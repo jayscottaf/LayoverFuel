@@ -2,12 +2,12 @@ import { User } from "@shared/schema";
 
 // Mifflin-St Jeor Equation for calculating Basal Metabolic Rate (BMR)
 function calculateBMR(user: User): number {
-  const { gender, weight, heightCm, age } = user;
+  const { gender, weight, height, age } = user;
   
   if (gender === 'male') {
-    return Math.round(10 * weight + 6.25 * heightCm - 5 * age + 5);
+    return Math.round(10 * weight + 6.25 * height - 5 * age + 5);
   } else {
-    return Math.round(10 * weight + 6.25 * heightCm - 5 * age - 161);
+    return Math.round(10 * weight + 6.25 * height - 5 * age - 161);
   }
 }
 

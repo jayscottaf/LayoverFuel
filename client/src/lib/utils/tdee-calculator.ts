@@ -1,6 +1,6 @@
 interface TDEEInput {
   age: number;
-  heightCm: number;
+  height: number;
   weightKg: number;
   gender: string;
   activityLevel: string;

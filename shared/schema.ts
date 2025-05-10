@@ -8,7 +8,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: text("name").notNull(),
   age: integer("age"),
-  heightCm: integer("height_cm"),
+  height: integer("height_cm"),
   weight: real("weight"),
   gender: text("gender"),
   fitnessGoal: text("fitness_goal"),
@@ -95,7 +95,7 @@ export const loginSchema = registerSchema;
 export const onboardingSchema = z.object({
   name: z.string(),
   age: z.number().int().min(1),
-  heightCm: z.number().int().min(1),
+  height: z.number().int().min(1),
   weight: z.number().min(1),
   gender: z.enum(['male', 'female', 'other']),
   fitnessGoal: z.enum(['shred', 'sustain']),
