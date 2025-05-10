@@ -328,7 +328,7 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-screen bg-black overflow-hidden">
       {/* Fixed Header */}
-      <div className="flex items-center justify-between bg-black px-4 py-3 border-b border-gray-800 fixed top-0 left-0 right-0 z-20">
+      <div className="flex items-center justify-between px-4 py-3 fixed top-0 left-0 right-0 z-20 border-b border-zinc-800 bg-black/40 backdrop-blur-md">
         <div className="flex items-center space-x-2">
           <h1 className="text-xl font-semibold text-white">Layover Fuel Assistant</h1>
         </div>
@@ -338,6 +338,7 @@ export default function ChatPage() {
           </Button>
         </Link>
       </div>
+
       
       {/* Spacer to account for fixed header */}
       <div className="h-14"></div>
@@ -456,7 +457,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input area - fixed at bottom */}
-      <div className="p-4 border-t border-gray-800 bg-black fixed bottom-0 left-0 right-0 z-20">
+      <div className="p-4 border-t border-zinc-800 bg-black/40 backdrop-blur-lg fixed bottom-0 left-0 right-0 z-20">
         {/* Display images to be sent - as thumbnails */}
         {tempImages.length > 0 && (
           <div className="mb-4">
