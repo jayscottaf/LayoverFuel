@@ -417,7 +417,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Removed duplicate inline nutrition log route - using the proper router at app.use("/api/logs/nutrition", nutritionRoutes)
+  // Additional nutrition log handler to catch requests with the erroneous newline character
+  app.post("/api/logs/nutrition%0A", (req, res) => {
+    console.log("⚠️ Received request to the incorrect nutrition endpoint with newline character");
+    console.log("⚠️ Redirecting to correct endpoint");
+    
+    // Redirect to the correct URL
+    res.redirect(307, "/api/logs/nutrition");
+  });
 
   // Workout Log Routes
   app.post("/api/logs/workout", async (req: Request, res: Response) => {
