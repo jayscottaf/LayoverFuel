@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real, date, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, real, date, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -8,7 +8,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: text("name").notNull(),
   age: integer("age"),
-  height: integer("height_cm"),
+  height: integer("height"),
   weight: real("weight"),
   gender: text("gender"),
   fitnessGoal: text("fitness_goal"),

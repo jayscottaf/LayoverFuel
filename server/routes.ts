@@ -5,7 +5,6 @@ import session from "express-session";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { registerSchema, loginSchema, onboardingSchema } from "@shared/schema";
-import fetch from "node-fetch";
 import { 
   calculateTDEE, 
   calculateMacros 
@@ -26,7 +25,7 @@ import {
 import { generateMealPlan } from "./services/meal-service";
 import { generateWorkoutPlan } from "./services/workout-service";
 import { analyzeMealImage } from "./services/image-analysis-service";
-
+import nutritionRoutes from "./routes/api/logs/nutrition";
 declare module "express-session" {
   interface SessionData {
     userId: number;
@@ -51,7 +50,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       },
     })
   );
-
+  app.use("/api/logs/nutrition", nutritionRoutes);
   // Auth Routes
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
