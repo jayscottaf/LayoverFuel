@@ -61,8 +61,8 @@ export function calculateMacros(user: User, tdee: number): {
     proteinMultiplier = 1.8; // 1.8g per kg of bodyweight
     fatMultiplier = 1.0; // 1.0g per kg of bodyweight
     
-    caloriesFromProtein = weightKg * proteinMultiplier * 4;
-    caloriesFromFat = weightKg * fatMultiplier * 9;
+    caloriesFromProtein = weight * proteinMultiplier * 4;
+    caloriesFromFat = weight * fatMultiplier * 9;
     caloriesFromCarbs = tdee - caloriesFromProtein - caloriesFromFat;
   }
   

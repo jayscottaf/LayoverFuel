@@ -1,17 +1,17 @@
 interface TDEEInput {
   age: number;
   height: number;
-  weightKg: number;
+  weight: number;
   gender: string;
   activityLevel: string;
 }
 
 // Mifflin-St Jeor Equation for calculating Basal Metabolic Rate (BMR)
-function calculateBMR({ gender, weightKg, heightCm, age }: TDEEInput): number {
+function calculateBMR({ gender, weight, height, age }: TDEEInput): number {
   if (gender === 'male') {
-    return Math.round(10 * weightKg + 6.25 * heightCm - 5 * age + 5);
+    return Math.round(10 * weight + 6.25 * height - 5 * age + 5);
   } else {
-    return Math.round(10 * weightKg + 6.25 * heightCm - 5 * age - 161);
+    return Math.round(10 * weight + 6.25 * height - 5 * age - 161);
   }
 }
 
