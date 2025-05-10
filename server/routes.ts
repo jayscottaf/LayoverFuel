@@ -113,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       
       // Check if user has completed onboarding
-      const isOnboardingComplete = Boolean(user.name && user.age && user.heightCm && user.weight);
+      const isOnboardingComplete = Boolean(user.name && user.age && user.height && user.weight);
       
       if (!isOnboardingComplete) {
         req.session.onboarding = {
