@@ -2,12 +2,12 @@ import { User } from "@shared/schema";
 
 // Mifflin-St Jeor Equation for calculating Basal Metabolic Rate (BMR)
 function calculateBMR(user: User): number {
-  const { gender, weightKg, heightCm, age } = user;
+  const { gender, weight, heightCm, age } = user;
   
   if (gender === 'male') {
-    return Math.round(10 * weightKg + 6.25 * heightCm - 5 * age + 5);
+    return Math.round(10 * weight + 6.25 * heightCm - 5 * age + 5);
   } else {
-    return Math.round(10 * weightKg + 6.25 * heightCm - 5 * age - 161);
+    return Math.round(10 * weight + 6.25 * heightCm - 5 * age - 161);
   }
 }
 
@@ -36,7 +36,7 @@ export function calculateMacros(user: User, tdee: number): {
   caloriesFromCarbs: number;
   caloriesFromFat: number;
 } {
-  const { fitnessGoal, weightKg } = user;
+  const { fitnessGoal, weight } = user;
   
   let proteinMultiplier: number;
   let fatMultiplier: number;
