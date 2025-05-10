@@ -2,10 +2,16 @@
 import { Request, Response } from "express";
 import { storage } from "../../../storage";
 import { createInsertSchema } from "drizzle-zod";
-import { nutritionLogs } from "../../../../shared/schema";
- // adjust path based on your structure
-// Zod validation schema based on your Drizzle table
-const NutritionLogInsertSchema = createInsertSchema(nutritionLogs);
+import { nutritionLogs, insertNutritionLogSchema } from "../../../../shared/schema";
+import { z } from "zod";
+
+// Create a modified schema that makes userId optional for client requests
+// This way we can fill it in with the session userId or fallback value
+const ClientNutritionLogSchema = insertNutritionLogSchema
+  .omit({ userId: true })
+  .merge(z.object({
+    userId: z.number().optional()
+  }));
 
 export async function handleNutritionLogPost(req: Request, res: Response) {
   console.log("🔥 Nutrition POST route was called - ROUTED VERSION");
@@ -23,10 +29,17 @@ export async function handleNutritionLogPost(req: Request, res: Response) {
   }
 
   try {
-    // Validate incoming request
-    console.log("Validating request data...");
-    const parsed = NutritionLogInsertSchema.parse(req.body);
-    console.log("Validated data:", parsed);
+    // Validate incoming request with the client schema (userId optional)
+    console.log("Validating request data with client schema...");
+    const clientData = ClientNutritionLogSchema.parse(req.body);
+    console.log("Client data validated:", clientData);
+    
+    // Now add the userId from session or fallback
+    const parsed = {
+      ...clientData,
+      userId: userId
+    };
+    console.log("Complete data with userId:", parsed);
 
     // Destructure after validation
     const { date, ...logData } = parsed;
