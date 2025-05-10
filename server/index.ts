@@ -7,6 +7,18 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
+// Add additional debugging middleware specifically for nutrition endpoint
+app.use((req, res, next) => {
+  if (req.originalUrl.includes('nutrition')) {
+    console.log(`🔍 DEBUG REQUEST - Original URL: "${req.originalUrl}"`);
+    console.log(`🔍 Debug Path: "${req.path}"`);
+    console.log(`🔍 Full URL:`, req.url);
+    console.log(`🔍 Method:`, req.method);
+    console.log(`🔍 Session:`, req.session);
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

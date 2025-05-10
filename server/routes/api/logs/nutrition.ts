@@ -9,7 +9,11 @@ const NutritionLogInsertSchema = createInsertSchema(nutritionLogs);
 
 export async function handleNutritionLogPost(req: Request, res: Response) {
   console.log("🔥 Nutrition POST route was called - ROUTED VERSION");
-  console.log("Request body:", req.body);
+  console.log("⚠️ Request URL:", req.originalUrl);
+  console.log("⚠️ Request path:", req.path);
+  console.log("⚠️ Request query:", req.query);
+  console.log("⚠️ Request params:", req.params);
+  console.log("Request body:", JSON.stringify(req.body, null, 2));
   console.log("Session:", req.session);
   
   const userId = req.session?.userId || 1; // TEMP fallback for testing
