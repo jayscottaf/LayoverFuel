@@ -113,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       
       // Check if user has completed onboarding
-      const isOnboardingComplete = Boolean(user.name && user.age && user.heightCm && user.weightKg);
+      const isOnboardingComplete = Boolean(user.name && user.age && user.heightCm && user.weight);
       
       if (!isOnboardingComplete) {
         req.session.onboarding = {
@@ -205,8 +205,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: userData.name,
           email: userData.email,
           age: userData.biometrics?.age,
-          heightCm: userData.biometrics?.heightCm,
-          weightKg: userData.biometrics?.weightKg,
+          height: userData.biometrics?.height,
+          weight: userData.biometrics?.weight,
           gender: userData.gender,
           fitnessGoal: userData.fitnessGoal,
           activityLevel: userData.activityLevel,
