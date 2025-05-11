@@ -352,8 +352,7 @@ export default function ChatPage() {
               className={`flex ${
                 message.role === "user" ? "justify-end" : "justify-start"
               }`}
-            >
-              <div className="flex flex-col space-y-2 max-w-[75%] w-full">
+            ><div className="flex flex-col space-y-2 max-w-[75%]">
                 {message.imageUrls && message.imageUrls.length > 0 && (
                   <div className={`flex flex-wrap gap-1 max-w-[90%] ${
                       message.role === "user" ? "ml-auto justify-end" : "mr-auto justify-start"
