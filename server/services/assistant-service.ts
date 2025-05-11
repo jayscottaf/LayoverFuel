@@ -279,39 +279,77 @@ export async function getMessagesFromThread(threadId: string) {
             
             for (const potentialJson of jsonMatches) {
               try {
-                const parsed = JSON.parse(potentialJson);
-                console.log("Successfully parsed JSON content:", parsed);
+                // Clean JSON
+                const cleanJson = potentialJson
+                  .replace(/\/\/.*$/gm, '') // Remove single-line comments
+                  .replace(/\/\*[\s\S]*?\*\//g, '') // Remove multiline comments
+                  .replace(/,\s*}/g, '}') // Remove trailing commas before closing braces
+                  .replace(/,\s*]/g, ']') // Remove trailing commas before closing arrays
+                  .trim();
+
+                // Log for debugging
+                console.log("Raw JSON:", potentialJson);
+                console.log("Cleaned JSON:", cleanJson);
+
+                // Validate JSON structure
+                if (!cleanJson || !cleanJson.startsWith('{') || !cleanJson.endsWith('}')) {
+                  console.warn("Skipping invalid JSON (empty or malformed):", cleanJson);
+                  continue;
+                }
                 
+                // Parse JSON
+                const parsed = JSON.parse(cleanJson);
+
+                // Fix invalid or placeholder date
+                if (!parsed.date || 
+                    parsed.date.trim() === "" || 
+                    parsed.date === "YYYY-MM-DD" || 
+                    /^\d{4}-[A-Z]{2}-[A-Z]{2}$/i.test(parsed.date) ||
+                    isNaN(new Date(parsed.date).getTime())) {
+                  // Format today as YYYY-MM-DD
+                  const now = new Date();
+                  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                  console.warn(`⚠️ Invalid or placeholder date detected "${parsed.date}". Replacing with today's date: ${today}`);
+                  parsed.date = today;
+                }
+
+                console.log("Successfully parsed JSON content:", parsed);
+                // Validate required fields for log_nutrition action
                 if (parsed && parsed.action === 'log_nutrition') {
+                  const requiredFields = ['action', 'date', 'calories', 'protein', 'carbs', 'fat', 'fiber', 'mealStyle', 'notes'];
+                  const toFloat = (val: any) => isNaN(parseFloat(val)) ? 0 : parseFloat(val);
+
+                  parsed.calories = toFloat(parsed.calories);
+                  parsed.protein = toFloat(parsed.protein);
+                  parsed.carbs = toFloat(parsed.carbs);
+                  parsed.fat = toFloat(parsed.fat);
+                  parsed.fiber = toFloat(parsed.fiber);
+                  const missingFields = requiredFields.filter(field => !(field in parsed));
+                  if (missingFields.length > 0) {
+                    console.warn(`Skipping log_nutrition action due to missing fields: ${missingFields.join(', ')}`);
+                    continue;
+                  }
+
                   console.log("✨ Detected log_nutrition action. Logging to backend...");
-                  
-                  try {
-                    // Use an absolute URL with localhost to ensure it works within the Node.js server environment
-                    // Node.js fetch doesn't resolve relative URLs the same way as the browser
-                    const baseUrl = 'http://localhost:5000';
-                    console.log(`🔄 Sending nutrition log to ${baseUrl}/api/logs/nutrition`);
-                    
-                    const logResponse = await fetch(`${baseUrl}/api/logs/nutrition`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(parsed),
-                    });
-                    
-                    if (logResponse.ok) {
-                      const logResult = await logResponse.json();
-                      console.log("✅ Nutrition log successfully sent:", logResult);
-                    } else {
-                      console.error("❌ Failed to log nutrition:", await logResponse.text());
-                    }
-                  } catch (fetchError) {
-                    console.error("❌ Error sending nutrition log:", fetchError);
+                  const baseUrl = 'http://localhost:5000';
+                  console.log(`🔄 Sending nutrition log to ${baseUrl}/api/logs/nutrition`);
+
+                  const logResponse = await fetch(`${baseUrl}/api/logs/nutrition`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(parsed),
+                  });
+
+                  if (logResponse.ok) {
+                    const logResult = await logResponse.json();
+                    console.log("✅ Nutrition log successfully sent:", logResult);
+                  } else {
+                    console.error("❌ Failed to log nutrition:", await logResponse.text());
                   }
                 }
               } catch (jsonError) {
-                // Log the error and the problematic JSON for debugging
                 console.error("❌ Failed to parse JSON object:", jsonError);
-                console.error("⚠️ Problematic JSON string:", potentialJson.substring(0, 100) + (potentialJson.length > 100 ? '...' : ''));
-                // Skip invalid JSON matches and continue with the next one
+                console.error("⚠️ Problematic JSON string:", potentialJson);
                 continue;
               }
             }

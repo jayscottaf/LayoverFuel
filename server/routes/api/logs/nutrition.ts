@@ -42,36 +42,50 @@ export async function handleNutritionLogPost(req: Request, res: Response) {
 
     // Destructure after validation
     const { date, ...logData } = parsed;
-    const logDate = date ? new Date(date) : new Date();
-    console.log("Using date:", logDate);
+    let logDate: Date;
 
-    // ✅ Use fallback-enabled userId throughout
-    console.log("Looking for existing log with userId:", userId, "and date:", logDate);
-    const existingLog = await storage.getNutritionLogByDate(userId, logDate);
-    console.log("Existing log found?", !!existingLog);
-
-    let nutritionLog;
-    if (existingLog) {
-      console.log("Updating existing log:", existingLog.id);
-      nutritionLog = await storage.updateNutritionLog(existingLog.id, logData);
-    } else {
-      console.log("Creating new log with:", {
-        ...logData,
-        date: logDate.toISOString().split("T")[0],
-        userId,
-      });
-      nutritionLog = await storage.createNutritionLog({
-        ...logData,
-        date: logDate.toISOString().split("T")[0],
-        userId,
-      });
+    try {
+      // Check if we have a placeholder date format like "YYYY-MM-DD" 
+      // or any other format that's not a valid date
+      if (date === "YYYY-MM-DD" || /^\d{4}-[A-Z]{2}-[A-Z]{2}$/i.test(date)) {
+        console.log("🔄 Found date placeholder. Replacing with today's date");
+        logDate = new Date();
+      } else {
+        logDate = new Date(date);
+        if (isNaN(logDate.getTime())) {
+          throw new Error("Invalid date format received");
+        }
+      }
+    } catch (error) {
+      const fallback = new Date();
+      logDate = fallback;
+      console.warn(`⚠️ Received invalid date string "${date}". Using fallback:`, fallback);
     }
+    
+    // Format the date as YYYY-MM-DD for database storage
+    const formattedDate = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}-${String(logDate.getDate()).padStart(2, '0')}`;
+    console.log("Using date:", logDate, "formatted as:", formattedDate);
+
+    console.log("Creating new nutrition log (multiple meals per day supported)");
+    const nutritionLog = await storage.createNutritionLog({
+      ...logData,
+      date: formattedDate, // Use our pre-formatted date string
+      userId,
+    });
 
     console.log("Saved nutrition log:", nutritionLog);
 
     res.status(200).json(nutritionLog);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    if (error instanceof z.ZodError) {
+      console.error("Zod validation error:", error.flatten());
+      return res.status(400).json({ message: "Validation failed", issues: error.flatten() });
+    }
+    console.error("💥 Server error while logging nutrition:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 import { Router } from "express";

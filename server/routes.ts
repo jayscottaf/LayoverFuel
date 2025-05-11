@@ -657,14 +657,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let messages;
       try {
         messages = await getMessagesFromThread(threadId);
+        console.log("Messages retrieved:", JSON.stringify(messages.data, null, 2));
       } catch (messagesError) {
         console.error("Error getting messages:", messagesError);
+        if (messagesError instanceof Error && messagesError.message.includes("SyntaxError")) {
+          return res.status(400).json({ 
+            message: "Invalid response format from assistant. Please try rephrasing your request or contact support.",
+            error: messagesError.message
+          });
+        }
         return res.status(500).json({ 
           message: "Failed to get messages", 
           error: messagesError instanceof Error ? messagesError.message : String(messagesError) 
         });
       }
-      
       res.status(200).json({ messages: messages.data });
     } catch (error) {
       console.error("Error processing message:", error);

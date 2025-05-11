@@ -25,11 +25,11 @@ export const nutritionLogs = pgTable("nutrition_logs", {
   date: date("date").notNull(),
   userId: integer("user_id").notNull().references(() => users.id),
   mealStyle: text("meal_style"),
-  calories: integer("calories"),
-  protein: integer("protein"),
-  carbs: integer("carbs"),
-  fat: integer("fat"),
-  fiber: integer("fiber"),
+  calories: real("calories"),
+  protein: real("protein"),
+  carbs: real("carbs"),
+  fat: real("fat"),
+  fiber: real("fiber"),
   notes: text("notes"),
 });
 
