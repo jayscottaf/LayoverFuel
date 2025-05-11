@@ -1,0 +1,2858 @@
+6:55:16 AM [express] GET /api/assistant/messages/thread_Lvr6hWZujLwaVwYSf9JNssE8 304 in 2267ms :: {"…
+Adding message to thread thread_Lvr6hWZujLwaVwYSf9JNssE8
+Adding message to thread thread_Lvr6hWZujLwaVwYSf9JNssE8 with content types: text
+Message and images added successfully
+Running assistant on thread thread_Lvr6hWZujLwaVwYSf9JNssE8
+Run created with ID: run_AuqaG8oKdhsOjQfJ3H4Zuex4
+Initial run status: queued
+Run status after 5 attempts: in_progress
+Getting messages from thread thread_Lvr6hWZujLwaVwYSf9JNssE8
+Examining message content (929 chars):
+To estimate the nutrients in your meal consisting of cheese ravioli and broccoli, here's a breakdown:
+
+**Cheese Ravioli (Typical Serving):**
+- **Calories:** ~350-450 kcal
+- **Protein:** ~15g
+- **Carbohydrates:** ~50g
+- **Fat:** ~15g
+
+**Broccoli:**
+- **Calories:** ~50 kcal (assuming ~1 cup cooked)
+- ...
+Found 1 JSON code blocks
+Found 1 potential raw JSON objects
+Processing 2 potential JSON objects
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Using today's date
+  "calories": 450,
+  "protein": 19,
+  "carbs": 60,
+  "fat": 15.5,
+  "fiber": 7,  // Estimated fiber from broccoli and pasta
+  "mealStyle": "home",
+  "notes": "Meal included a plate of cheese ravioli and broccoli."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 450,
+  "protein": 19,
+  "carbs": 60,
+  "fat": 15.5,
+  "fiber": 7,  
+  "mealStyle": "home",
+  "notes": "Meal included a plate of cheese ravioli and broccoli."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 450,
+  protein: 19,
+  carbs: 60,
+  fat: 15.5,
+  fiber: 7,
+  mealStyle: 'home',
+  notes: 'Meal included a plate of cheese ravioli and broccoli.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 450,
+  "protein": 19,
+  "carbs": 60,
+  "fat": 15.5,
+  "fiber": 7,
+  "mealStyle": "home",
+  "notes": "Meal included a plate of cheese ravioli and broccoli."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:45.891Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 450,
+  protein: 19,
+  carbs: 60,
+  fat: 15.5,
+  fiber: 7,
+  notes: 'Meal included a plate of cheese ravioli and broccoli.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 450,
+  protein: 19,
+  carbs: 60,
+  fat: 15.5,
+  fiber: 7,
+  notes: 'Meal included a plate of cheese ravioli and broccoli.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 68,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 450,
+  protein: 19,
+  carbs: 60,
+  fat: 15.5,
+  fiber: 7,
+  notes: 'Meal included a plate of cheese ravioli and broccoli.'
+}
+6:56:48 AM [express] POST /api/logs/nutrition 200 in 2827ms :: {"id":68,"date":"2023-10-10","userId"…
+✅ Nutrition log successfully sent: {
+  id: 68,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 450,
+  protein: 19,
+  carbs: 60,
+  fat: 15.5,
+  fiber: 7,
+  notes: 'Meal included a plate of cheese ravioli and broccoli.'
+}
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Using today's date
+  "calories": 450,
+  "protein": 19,
+  "carbs": 60,
+  "fat": 15.5,
+  "fiber": 7,  // Estimated fiber from broccoli and pasta
+  "mealStyle": "home",
+  "notes": "Meal included a plate of cheese ravioli and broccoli."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 450,
+  "protein": 19,
+  "carbs": 60,
+  "fat": 15.5,
+  "fiber": 7,  
+  "mealStyle": "home",
+  "notes": "Meal included a plate of cheese ravioli and broccoli."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 450,
+  protein: 19,
+  carbs: 60,
+  fat: 15.5,
+  fiber: 7,
+  mealStyle: 'home',
+  notes: 'Meal included a plate of cheese ravioli and broccoli.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 450,
+  "protein": 19,
+  "carbs": 60,
+  "fat": 15.5,
+  "fiber": 7,
+  "mealStyle": "home",
+  "notes": "Meal included a plate of cheese ravioli and broccoli."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:48.720Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 450,
+  protein: 19,
+  carbs: 60,
+  fat: 15.5,
+  fiber: 7,
+  notes: 'Meal included a plate of cheese ravioli and broccoli.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 450,
+  protein: 19,
+  carbs: 60,
+  fat: 15.5,
+  fiber: 7,
+  notes: 'Meal included a plate of cheese ravioli and broccoli.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 69,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 450,
+  protein: 19,
+  carbs: 60,
+  fat: 15.5,
+  fiber: 7,
+  notes: 'Meal included a plate of cheese ravioli and broccoli.'
+}
+6:56:48 AM [express] POST /api/logs/nutrition 200 in 80ms :: {"id":69,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 69,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 450,
+  protein: 19,
+  carbs: 60,
+  fat: 15.5,
+  fiber: 7,
+  notes: 'Meal included a plate of cheese ravioli and broccoli.'
+}
+Examining message content (885 chars):
+To log your meal consisting of a Fairlife Protein Shake Elite and Pad See Ew, here's the estimated nutritional entry:
+
+**Fairlife Protein Shake Elite:**
+- **Calories:** ~150 kcal
+- **Protein:** ~42g
+- **Carbohydrates:** ~8g
+- **Fat:** ~3g
+
+**Pad See Ew:**
+- **Calories:** ~600 kcal
+- **Protein:** ~20...
+Found 1 JSON code blocks
+Found 1 potential raw JSON objects
+Processing 2 potential JSON objects
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Using today's date
+  "calories": 750,
+  "protein": 62,
+  "carbs": 88,
+  "fat": 23,
+  "fiber": 5,  // Estimated fiber content
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 750,
+  "protein": 62,
+  "carbs": 88,
+  "fat": 23,
+  "fiber": 5,  
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  mealStyle: 'on_the_go',
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 750,
+  "protein": 62,
+  "carbs": 88,
+  "fat": 23,
+  "fiber": 5,
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:48.801Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 70,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+6:56:48 AM [express] POST /api/logs/nutrition 200 in 80ms :: {"id":70,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 70,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Using today's date
+  "calories": 750,
+  "protein": 62,
+  "carbs": 88,
+  "fat": 23,
+  "fiber": 5,  // Estimated fiber content
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 750,
+  "protein": 62,
+  "carbs": 88,
+  "fat": 23,
+  "fiber": 5,  
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  mealStyle: 'on_the_go',
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 750,
+  "protein": 62,
+  "carbs": 88,
+  "fat": 23,
+  "fiber": 5,
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:48.883Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 71,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+6:56:48 AM [express] POST /api/logs/nutrition 200 in 80ms :: {"id":71,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 71,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+Examining message content (885 chars):
+Based on your meal, here's the estimated nutritional information and corresponding log entry:
+
+**Fairlife Protein Shake Elite:**
+- **Calories:** ~150 kcal
+- **Protein:** ~42g
+- **Carbohydrates:** ~8g
+- **Fat:** ~3g
+
+**Pad See Ew (Typical Serving):**
+- **Calories:** ~600 kcal
+- **Protein:** ~20g
+- **...
+Found 1 JSON code blocks
+Found 1 potential raw JSON objects
+Processing 2 potential JSON objects
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Assuming today's date
+  "calories": 750,
+  "protein": 62,
+  "carbs": 88,
+  "fat": 23,
+  "fiber": 5,  // Estimated fiber content
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 750,
+  "protein": 62,
+  "carbs": 88,
+  "fat": 23,
+  "fiber": 5,  
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  mealStyle: 'on_the_go',
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 750,
+  "protein": 62,
+  "carbs": 88,
+  "fat": 23,
+  "fiber": 5,
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:48.964Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 72,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+6:56:49 AM [express] POST /api/logs/nutrition 200 in 81ms :: {"id":72,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 72,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Assuming today's date
+  "calories": 750,
+  "protein": 62,
+  "carbs": 88,
+  "fat": 23,
+  "fiber": 5,  // Estimated fiber content
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 750,
+  "protein": 62,
+  "carbs": 88,
+  "fat": 23,
+  "fiber": 5,  
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  mealStyle: 'on_the_go',
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 750,
+  "protein": 62,
+  "carbs": 88,
+  "fat": 23,
+  "fiber": 5,
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:49.047Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 73,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+6:56:49 AM [express] POST /api/logs/nutrition 200 in 80ms :: {"id":73,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 73,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 62,
+  carbs: 88,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+Examining message content (994 chars):
+Let's break down the estimated nutritional content for both the Fairlife Protein Shake Elite and a typical serving of Pad See Ew:
+
+**Fairlife Protein Shake Elite:**
+- **Calories:** ~150 kcal
+- **Protein:** ~42g
+- **Carbohydrates:** ~8g
+- **Fat:** ~3g
+
+**Pad See Ew (Typical Restaurant Serving):**
+- *...
+Found 1 JSON code blocks
+Found 1 potential raw JSON objects
+Processing 2 potential JSON objects
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "YYYY-MM-DD",  // Replace with today's date
+  "calories": 750,  // Average of the range
+  "protein": 65,
+  "carbs": 85,
+  "fat": 23,
+  "fiber": 5,  // Estimated fiber content from the noodle dish
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "YYYY-MM-DD",  
+  "calories": 750,  
+  "protein": 65,
+  "carbs": 85,
+  "fat": 23,
+  "fiber": 5,  
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+⚠️ Invalid or placeholder date detected "YYYY-MM-DD". Replacing with today's date: 2025-05-11
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2025-05-11',
+  calories: 750,
+  protein: 65,
+  carbs: 85,
+  fat: 23,
+  fiber: 5,
+  mealStyle: 'on_the_go',
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2025-05-11",
+  "calories": 750,
+  "protein": 65,
+  "carbs": 85,
+  "fat": 23,
+  "fiber": 5,
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:49.128Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2025-05-11',
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 65,
+  carbs: 85,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+Complete data with userId: {
+  date: '2025-05-11',
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 65,
+  carbs: 85,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.',
+  userId: 1
+}
+Using date: 2025-05-11T00:00:00.000Z formatted as: 2025-05-11
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 74,
+  date: '2025-05-11',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 65,
+  carbs: 85,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+6:56:49 AM [express] POST /api/logs/nutrition 200 in 81ms :: {"id":74,"date":"2025-05-11","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 74,
+  date: '2025-05-11',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 65,
+  carbs: 85,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "YYYY-MM-DD",  // Replace with today's date
+  "calories": 750,  // Average of the range
+  "protein": 65,
+  "carbs": 85,
+  "fat": 23,
+  "fiber": 5,  // Estimated fiber content from the noodle dish
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "YYYY-MM-DD",  
+  "calories": 750,  
+  "protein": 65,
+  "carbs": 85,
+  "fat": 23,
+  "fiber": 5,  
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+⚠️ Invalid or placeholder date detected "YYYY-MM-DD". Replacing with today's date: 2025-05-11
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2025-05-11',
+  calories: 750,
+  protein: 65,
+  carbs: 85,
+  fat: 23,
+  fiber: 5,
+  mealStyle: 'on_the_go',
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2025-05-11",
+  "calories": 750,
+  "protein": 65,
+  "carbs": 85,
+  "fat": 23,
+  "fiber": 5,
+  "mealStyle": "on_the_go",
+  "notes": "Meal included a Fairlife Protein Shake Elite and Pad See Ew."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:49.210Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2025-05-11',
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 65,
+  carbs: 85,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+Complete data with userId: {
+  date: '2025-05-11',
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 65,
+  carbs: 85,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.',
+  userId: 1
+}
+Using date: 2025-05-11T00:00:00.000Z formatted as: 2025-05-11
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 75,
+  date: '2025-05-11',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 65,
+  carbs: 85,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+6:56:49 AM [express] POST /api/logs/nutrition 200 in 112ms :: {"id":75,"date":"2025-05-11","userId":…
+✅ Nutrition log successfully sent: {
+  id: 75,
+  date: '2025-05-11',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 750,
+  protein: 65,
+  carbs: 85,
+  fat: 23,
+  fiber: 5,
+  notes: 'Meal included a Fairlife Protein Shake Elite and Pad See Ew.'
+}
+Examining message content (363 chars):
+```json
+{
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Using today's date
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+```
+
+I've now logged this entry for y...
+Found 1 JSON code blocks
+Found 1 potential raw JSON objects
+Processing 2 potential JSON objects
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Using today's date
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  mealStyle: 'home',
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:49.326Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 76,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+6:56:49 AM [express] POST /api/logs/nutrition 200 in 81ms :: {"id":76,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 76,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Using today's date
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  mealStyle: 'home',
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:49.408Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 77,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+6:56:49 AM [express] POST /api/logs/nutrition 200 in 81ms :: {"id":77,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 77,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+Examining message content (451 chars):
+Here's the entry for your Nutrition Log based on your lunch:
+
+```json
+{
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Assume today's date is used
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon,...
+Found 1 JSON code blocks
+Found 1 potential raw JSON objects
+Processing 2 potential JSON objects
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Assume today's date is used
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  mealStyle: 'home',
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:49.490Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 78,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+6:56:49 AM [express] POST /api/logs/nutrition 200 in 81ms :: {"id":78,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 78,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Assume today's date is used
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  mealStyle: 'home',
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 620,
+  "protein": 48,
+  "carbs": 35,
+  "fat": 24,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Lunch included grilled salmon, sweet potatoes, and broccoli."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:49.574Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 79,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+6:56:49 AM [express] POST /api/logs/nutrition 200 in 81ms :: {"id":79,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 79,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 620,
+  protein: 48,
+  carbs: 35,
+  fat: 24,
+  fiber: 8,
+  notes: 'Lunch included grilled salmon, sweet potatoes, and broccoli.'
+}
+Examining message content (439 chars):
+Here's how the entry for your Nutrition Log will look for your chicken sandwich lunch:
+
+```json
+{
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Use today's date
+  "calories": 700,
+  "protein": 40,
+  "carbs": 60,
+  "fat": 25,
+  "fiber": 5,  // Estimated fiber content
+  "mealStyle": "on_the...
+Found 1 JSON code blocks
+Found 1 potential raw JSON objects
+Processing 2 potential JSON objects
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Use today's date
+  "calories": 700,
+  "protein": 40,
+  "carbs": 60,
+  "fat": 25,
+  "fiber": 5,  // Estimated fiber content
+  "mealStyle": "on_the_go",
+  "notes": "Lunch included a chicken sandwich."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 700,
+  "protein": 40,
+  "carbs": 60,
+  "fat": 25,
+  "fiber": 5,  
+  "mealStyle": "on_the_go",
+  "notes": "Lunch included a chicken sandwich."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 700,
+  protein: 40,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  mealStyle: 'on_the_go',
+  notes: 'Lunch included a chicken sandwich.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 700,
+  "protein": 40,
+  "carbs": 60,
+  "fat": 25,
+  "fiber": 5,
+  "mealStyle": "on_the_go",
+  "notes": "Lunch included a chicken sandwich."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:49.656Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 700,
+  protein: 40,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch included a chicken sandwich.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 700,
+  protein: 40,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch included a chicken sandwich.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 80,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 700,
+  protein: 40,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch included a chicken sandwich.'
+}
+6:56:49 AM [express] POST /api/logs/nutrition 200 in 81ms :: {"id":80,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 80,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 700,
+  protein: 40,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch included a chicken sandwich.'
+}
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Use today's date
+  "calories": 700,
+  "protein": 40,
+  "carbs": 60,
+  "fat": 25,
+  "fiber": 5,  // Estimated fiber content
+  "mealStyle": "on_the_go",
+  "notes": "Lunch included a chicken sandwich."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 700,
+  "protein": 40,
+  "carbs": 60,
+  "fat": 25,
+  "fiber": 5,  
+  "mealStyle": "on_the_go",
+  "notes": "Lunch included a chicken sandwich."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 700,
+  protein: 40,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  mealStyle: 'on_the_go',
+  notes: 'Lunch included a chicken sandwich.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 700,
+  "protein": 40,
+  "carbs": 60,
+  "fat": 25,
+  "fiber": 5,
+  "mealStyle": "on_the_go",
+  "notes": "Lunch included a chicken sandwich."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:49.739Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 700,
+  protein: 40,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch included a chicken sandwich.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 700,
+  protein: 40,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch included a chicken sandwich.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 81,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 700,
+  protein: 40,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch included a chicken sandwich.'
+}
+6:56:49 AM [express] POST /api/logs/nutrition 200 in 81ms :: {"id":81,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 81,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 700,
+  protein: 40,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch included a chicken sandwich.'
+}
+Examining message content (572 chars):
+Here's the entry for your Nutrition Log based on your turkey sandwich lunch:
+
+```json
+{
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Assume today's date is used
+  "calories": 600,
+  "protein": 25,  // Estimated protein content
+  "carbs": 60,    // Estimated carbohydrate content
+  "fat": ...
+Found 1 JSON code blocks
+Found 1 potential raw JSON objects
+Processing 2 potential JSON objects
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Assume today's date is used
+  "calories": 600,
+  "protein": 25,  // Estimated protein content
+  "carbs": 60,    // Estimated carbohydrate content
+  "fat": 25,      // Estimated fat content
+  "fiber": 5,     // Estimated fiber content
+  "mealStyle": "on_the_go",
+  "notes": "Lunch consisted of a turkey sandwich."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 600,
+  "protein": 25,  
+  "carbs": 60,    
+  "fat": 25,      
+  "fiber": 5,     
+  "mealStyle": "on_the_go",
+  "notes": "Lunch consisted of a turkey sandwich."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 600,
+  protein: 25,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  mealStyle: 'on_the_go',
+  notes: 'Lunch consisted of a turkey sandwich.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 600,
+  "protein": 25,
+  "carbs": 60,
+  "fat": 25,
+  "fiber": 5,
+  "mealStyle": "on_the_go",
+  "notes": "Lunch consisted of a turkey sandwich."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:49.822Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 600,
+  protein: 25,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch consisted of a turkey sandwich.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 600,
+  protein: 25,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch consisted of a turkey sandwich.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 82,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 600,
+  protein: 25,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch consisted of a turkey sandwich.'
+}
+6:56:49 AM [express] POST /api/logs/nutrition 200 in 81ms :: {"id":82,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 82,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 600,
+  protein: 25,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch consisted of a turkey sandwich.'
+}
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Assume today's date is used
+  "calories": 600,
+  "protein": 25,  // Estimated protein content
+  "carbs": 60,    // Estimated carbohydrate content
+  "fat": 25,      // Estimated fat content
+  "fiber": 5,     // Estimated fiber content
+  "mealStyle": "on_the_go",
+  "notes": "Lunch consisted of a turkey sandwich."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 600,
+  "protein": 25,  
+  "carbs": 60,    
+  "fat": 25,      
+  "fiber": 5,     
+  "mealStyle": "on_the_go",
+  "notes": "Lunch consisted of a turkey sandwich."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 600,
+  protein: 25,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  mealStyle: 'on_the_go',
+  notes: 'Lunch consisted of a turkey sandwich.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 600,
+  "protein": 25,
+  "carbs": 60,
+  "fat": 25,
+  "fiber": 5,
+  "mealStyle": "on_the_go",
+  "notes": "Lunch consisted of a turkey sandwich."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:49.905Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 600,
+  protein: 25,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch consisted of a turkey sandwich.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'on_the_go',
+  calories: 600,
+  protein: 25,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch consisted of a turkey sandwich.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 83,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 600,
+  protein: 25,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch consisted of a turkey sandwich.'
+}
+6:56:49 AM [express] POST /api/logs/nutrition 200 in 80ms :: {"id":83,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 83,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'on_the_go',
+  calories: 600,
+  protein: 25,
+  carbs: 60,
+  fat: 25,
+  fiber: 5,
+  notes: 'Lunch consisted of a turkey sandwich.'
+}
+Examining message content (405 chars):
+Here's the final JSON entry to log your breakfast:
+
+```json
+{
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Assume today's date is used
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup ...
+Found 1 JSON code blocks
+Found 1 potential raw JSON objects
+Processing 2 potential JSON objects
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Assume today's date is used
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup oatmeal."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup oatmeal."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  mealStyle: 'home',
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup oatmeal."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:49.987Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 84,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+6:56:50 AM [express] POST /api/logs/nutrition 200 in 80ms :: {"id":84,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 84,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  // Assume today's date is used
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup oatmeal."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",  
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup oatmeal."
+}
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2023-10-10',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  mealStyle: 'home',
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup oatmeal."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:50.069Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 85,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+6:56:50 AM [express] POST /api/logs/nutrition 200 in 80ms :: {"id":85,"date":"2023-10-10","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 85,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+Examining message content (786 chars):
+Here's an estimated macro breakdown for your breakfast:
+
+- **3 Eggs:**
+  - Calories: ~210 kcal
+  - Protein: ~18g
+  - Carbohydrates: ~1g
+  - Fat: ~15g
+
+- **1/2 Cup Oatmeal (cooked):**
+  - Calories: ~75 kcal
+  - Protein: ~3g
+  - Carbohydrates: ~13g
+  - Fat: ~1.5g
+
+**Total Estimated Macros for Breakfas...
+Found 1 JSON code blocks
+Found 1 potential raw JSON objects
+Processing 2 potential JSON objects
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "YYYY-MM-DD",  // Replace with today's date
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,  // estimating fiber from oatmeal
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup oatmeal."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "YYYY-MM-DD",  
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,  
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup oatmeal."
+}
+⚠️ Invalid or placeholder date detected "YYYY-MM-DD". Replacing with today's date: 2025-05-11
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2025-05-11',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  mealStyle: 'home',
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2025-05-11",
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup oatmeal."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:50.152Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2025-05-11',
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+Complete data with userId: {
+  date: '2025-05-11',
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.',
+  userId: 1
+}
+Using date: 2025-05-11T00:00:00.000Z formatted as: 2025-05-11
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 86,
+  date: '2025-05-11',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+6:56:50 AM [express] POST /api/logs/nutrition 200 in 80ms :: {"id":86,"date":"2025-05-11","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 86,
+  date: '2025-05-11',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+Raw JSON: {
+  "action": "log_nutrition",
+  "date": "YYYY-MM-DD",  // Replace with today's date
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,  // estimating fiber from oatmeal
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup oatmeal."
+}
+Cleaned JSON: {
+  "action": "log_nutrition",
+  "date": "YYYY-MM-DD",  
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,  
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup oatmeal."
+}
+⚠️ Invalid or placeholder date detected "YYYY-MM-DD". Replacing with today's date: 2025-05-11
+Successfully parsed JSON content: {
+  action: 'log_nutrition',
+  date: '2025-05-11',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  mealStyle: 'home',
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+✨ Detected log_nutrition action. Logging to backend...
+🔄 Sending nutrition log to http://localhost:5000/api/logs/nutrition
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2025-05-11",
+  "calories": 285,
+  "protein": 21,
+  "carbs": 14,
+  "fat": 16.5,
+  "fiber": 2,
+  "mealStyle": "home",
+  "notes": "Breakfast included 3 eggs and 1/2 cup oatmeal."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T06:56:50.234Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2025-05-11',
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+Complete data with userId: {
+  date: '2025-05-11',
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.',
+  userId: 1
+}
+Using date: 2025-05-11T00:00:00.000Z formatted as: 2025-05-11
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 87,
+  date: '2025-05-11',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+6:56:50 AM [express] POST /api/logs/nutrition 200 in 80ms :: {"id":87,"date":"2025-05-11","userId":1…
+✅ Nutrition log successfully sent: {
+  id: 87,
+  date: '2025-05-11',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 285,
+  protein: 21,
+  carbs: 14,
+  fat: 16.5,
+  fiber: 2,
+  notes: 'Breakfast included 3 eggs and 1/2 cup oatmeal.'
+}
+Messages retrieved: [
+  {
+    "id": "msg_U6ndvHwlIZhbmkLzl0CwLAuE",
+    "object": "thread.message",
+    "created_at": 1746946600,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_AuqaG8oKdhsOjQfJ3H4Zuex4",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "To estimate the nutrients in your meal consisting of cheese ravioli and broccoli, here's a breakdown:\n\n**Cheese Ravioli (Typical Serving):**\n- **Calories:** ~350-450 kcal\n- **Protein:** ~15g\n- **Carbohydrates:** ~50g\n- **Fat:** ~15g\n\n**Broccoli:**\n- **Calories:** ~50 kcal (assuming ~1 cup cooked)\n- **Protein:** ~4g\n- **Carbohydrates:** ~10g\n- **Fat:** ~0.5g\n\n**Total Estimated Nutrition for the Meal:**\n- **Calories:** ~400-500 kcal\n- **Protein:** ~19g\n- **Carbohydrates:** ~60g\n- **Fat:** ~15.5g\n\nHere's how it will be logged:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Using today's date\n  \"calories\": 450,\n  \"protein\": 19,\n  \"carbs\": 60,\n  \"fat\": 15.5,\n  \"fiber\": 7,  // Estimated fiber from broccoli and pasta\n  \"mealStyle\": \"home\",\n  \"notes\": \"Meal included a plate of cheese ravioli and broccoli.\"\n}\n```\n\nLet me know if the entry looks good or if there are any other details you'd like to adjust!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_kjktv3IakLDvkfheuShEieVJ",
+    "object": "thread.message",
+    "created_at": 1746946594,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "a plate of cheese ravioli and broccoli",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_mQGNAsq10Le594ytG52EEJek",
+    "object": "thread.message",
+    "created_at": 1746935941,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_7MiB3vqJV8mzKlfyevcktbtO",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "To log your meal consisting of a Fairlife Protein Shake Elite and Pad See Ew, here's the estimated nutritional entry:\n\n**Fairlife Protein Shake Elite:**\n- **Calories:** ~150 kcal\n- **Protein:** ~42g\n- **Carbohydrates:** ~8g\n- **Fat:** ~3g\n\n**Pad See Ew:**\n- **Calories:** ~600 kcal\n- **Protein:** ~20g\n- **Carbohydrates:** ~80g\n- **Fat:** ~20g\n\n**Total Estimated Nutrition:**\n- **Calories:** ~750 kcal\n- **Protein:** ~62g\n- **Carbohydrates:** ~88g\n- **Fat:** ~23g\n\nHere's how it will be logged:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Using today's date\n  \"calories\": 750,\n  \"protein\": 62,\n  \"carbs\": 88,\n  \"fat\": 23,\n  \"fiber\": 5,  // Estimated fiber content\n  \"mealStyle\": \"on_the_go\",\n  \"notes\": \"Meal included a Fairlife Protein Shake Elite and Pad See Ew.\"\n}\n```\n\nThis entry has been prepared for logging. Let me know if there's anything more you need!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_Ql18BU0sxAvJ5mlcJLYtD6oF",
+    "object": "thread.message",
+    "created_at": 1746935935,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "i ate a fairlife protien shake elite and pad see ew",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_IYqCzOpWomDiZbsH5lZo7vL1",
+    "object": "thread.message",
+    "created_at": 1746935403,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_lrWg2FjflkBCvhrwo7TjSqhn",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Based on your meal, here's the estimated nutritional information and corresponding log entry:\n\n**Fairlife Protein Shake Elite:**\n- **Calories:** ~150 kcal\n- **Protein:** ~42g\n- **Carbohydrates:** ~8g\n- **Fat:** ~3g\n\n**Pad See Ew (Typical Serving):**\n- **Calories:** ~600 kcal\n- **Protein:** ~20g\n- **Carbohydrates:** ~80g\n- **Fat:** ~20g\n\n**Estimated Total for the Meal:**\n- **Calories:** ~750 kcal\n- **Protein:** ~62g\n- **Carbohydrates:** ~88g\n- **Fat:** ~23g\n\nHere's the JSON entry to log this meal:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Assuming today's date\n  \"calories\": 750,\n  \"protein\": 62,\n  \"carbs\": 88,\n  \"fat\": 23,\n  \"fiber\": 5,  // Estimated fiber content\n  \"mealStyle\": \"on_the_go\",\n  \"notes\": \"Meal included a Fairlife Protein Shake Elite and Pad See Ew.\"\n}\n```\n\nPlease let me know if you would like to make any changes or log another entry!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_bf29PrSECqLpxXetRESbAlCf",
+    "object": "thread.message",
+    "created_at": 1746935397,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "i ate a fairlife protien shake elite and pad see ew",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_h7uOPqGAs6ACC6tKKl4hG3YB",
+    "object": "thread.message",
+    "created_at": 1746935362,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_iNSwdmIBNOSopvLKTRylVirA",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Let's break down the estimated nutritional content for both the Fairlife Protein Shake Elite and a typical serving of Pad See Ew:\n\n**Fairlife Protein Shake Elite:**\n- **Calories:** ~150 kcal\n- **Protein:** ~42g\n- **Carbohydrates:** ~8g\n- **Fat:** ~3g\n\n**Pad See Ew (Typical Restaurant Serving):**\n- **Calories:** ~500-700 kcal\n- **Protein:** ~20-25g\n- **Carbohydrates:** ~70-85g\n- **Fat:** ~15-25g\n\n**Estimated Total for the Meal:**\n- **Calories:** ~650-850 kcal\n- **Protein:** ~62-67g\n- **Carbohydrates:** ~78-93g\n- **Fat:** ~18-28g\n\nHere's a JSON entry reflecting this meal:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"YYYY-MM-DD\",  // Replace with today's date\n  \"calories\": 750,  // Average of the range\n  \"protein\": 65,\n  \"carbs\": 85,\n  \"fat\": 23,\n  \"fiber\": 5,  // Estimated fiber content from the noodle dish\n  \"mealStyle\": \"on_the_go\",\n  \"notes\": \"Meal included a Fairlife Protein Shake Elite and Pad See Ew.\"\n}\n```\n\nLet me know if you need any adjustments or additional entries!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_tOYBURIM1UpkjGMGk1zx5wVt",
+    "object": "thread.message",
+    "created_at": 1746935358,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "i ate a fairlife protien shake elite and pad see ew",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_esIZ2hoN03gamLmQODrCHtTI",
+    "object": "thread.message",
+    "created_at": 1746930563,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_Z4ujNubtKQMZpf3Y7m2m5okZ",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Using today's date\n  \"calories\": 620,\n  \"protein\": 48,\n  \"carbs\": 35,\n  \"fat\": 24,\n  \"fiber\": 8,\n  \"mealStyle\": \"home\",\n  \"notes\": \"Lunch included grilled salmon, sweet potatoes, and broccoli.\"\n}\n```\n\nI've now logged this entry for your lunch. If there's anything else you need, just let me know!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_gH0PqRzacAo2JMdQZTIG9mJy",
+    "object": "thread.message",
+    "created_at": 1746930557,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "For lunch I had grilled salmon, sweet potatoes, and broccoli. Total: 620 kcal, 48g protein, 35g carbs, 24g fat, 8g fiber. MealStyle was home",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_9dSemAdy6NkS5CfVIxGJHHyZ",
+    "object": "thread.message",
+    "created_at": 1746930042,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_sXaBXa0eZgTDUuWVgbi9fh4Q",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Here's the entry for your Nutrition Log based on your lunch:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Assume today's date is used\n  \"calories\": 620,\n  \"protein\": 48,\n  \"carbs\": 35,\n  \"fat\": 24,\n  \"fiber\": 8,\n  \"mealStyle\": \"home\",\n  \"notes\": \"Lunch included grilled salmon, sweet potatoes, and broccoli.\"\n}\n```\n\nThis entry has been logged. If you have any further adjustments or additional entries, feel free to let me know!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_24H12jN3BRDd1i63dQhyg4RT",
+    "object": "thread.message",
+    "created_at": 1746930037,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "For lunch I had grilled salmon, sweet potatoes, and broccoli. Total: 620 kcal, 48g protein, 35g carbs, 24g fat, 8g fiber. MealStyle was home",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_m4JCNNDNKO5sTgjQOc9vjH5O",
+    "object": "thread.message",
+    "created_at": 1746929039,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_JQLqXsk8QVNGSpBFXBFlDzJN",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Here's how the entry for your Nutrition Log will look for your chicken sandwich lunch:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Use today's date\n  \"calories\": 700,\n  \"protein\": 40,\n  \"carbs\": 60,\n  \"fat\": 25,\n  \"fiber\": 5,  // Estimated fiber content\n  \"mealStyle\": \"on_the_go\",\n  \"notes\": \"Lunch included a chicken sandwich.\"\n}\n```\n\nI've logged this entry for you. Let me know if there's anything else you need!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_V1WYcvkvwCU8jkM8bzrrEtV0",
+    "object": "thread.message",
+    "created_at": 1746929034,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Log my lunch: chicken sandwich with 700 calories, 40g protein, 60g carbs, and 25g fat",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_toehcYCsVqLzNTQhEyt2PY5f",
+    "object": "thread.message",
+    "created_at": 1746928753,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_TuEIeXCQ1mmha4929QlQl6BO",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Here's the entry for your Nutrition Log based on your turkey sandwich lunch:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Assume today's date is used\n  \"calories\": 600,\n  \"protein\": 25,  // Estimated protein content\n  \"carbs\": 60,    // Estimated carbohydrate content\n  \"fat\": 25,      // Estimated fat content\n  \"fiber\": 5,     // Estimated fiber content\n  \"mealStyle\": \"on_the_go\",\n  \"notes\": \"Lunch consisted of a turkey sandwich.\"\n}\n```\n\nI've logged this entry. If there are any adjustments or further entries required, feel free to let me know!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_L70qjSOHEnFT60DRrZ8t7eo6",
+    "object": "thread.message",
+    "created_at": 1746928749,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Log my turkey sandwich lunch with 600 calories",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_JscJ0F1HbSs0HxexfGhssEJW",
+    "object": "thread.message",
+    "created_at": 1746926831,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_wXsT8mKf9woYj9UJaMCfYdxw",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Here's the final JSON entry to log your breakfast:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Assume today's date is used\n  \"calories\": 285,\n  \"protein\": 21,\n  \"carbs\": 14,\n  \"fat\": 16.5,\n  \"fiber\": 2,\n  \"mealStyle\": \"home\",\n  \"notes\": \"Breakfast included 3 eggs and 1/2 cup oatmeal.\"\n}\n```\n\nI've logged this entry for you. Let me know if there's anything else you need help with!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_KKBpSqtggeArWACs1umKInHz",
+    "object": "thread.message",
+    "created_at": 1746926826,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "log it",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_ZI24B7EpPkevea5PwF2cLVJ3",
+    "object": "thread.message",
+    "created_at": 1746926800,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_xU8IvDBUui5Wo560PGDypIec",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Here's an estimated macro breakdown for your breakfast:\n\n- **3 Eggs:**\n  - Calories: ~210 kcal\n  - Protein: ~18g\n  - Carbohydrates: ~1g\n  - Fat: ~15g\n\n- **1/2 Cup Oatmeal (cooked):**\n  - Calories: ~75 kcal\n  - Protein: ~3g\n  - Carbohydrates: ~13g\n  - Fat: ~1.5g\n\n**Total Estimated Macros for Breakfast:**\n- **Calories:** ~285 kcal\n- **Protein:** ~21g\n- **Carbohydrates:** ~14g\n- **Fat:** ~16.5g\n\nHere's how it will be logged:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"YYYY-MM-DD\",  // Replace with today's date\n  \"calories\": 285,\n  \"protein\": 21,\n  \"carbs\": 14,\n  \"fat\": 16.5,\n  \"fiber\": 2,  // estimating fiber from oatmeal\n  \"mealStyle\": \"home\",\n  \"notes\": \"Breakfast included 3 eggs and 1/2 cup oatmeal.\"\n}\n```\n\nPlease confirm or adjust any details you would like to change!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_cYxyD6WsB8so8QVgwlLWnB7V",
+    "object": "thread.message",
+    "created_at": 1746926792,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "I had 3 eggs and 1/2 cup oatmeal this morning.",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  }
+]
+6:56:50 AM [express] POST /api/assistant/message 200 in 15858ms :: {"messages":[{"id":"msg_U6ndvHwlI…

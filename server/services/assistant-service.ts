@@ -227,6 +227,9 @@ export async function checkRunStatus(threadId: string, runId: string) {
   return response.data;
 }
 
+// Store the IDs of messages that have already been processed for nutrition logging
+const processedMessageIds = new Set<string>();
+
 // Get messages from a thread and check for log_nutrition action
 export async function getMessagesFromThread(threadId: string) {
   const response = await proxyRequestToOpenAI(
@@ -240,123 +243,131 @@ export async function getMessagesFromThread(threadId: string) {
 
   const messages = response.data?.data || [];
 
-  // Process messages in reverse to handle the newest message first
-  for (const msg of messages) {
-    // Only process assistant messages (not user messages)
-    if (msg.role !== 'assistant') continue;
+  // Process messages - but only check the LATEST message for nutrition logging
+  // This prevents duplicate logs when viewing message history
+  if (messages.length > 0) {
+    const latestMessage = messages[0]; // API returns newest first
     
-    for (const part of msg.content) {
-      if (part.type === 'text' && part.text?.value) {
-        try {
-          // Get the text content from the message
-          const text = part.text.value.trim();
-          console.log(`Examining message content (${text.length} chars):\n${text.substring(0, 300)}${text.length > 300 ? '...' : ''}`);
-          
-          // Check for code blocks with json syntax highlighting
-          const codeBlockMatches = text.match(/```json\s*([\s\S]*?)\s*```/g);
-          let jsonMatches: string[] = [];
-          
-          // If we have code blocks, extract the content from them
-          if (codeBlockMatches && codeBlockMatches.length > 0) {
-            console.log(`Found ${codeBlockMatches.length} JSON code blocks`);
+    // Only process assistant messages that haven't been processed before
+    if (latestMessage.role === 'assistant' && !processedMessageIds.has(latestMessage.id)) {
+      // Mark this message as processed
+      processedMessageIds.add(latestMessage.id);
+      console.log(`⚡ Processing NEW assistant message ${latestMessage.id} for nutrition logging`);
+      
+      // Process just this one message for nutrition logging
+      for (const part of latestMessage.content) {
+        if (part.type === 'text' && part.text?.value) {
+          try {
+            // Get the text content from the message
+            const text = part.text.value.trim();
+            console.log(`Examining message content (${text.length} chars):\n${text.substring(0, 300)}${text.length > 300 ? '...' : ''}`);
             
-            for (const block of codeBlockMatches) {
-              // Extract content between the code block markers
-              const codeContent = block.replace(/```json\s*/, '').replace(/\s*```$/, '').trim();
-              jsonMatches.push(codeContent);
-            }
-          }
-          
-          // Also look for raw JSON objects not in code blocks
-          const rawJsonMatches = text.match(/\{[\s\S]*?\}/g);
-          if (rawJsonMatches) {
-            console.log(`Found ${rawJsonMatches.length} potential raw JSON objects`);
-            jsonMatches = [...jsonMatches, ...rawJsonMatches];
-          }
-          
-          if (jsonMatches && jsonMatches.length > 0) {
-            console.log(`Processing ${jsonMatches.length} potential JSON objects`);
+            // Check for code blocks with json syntax highlighting
+            const codeBlockMatches = text.match(/```json\s*([\s\S]*?)\s*```/g);
+            let jsonMatches: string[] = [];
             
-            for (const potentialJson of jsonMatches) {
-              try {
-                // Clean JSON
-                const cleanJson = potentialJson
-                  .replace(/\/\/.*$/gm, '') // Remove single-line comments
-                  .replace(/\/\*[\s\S]*?\*\//g, '') // Remove multiline comments
-                  .replace(/,\s*}/g, '}') // Remove trailing commas before closing braces
-                  .replace(/,\s*]/g, ']') // Remove trailing commas before closing arrays
-                  .trim();
-
-                // Log for debugging
-                console.log("Raw JSON:", potentialJson);
-                console.log("Cleaned JSON:", cleanJson);
-
-                // Validate JSON structure
-                if (!cleanJson || !cleanJson.startsWith('{') || !cleanJson.endsWith('}')) {
-                  console.warn("Skipping invalid JSON (empty or malformed):", cleanJson);
-                  continue;
-                }
-                
-                // Parse JSON
-                const parsed = JSON.parse(cleanJson);
-
-                // Fix invalid or placeholder date
-                if (!parsed.date || 
-                    parsed.date.trim() === "" || 
-                    parsed.date === "YYYY-MM-DD" || 
-                    /^\d{4}-[A-Z]{2}-[A-Z]{2}$/i.test(parsed.date) ||
-                    isNaN(new Date(parsed.date).getTime())) {
-                  // Format today as YYYY-MM-DD
-                  const now = new Date();
-                  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                  console.warn(`⚠️ Invalid or placeholder date detected "${parsed.date}". Replacing with today's date: ${today}`);
-                  parsed.date = today;
-                }
-
-                console.log("Successfully parsed JSON content:", parsed);
-                // Validate required fields for log_nutrition action
-                if (parsed && parsed.action === 'log_nutrition') {
-                  const requiredFields = ['action', 'date', 'calories', 'protein', 'carbs', 'fat', 'fiber', 'mealStyle', 'notes'];
-                  const toFloat = (val: any) => isNaN(parseFloat(val)) ? 0 : parseFloat(val);
-
-                  parsed.calories = toFloat(parsed.calories);
-                  parsed.protein = toFloat(parsed.protein);
-                  parsed.carbs = toFloat(parsed.carbs);
-                  parsed.fat = toFloat(parsed.fat);
-                  parsed.fiber = toFloat(parsed.fiber);
-                  const missingFields = requiredFields.filter(field => !(field in parsed));
-                  if (missingFields.length > 0) {
-                    console.warn(`Skipping log_nutrition action due to missing fields: ${missingFields.join(', ')}`);
-                    continue;
-                  }
-
-                  console.log("✨ Detected log_nutrition action. Logging to backend...");
-                  const baseUrl = 'http://localhost:5000';
-                  console.log(`🔄 Sending nutrition log to ${baseUrl}/api/logs/nutrition`);
-
-                  const logResponse = await fetch(`${baseUrl}/api/logs/nutrition`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(parsed),
-                  });
-
-                  if (logResponse.ok) {
-                    const logResult = await logResponse.json();
-                    console.log("✅ Nutrition log successfully sent:", logResult);
-                  } else {
-                    console.error("❌ Failed to log nutrition:", await logResponse.text());
-                  }
-                }
-              } catch (jsonError) {
-                console.error("❌ Failed to parse JSON object:", jsonError);
-                console.error("⚠️ Problematic JSON string:", potentialJson);
-                continue;
+            // If we have code blocks, extract the content from them
+            if (codeBlockMatches && codeBlockMatches.length > 0) {
+              console.log(`Found ${codeBlockMatches.length} JSON code blocks`);
+              
+              for (const block of codeBlockMatches) {
+                // Extract content between the code block markers
+                const codeContent = block.replace(/```json\s*/, '').replace(/\s*```$/, '').trim();
+                jsonMatches.push(codeContent);
               }
             }
+            
+            // Also look for raw JSON objects not in code blocks
+            const rawJsonMatches = text.match(/\{[\s\S]*?\}/g);
+            if (rawJsonMatches) {
+              console.log(`Found ${rawJsonMatches.length} potential raw JSON objects`);
+              jsonMatches = [...jsonMatches, ...rawJsonMatches];
+            }
+            
+            if (jsonMatches && jsonMatches.length > 0) {
+              console.log(`Processing ${jsonMatches.length} potential JSON objects`);
+              
+              for (const potentialJson of jsonMatches) {
+                try {
+                  // Clean JSON
+                  const cleanJson = potentialJson
+                    .replace(/\/\/.*$/gm, '') // Remove single-line comments
+                    .replace(/\/\*[\s\S]*?\*\//g, '') // Remove multiline comments
+                    .replace(/,\s*}/g, '}') // Remove trailing commas before closing braces
+                    .replace(/,\s*]/g, ']') // Remove trailing commas before closing arrays
+                    .trim();
+
+                  // Log for debugging
+                  console.log("Raw JSON:", potentialJson);
+                  console.log("Cleaned JSON:", cleanJson);
+
+                  // Validate JSON structure
+                  if (!cleanJson || !cleanJson.startsWith('{') || !cleanJson.endsWith('}')) {
+                    console.warn("Skipping invalid JSON (empty or malformed):", cleanJson);
+                    continue;
+                  }
+                  
+                  // Parse JSON
+                  const parsed = JSON.parse(cleanJson);
+
+                  // Fix invalid or placeholder date
+                  if (!parsed.date || 
+                      parsed.date.trim() === "" || 
+                      parsed.date === "YYYY-MM-DD" || 
+                      /^\d{4}-[A-Z]{2}-[A-Z]{2}$/i.test(parsed.date) ||
+                      isNaN(new Date(parsed.date).getTime())) {
+                    // Format today as YYYY-MM-DD
+                    const now = new Date();
+                    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                    console.warn(`⚠️ Invalid or placeholder date detected "${parsed.date}". Replacing with today's date: ${today}`);
+                    parsed.date = today;
+                  }
+
+                  console.log("Successfully parsed JSON content:", parsed);
+                  // Validate required fields for log_nutrition action
+                  if (parsed && parsed.action === 'log_nutrition') {
+                    const requiredFields = ['action', 'date', 'calories', 'protein', 'carbs', 'fat', 'fiber', 'mealStyle', 'notes'];
+                    const toFloat = (val: any) => isNaN(parseFloat(val)) ? 0 : parseFloat(val);
+
+                    parsed.calories = toFloat(parsed.calories);
+                    parsed.protein = toFloat(parsed.protein);
+                    parsed.carbs = toFloat(parsed.carbs);
+                    parsed.fat = toFloat(parsed.fat);
+                    parsed.fiber = toFloat(parsed.fiber);
+                    const missingFields = requiredFields.filter(field => !(field in parsed));
+                    if (missingFields.length > 0) {
+                      console.warn(`Skipping log_nutrition action due to missing fields: ${missingFields.join(', ')}`);
+                      continue;
+                    }
+
+                    console.log("✨ Detected log_nutrition action. Logging to backend...");
+                    const baseUrl = 'http://localhost:5000';
+                    console.log(`🔄 Sending nutrition log to ${baseUrl}/api/logs/nutrition`);
+
+                    const logResponse = await fetch(`${baseUrl}/api/logs/nutrition`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(parsed),
+                    });
+
+                    if (logResponse.ok) {
+                      const logResult = await logResponse.json();
+                      console.log("✅ Nutrition log successfully sent:", logResult);
+                    } else {
+                      console.error("❌ Failed to log nutrition:", await logResponse.text());
+                    }
+                  }
+                } catch (jsonError) {
+                  console.error("❌ Failed to parse JSON object:", jsonError);
+                  console.error("⚠️ Problematic JSON string:", potentialJson);
+                  continue;
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Error processing message content:", err);
+            // Continue processing other messages even if this one fails
           }
-        } catch (err) {
-          console.error("Error processing message content:", err);
-          // Continue processing other messages even if this one fails
         }
       }
     }
