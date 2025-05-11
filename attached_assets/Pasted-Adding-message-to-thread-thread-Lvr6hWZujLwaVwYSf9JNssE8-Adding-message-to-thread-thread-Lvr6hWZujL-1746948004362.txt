@@ -1,0 +1,482 @@
+Adding message to thread thread_Lvr6hWZujLwaVwYSf9JNssE8
+Adding message to thread thread_Lvr6hWZujLwaVwYSf9JNssE8 with content types: text
+Message and images added successfully
+Running assistant on thread thread_Lvr6hWZujLwaVwYSf9JNssE8
+Run created with ID: run_Ce2HAeI2LUYv6v32QCxtjCXf
+Initial run status: queued
+Run status after 5 attempts: in_progress
+Getting messages from thread thread_Lvr6hWZujLwaVwYSf9JNssE8
+⚡ Processing message msg_uCNOvYY1LMCeIWK1pvtte8Xl for nutrition logging
+✨ Found nutrition log action
+🔍 DEBUG REQUEST - Original URL: "/api/logs/nutrition"
+🔍 Debug Path: "/api/logs/nutrition"
+🔍 Full URL: /api/logs/nutrition
+🔍 Method: POST
+🔍 Session: undefined
+🔥 Nutrition POST route was called - ROUTED VERSION
+⚠️ Request URL: /api/logs/nutrition
+⚠️ Request path: /
+⚠️ Request query: {}
+⚠️ Request params: {}
+Request body: {
+  "action": "log_nutrition",
+  "date": "2023-10-10",
+  "calories": 700,
+  "protein": 32,
+  "carbs": 80,
+  "fat": 25,
+  "fiber": 8,
+  "mealStyle": "home",
+  "notes": "Meal included spaghetti and meatballs with RAHG."
+}
+Session: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-18T07:18:27.104Z,
+    originalMaxAge: 604800000,
+    httpOnly: true,
+    secure: false
+  }
+}
+Validating request data with client schema...
+Client data validated: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 700,
+  protein: 32,
+  carbs: 80,
+  fat: 25,
+  fiber: 8,
+  notes: 'Meal included spaghetti and meatballs with RAHG.'
+}
+Complete data with userId: {
+  date: '2023-10-10',
+  mealStyle: 'home',
+  calories: 700,
+  protein: 32,
+  carbs: 80,
+  fat: 25,
+  fiber: 8,
+  notes: 'Meal included spaghetti and meatballs with RAHG.',
+  userId: 1
+}
+Using date: 2023-10-10T00:00:00.000Z formatted as: 2023-10-10
+Creating new nutrition log (multiple meals per day supported)
+Saved nutrition log: {
+  id: 92,
+  date: '2023-10-10',
+  userId: 1,
+  mealStyle: 'home',
+  calories: 700,
+  protein: 32,
+  carbs: 80,
+  fat: 25,
+  fiber: 8,
+  notes: 'Meal included spaghetti and meatballs with RAHG.'
+}
+7:18:28 AM [express] POST /api/logs/nutrition 200 in 942ms :: {"id":92,"date":"2023-10-10","userId":…
+✅ Nutrition log saved successfully
+✨ Found nutrition log action
+Messages retrieved: [
+  {
+    "id": "msg_uCNOvYY1LMCeIWK1pvtte8Xl",
+    "object": "thread.message",
+    "created_at": 1746947901,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_Ce2HAeI2LUYv6v32QCxtjCXf",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "To provide an estimated nutritional breakdown for your meal consisting of spaghetti and meatballs with marinara sauce (commonly referred to as \"gravy\"), here's how it might look:\n\n**Spaghetti and Meatballs:**\n- **Calories:** ~600 kcal\n- **Protein:** ~30g\n- **Carbohydrates:** ~70g\n- **Fat:** ~20g\n\n**Rich Allan's Homemade Italian Gravy (RAHG):**\n- **Calories:** ~100 kcal per serving\n- **Protein:** ~2g\n- **Carbohydrates:** ~10g\n- **Fat:** ~5g\n\n**Total Estimated Nutrition for the Meal:**\n- **Calories:** ~700 kcal\n- **Protein:** ~32g\n- **Carbohydrates:** ~80g\n- **Fat:** ~25g\n\nHere's how it will be logged:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Using today's date\n  \"calories\": 700,\n  \"protein\": 32,\n  \"carbs\": 80,\n  \"fat\": 25,\n  \"fiber\": 8,  // Estimated fiber from pasta and sauce\n  \"mealStyle\": \"home\",\n  \"notes\": \"Meal included spaghetti and meatballs with RAHG.\"\n}\n```\n\nPlease review and let me know if there are any adjustments or if I should log this entry!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_tBgnplfvapWb2tyOeoLV95gg",
+    "object": "thread.message",
+    "created_at": 1746947894,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "spaghetti and meatbals plate wth rahb",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_XzPodNSIa3w8NdjKqvMjMWyE",
+    "object": "thread.message",
+    "created_at": 1746947182,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_gbiUb0Z5I2iswoHb58s2fQJa",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "To estimate the nutritional content for your meal of pork chops, string beans, and mashed potatoes, here's a breakdown:\n\n**Pork Chops (6 oz cooked):**\n- **Calories:** ~350 kcal\n- **Protein:** ~45g\n- **Carbohydrates:** ~0g\n- **Fat:** ~20g\n\n**String Beans (~1 cup cooked):**\n- **Calories:** ~40 kcal\n- **Protein:** ~2g\n- **Carbohydrates:** ~9g\n- **Fat:** ~0.5g\n\n**Mashed Potatoes (~1 cup):**\n- **Calories:** ~200 kcal\n- **Protein:** ~4g\n- **Carbohydrates:** ~35g\n- **Fat:** ~8g\n\n**Total Estimated Nutrition for the Meal:**\n- **Calories:** ~590 kcal\n- **Protein:** ~51g\n- **Carbohydrates:** ~44g\n- **Fat:** ~28.5g\n\nHere's how it will be logged:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Using today's date\n  \"calories\": 590,\n  \"protein\": 51,\n  \"carbs\": 44,\n  \"fat\": 28.5,\n  \"fiber\": 6,  // Estimated fiber from string beans and potatoes\n  \"mealStyle\": \"home\",\n  \"notes\": \"Meal included pork chops, string beans, and mashed potatoes.\"\n}\n```\n\nPlease let me know if this looks correct or if there are any changes needed!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_vS3bkeoq7ZJPs5c0ksMm9Vgw",
+    "object": "thread.message",
+    "created_at": 1746947177,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "pork chops and string bean with mashed potatoes",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_U6ndvHwlIZhbmkLzl0CwLAuE",
+    "object": "thread.message",
+    "created_at": 1746946600,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_AuqaG8oKdhsOjQfJ3H4Zuex4",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "To estimate the nutrients in your meal consisting of cheese ravioli and broccoli, here's a breakdown:\n\n**Cheese Ravioli (Typical Serving):**\n- **Calories:** ~350-450 kcal\n- **Protein:** ~15g\n- **Carbohydrates:** ~50g\n- **Fat:** ~15g\n\n**Broccoli:**\n- **Calories:** ~50 kcal (assuming ~1 cup cooked)\n- **Protein:** ~4g\n- **Carbohydrates:** ~10g\n- **Fat:** ~0.5g\n\n**Total Estimated Nutrition for the Meal:**\n- **Calories:** ~400-500 kcal\n- **Protein:** ~19g\n- **Carbohydrates:** ~60g\n- **Fat:** ~15.5g\n\nHere's how it will be logged:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Using today's date\n  \"calories\": 450,\n  \"protein\": 19,\n  \"carbs\": 60,\n  \"fat\": 15.5,\n  \"fiber\": 7,  // Estimated fiber from broccoli and pasta\n  \"mealStyle\": \"home\",\n  \"notes\": \"Meal included a plate of cheese ravioli and broccoli.\"\n}\n```\n\nLet me know if the entry looks good or if there are any other details you'd like to adjust!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_kjktv3IakLDvkfheuShEieVJ",
+    "object": "thread.message",
+    "created_at": 1746946594,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "a plate of cheese ravioli and broccoli",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_mQGNAsq10Le594ytG52EEJek",
+    "object": "thread.message",
+    "created_at": 1746935941,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_7MiB3vqJV8mzKlfyevcktbtO",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "To log your meal consisting of a Fairlife Protein Shake Elite and Pad See Ew, here's the estimated nutritional entry:\n\n**Fairlife Protein Shake Elite:**\n- **Calories:** ~150 kcal\n- **Protein:** ~42g\n- **Carbohydrates:** ~8g\n- **Fat:** ~3g\n\n**Pad See Ew:**\n- **Calories:** ~600 kcal\n- **Protein:** ~20g\n- **Carbohydrates:** ~80g\n- **Fat:** ~20g\n\n**Total Estimated Nutrition:**\n- **Calories:** ~750 kcal\n- **Protein:** ~62g\n- **Carbohydrates:** ~88g\n- **Fat:** ~23g\n\nHere's how it will be logged:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Using today's date\n  \"calories\": 750,\n  \"protein\": 62,\n  \"carbs\": 88,\n  \"fat\": 23,\n  \"fiber\": 5,  // Estimated fiber content\n  \"mealStyle\": \"on_the_go\",\n  \"notes\": \"Meal included a Fairlife Protein Shake Elite and Pad See Ew.\"\n}\n```\n\nThis entry has been prepared for logging. Let me know if there's anything more you need!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_Ql18BU0sxAvJ5mlcJLYtD6oF",
+    "object": "thread.message",
+    "created_at": 1746935935,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "i ate a fairlife protien shake elite and pad see ew",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_IYqCzOpWomDiZbsH5lZo7vL1",
+    "object": "thread.message",
+    "created_at": 1746935403,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_lrWg2FjflkBCvhrwo7TjSqhn",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Based on your meal, here's the estimated nutritional information and corresponding log entry:\n\n**Fairlife Protein Shake Elite:**\n- **Calories:** ~150 kcal\n- **Protein:** ~42g\n- **Carbohydrates:** ~8g\n- **Fat:** ~3g\n\n**Pad See Ew (Typical Serving):**\n- **Calories:** ~600 kcal\n- **Protein:** ~20g\n- **Carbohydrates:** ~80g\n- **Fat:** ~20g\n\n**Estimated Total for the Meal:**\n- **Calories:** ~750 kcal\n- **Protein:** ~62g\n- **Carbohydrates:** ~88g\n- **Fat:** ~23g\n\nHere's the JSON entry to log this meal:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Assuming today's date\n  \"calories\": 750,\n  \"protein\": 62,\n  \"carbs\": 88,\n  \"fat\": 23,\n  \"fiber\": 5,  // Estimated fiber content\n  \"mealStyle\": \"on_the_go\",\n  \"notes\": \"Meal included a Fairlife Protein Shake Elite and Pad See Ew.\"\n}\n```\n\nPlease let me know if you would like to make any changes or log another entry!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_bf29PrSECqLpxXetRESbAlCf",
+    "object": "thread.message",
+    "created_at": 1746935397,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "i ate a fairlife protien shake elite and pad see ew",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_h7uOPqGAs6ACC6tKKl4hG3YB",
+    "object": "thread.message",
+    "created_at": 1746935362,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_iNSwdmIBNOSopvLKTRylVirA",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Let's break down the estimated nutritional content for both the Fairlife Protein Shake Elite and a typical serving of Pad See Ew:\n\n**Fairlife Protein Shake Elite:**\n- **Calories:** ~150 kcal\n- **Protein:** ~42g\n- **Carbohydrates:** ~8g\n- **Fat:** ~3g\n\n**Pad See Ew (Typical Restaurant Serving):**\n- **Calories:** ~500-700 kcal\n- **Protein:** ~20-25g\n- **Carbohydrates:** ~70-85g\n- **Fat:** ~15-25g\n\n**Estimated Total for the Meal:**\n- **Calories:** ~650-850 kcal\n- **Protein:** ~62-67g\n- **Carbohydrates:** ~78-93g\n- **Fat:** ~18-28g\n\nHere's a JSON entry reflecting this meal:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"YYYY-MM-DD\",  // Replace with today's date\n  \"calories\": 750,  // Average of the range\n  \"protein\": 65,\n  \"carbs\": 85,\n  \"fat\": 23,\n  \"fiber\": 5,  // Estimated fiber content from the noodle dish\n  \"mealStyle\": \"on_the_go\",\n  \"notes\": \"Meal included a Fairlife Protein Shake Elite and Pad See Ew.\"\n}\n```\n\nLet me know if you need any adjustments or additional entries!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_tOYBURIM1UpkjGMGk1zx5wVt",
+    "object": "thread.message",
+    "created_at": 1746935358,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "i ate a fairlife protien shake elite and pad see ew",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_esIZ2hoN03gamLmQODrCHtTI",
+    "object": "thread.message",
+    "created_at": 1746930563,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_Z4ujNubtKQMZpf3Y7m2m5okZ",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Using today's date\n  \"calories\": 620,\n  \"protein\": 48,\n  \"carbs\": 35,\n  \"fat\": 24,\n  \"fiber\": 8,\n  \"mealStyle\": \"home\",\n  \"notes\": \"Lunch included grilled salmon, sweet potatoes, and broccoli.\"\n}\n```\n\nI've now logged this entry for your lunch. If there's anything else you need, just let me know!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_gH0PqRzacAo2JMdQZTIG9mJy",
+    "object": "thread.message",
+    "created_at": 1746930557,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "For lunch I had grilled salmon, sweet potatoes, and broccoli. Total: 620 kcal, 48g protein, 35g carbs, 24g fat, 8g fiber. MealStyle was home",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_9dSemAdy6NkS5CfVIxGJHHyZ",
+    "object": "thread.message",
+    "created_at": 1746930042,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_sXaBXa0eZgTDUuWVgbi9fh4Q",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Here's the entry for your Nutrition Log based on your lunch:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Assume today's date is used\n  \"calories\": 620,\n  \"protein\": 48,\n  \"carbs\": 35,\n  \"fat\": 24,\n  \"fiber\": 8,\n  \"mealStyle\": \"home\",\n  \"notes\": \"Lunch included grilled salmon, sweet potatoes, and broccoli.\"\n}\n```\n\nThis entry has been logged. If you have any further adjustments or additional entries, feel free to let me know!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_24H12jN3BRDd1i63dQhyg4RT",
+    "object": "thread.message",
+    "created_at": 1746930037,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "For lunch I had grilled salmon, sweet potatoes, and broccoli. Total: 620 kcal, 48g protein, 35g carbs, 24g fat, 8g fiber. MealStyle was home",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_m4JCNNDNKO5sTgjQOc9vjH5O",
+    "object": "thread.message",
+    "created_at": 1746929039,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_JQLqXsk8QVNGSpBFXBFlDzJN",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Here's how the entry for your Nutrition Log will look for your chicken sandwich lunch:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Use today's date\n  \"calories\": 700,\n  \"protein\": 40,\n  \"carbs\": 60,\n  \"fat\": 25,\n  \"fiber\": 5,  // Estimated fiber content\n  \"mealStyle\": \"on_the_go\",\n  \"notes\": \"Lunch included a chicken sandwich.\"\n}\n```\n\nI've logged this entry for you. Let me know if there's anything else you need!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_V1WYcvkvwCU8jkM8bzrrEtV0",
+    "object": "thread.message",
+    "created_at": 1746929034,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Log my lunch: chicken sandwich with 700 calories, 40g protein, 60g carbs, and 25g fat",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_toehcYCsVqLzNTQhEyt2PY5f",
+    "object": "thread.message",
+    "created_at": 1746928753,
+    "assistant_id": "asst_PZYE18wO7th5Fm9JoOkLEfDJ",
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": "run_TuEIeXCQ1mmha4929QlQl6BO",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Here's the entry for your Nutrition Log based on your turkey sandwich lunch:\n\n```json\n{\n  \"action\": \"log_nutrition\",\n  \"date\": \"2023-10-10\",  // Assume today's date is used\n  \"calories\": 600,\n  \"protein\": 25,  // Estimated protein content\n  \"carbs\": 60,    // Estimated carbohydrate content\n  \"fat\": 25,      // Estimated fat content\n  \"fiber\": 5,     // Estimated fiber content\n  \"mealStyle\": \"on_the_go\",\n  \"notes\": \"Lunch consisted of a turkey sandwich.\"\n}\n```\n\nI've logged this entry. If there are any adjustments or further entries required, feel free to let me know!",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  },
+  {
+    "id": "msg_L70qjSOHEnFT60DRrZ8t7eo6",
+    "object": "thread.message",
+    "created_at": 1746928749,
+    "assistant_id": null,
+    "thread_id": "thread_Lvr6hWZujLwaVwYSf9JNssE8",
+    "run_id": null,
+    "role": "user",
+    "content": [
+      {
+        "type": "text",
+        "text": {
+          "value": "Log my turkey sandwich lunch with 600 calories",
+          "annotations": []
+        }
+      }
+    ],
+    "attachments": [],
+    "metadata": {}
+  }
+]
+7:18:28 AM [express] POST /api/assistant/message 200 in 13284ms :: {"messages":[{"id":"msg_uCNOvYY1L…

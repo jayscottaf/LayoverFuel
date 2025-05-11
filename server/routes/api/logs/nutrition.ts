@@ -13,13 +13,7 @@ const ClientNutritionLogSchema = insertNutritionLogSchema
   }));
 
 export async function handleNutritionLogPost(req: Request, res: Response) {
-  console.log("🔥 Nutrition POST route was called - ROUTED VERSION");
-  console.log("⚠️ Request URL:", req.originalUrl);
-  console.log("⚠️ Request path:", req.path);
-  console.log("⚠️ Request query:", req.query);
-  console.log("⚠️ Request params:", req.params);
-  console.log("Request body:", JSON.stringify(req.body, null, 2));
-  console.log("Session:", req.session);
+  console.log("📝 Nutrition log POST received");
   
   const userId = req.session?.userId || 1; // TEMP fallback for testing
 
@@ -29,16 +23,13 @@ export async function handleNutritionLogPost(req: Request, res: Response) {
 
   try {
     // Validate incoming request with the client schema (userId optional)
-    console.log("Validating request data with client schema...");
     const clientData = ClientNutritionLogSchema.parse(req.body);
-    console.log("Client data validated:", clientData);
     
     // Now add the userId from session or fallback
     const parsed = {
       ...clientData,
       userId: userId
     };
-    console.log("Complete data with userId:", parsed);
 
     // Destructure after validation
     const { date, ...logData } = parsed;
@@ -48,7 +39,6 @@ export async function handleNutritionLogPost(req: Request, res: Response) {
       // Check if we have a placeholder date format like "YYYY-MM-DD" 
       // or any other format that's not a valid date
       if (date === "YYYY-MM-DD" || /^\d{4}-[A-Z]{2}-[A-Z]{2}$/i.test(date)) {
-        console.log("🔄 Found date placeholder. Replacing with today's date");
         logDate = new Date();
       } else {
         logDate = new Date(date);
@@ -59,21 +49,19 @@ export async function handleNutritionLogPost(req: Request, res: Response) {
     } catch (error) {
       const fallback = new Date();
       logDate = fallback;
-      console.warn(`⚠️ Received invalid date string "${date}". Using fallback:`, fallback);
     }
     
     // Format the date as YYYY-MM-DD for database storage
     const formattedDate = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}-${String(logDate.getDate()).padStart(2, '0')}`;
-    console.log("Using date:", logDate, "formatted as:", formattedDate);
 
-    console.log("Creating new nutrition log (multiple meals per day supported)");
+    // Save the nutrition log
     const nutritionLog = await storage.createNutritionLog({
       ...logData,
       date: formattedDate, // Use our pre-formatted date string
       userId,
     });
 
-    console.log("Saved nutrition log:", nutritionLog);
+    console.log(`✅ Nutrition log saved - ID: ${nutritionLog.id} for user ${userId}`);
 
     res.status(200).json(nutritionLog);
   } catch (error) {

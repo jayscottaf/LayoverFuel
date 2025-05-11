@@ -7,15 +7,8 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
-// Add additional debugging middleware specifically for nutrition endpoint
+// This middleware was used for debugging but we're now disabling verbose logging
 app.use((req, res, next) => {
-  if (req.originalUrl.includes('nutrition')) {
-    console.log(`🔍 DEBUG REQUEST - Original URL: "${req.originalUrl}"`);
-    console.log(`🔍 Debug Path: "${req.path}"`);
-    console.log(`🔍 Full URL:`, req.url);
-    console.log(`🔍 Method:`, req.method);
-    console.log(`🔍 Session:`, req.session);
-  }
   next();
 });
 
@@ -33,9 +26,19 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
+      // Create simplified log line without full response objects
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      
+      // For large responses, don't log the whole thing - just indicate size
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        // If it's a logs or messages endpoint, don't include response data
+        if (path.includes('/logs/') || path.includes('/messages')) {
+          // Just log that it returned data, not what the data was
+          logLine += ` :: [data returned]`;
+        } else {
+          // For other endpoints, include a summarized version
+          logLine += ` :: ${JSON.stringify(capturedJsonResponse).substring(0, 50)}${JSON.stringify(capturedJsonResponse).length > 50 ? '...' : ''}`;
+        }
       }
 
       if (logLine.length > 80) {

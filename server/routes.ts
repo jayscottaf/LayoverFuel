@@ -668,7 +668,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        console.log("Messages retrieved:", JSON.stringify(messages.data, null, 2));
+        // Just log that messages were retrieved, not their entire content
+        console.log(`Retrieved ${messages.data?.length || 0} messages from thread ${threadId}`);
       } catch (messagesError) {
         console.error("Error getting messages:", messagesError);
         if (messagesError instanceof Error && messagesError.message.includes("SyntaxError")) {
