@@ -20,7 +20,8 @@ import {
   addMessageToThread,
   runAssistantOnThread,
   checkRunStatus,
-  getMessagesFromThread
+  getMessagesFromThread,
+  processMessageForNutritionLogging
 } from "./services/assistant-service";
 import { generateMealPlan } from "./services/meal-service";
 import { generateWorkoutPlan } from "./services/workout-service";
@@ -691,7 +692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all messages from a thread
+  // Get all messages from a thread - for display only, no nutrition processing
   app.get("/api/assistant/messages/:threadId", async (req: Request, res: Response) => {
     try {
       const { threadId } = req.params;
@@ -700,8 +701,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Thread ID is required" });
       }
       
-      // Get the messages from the thread
+      // Get the messages from the thread (without processing for nutrition)
       const messages = await getMessagesFromThread(threadId);
+      
+      // DO NOT process messages for nutrition logging when just displaying them
+      // This prevents duplicate processing
       
       res.status(200).json({ messages: messages.data });
     } catch (error) {

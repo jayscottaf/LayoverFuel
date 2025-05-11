@@ -253,7 +253,7 @@ export async function processMessageForNutritionLogging(message: any): Promise<b
 
   // Mark this message as processed to prevent duplicates
   processedMessageIds.add(message.id);
-  console.log(`⚡ Processing NEW assistant message ${message.id} for nutrition logging`);
+  console.log(`⚡ Processing message ${message.id} for nutrition logging`);
   
   let nutritionLogged = false;
 
@@ -263,7 +263,6 @@ export async function processMessageForNutritionLogging(message: any): Promise<b
       try {
         // Get the text content from the message
         const text = part.text.value.trim();
-        console.log(`Examining message content (${text.length} chars):\n${text.substring(0, 300)}${text.length > 300 ? '...' : ''}`);
         
         // Check for code blocks with json syntax highlighting
         const codeBlockMatches = text.match(/```json\s*([\s\S]*?)\s*```/g);
@@ -271,8 +270,6 @@ export async function processMessageForNutritionLogging(message: any): Promise<b
         
         // If we have code blocks, extract the content from them
         if (codeBlockMatches && codeBlockMatches.length > 0) {
-          console.log(`Found ${codeBlockMatches.length} JSON code blocks`);
-          
           for (const block of codeBlockMatches) {
             // Extract content between the code block markers
             const codeContent = block.replace(/```json\s*/, '').replace(/\s*```$/, '').trim();
@@ -283,13 +280,10 @@ export async function processMessageForNutritionLogging(message: any): Promise<b
         // Also look for raw JSON objects not in code blocks
         const rawJsonMatches = text.match(/\{[\s\S]*?\}/g);
         if (rawJsonMatches) {
-          console.log(`Found ${rawJsonMatches.length} potential raw JSON objects`);
           jsonMatches = [...jsonMatches, ...rawJsonMatches];
         }
         
-        if (jsonMatches && jsonMatches.length > 0) {
-          console.log(`Processing ${jsonMatches.length} potential JSON objects`);
-          
+        if (jsonMatches && jsonMatches.length > 0) {  
           for (const potentialJson of jsonMatches) {
             try {
               // Clean JSON
@@ -302,7 +296,6 @@ export async function processMessageForNutritionLogging(message: any): Promise<b
 
               // Validate JSON structure
               if (!cleanJson || !cleanJson.startsWith('{') || !cleanJson.endsWith('}')) {
-                console.warn("Skipping invalid JSON (empty or malformed)");
                 continue;
               }
               
@@ -318,7 +311,7 @@ export async function processMessageForNutritionLogging(message: any): Promise<b
                 // Format today as YYYY-MM-DD
                 const now = new Date();
                 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                console.warn(`⚠️ Invalid or placeholder date detected "${parsed.date}". Replacing with today's date: ${today}`);
+                console.log(`⚠️ Replacing invalid date "${parsed.date}" with today's date: ${today}`);
                 parsed.date = today;
               }
 
@@ -335,16 +328,14 @@ export async function processMessageForNutritionLogging(message: any): Promise<b
                 
                 const missingFields = requiredFields.filter(field => !(field in parsed));
                 if (missingFields.length > 0) {
-                  console.warn(`Skipping log_nutrition action due to missing fields: ${missingFields.join(', ')}`);
                   continue;
                 }
 
-                console.log("✨ Detected log_nutrition action. Logging to backend...");
-                const baseUrl = 'http://localhost:5000';
-                console.log(`🔄 Sending nutrition log to ${baseUrl}/api/logs/nutrition`);
+                console.log("✨ Found nutrition log action");
 
                 // Only process once per message to prevent duplicates
                 if (!nutritionLogged) {
+                  const baseUrl = 'http://localhost:5000';
                   const logResponse = await fetch(`${baseUrl}/api/logs/nutrition`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -352,25 +343,21 @@ export async function processMessageForNutritionLogging(message: any): Promise<b
                   });
 
                   if (logResponse.ok) {
-                    const logResult = await logResponse.json();
-                    console.log("✅ Nutrition log successfully sent:", logResult);
+                    console.log("✅ Nutrition log saved successfully");
                     nutritionLogged = true;
                   } else {
                     console.error("❌ Failed to log nutrition:", await logResponse.text());
                   }
-                } else {
-                  console.log("⚠️ Skipping duplicate nutrition log within the same message");
                 }
               }
             } catch (jsonError) {
-              console.error("❌ Failed to parse JSON object:", jsonError);
+              // Just continue on parsing errors
               continue;
             }
           }
         }
       } catch (err) {
         console.error("Error processing message content:", err);
-        // Continue processing other parts even if this one fails
       }
     }
   }
