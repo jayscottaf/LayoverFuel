@@ -24,7 +24,7 @@ export function ChatBubble({
         </div>
       )}
       <div className={cn(
-        "rounded-lg p-4 max-w-[80%] w-fit",
+        "rounded-lg p-4 max-w-[80%] inline-block",
         isUser ? "bg-primary-500 text-white" : "bg-gray-100 text-gray-800"
       )}>
         {isTyping ? (
