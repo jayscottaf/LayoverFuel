@@ -391,7 +391,7 @@ export default function ChatPage() {
                 
                 {((message.content.length > 0 && message.content[0]?.trim() !== "") || message.id === "processing") && (
                   <div
-                    className={`rounded-2xl p-3 ${
+                    className={`rounded-2xl p-3 inline-block ${
                       message.role === "user"
                         ? "bg-blue-500 text-white rounded-tr-none"
                         : "bg-gray-800 text-white rounded-tl-none"
