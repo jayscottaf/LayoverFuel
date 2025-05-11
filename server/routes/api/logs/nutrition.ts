@@ -1,8 +1,7 @@
 
 import { Request, Response } from "express";
 import { storage } from "../../../storage";
-import { createInsertSchema } from "drizzle-zod";
-import { nutritionLogs, insertNutritionLogSchema } from "../../../../shared/schema";
+import { insertNutritionLogSchema } from "../../../../shared/schema";
 import { z } from "zod";
 
 // Create a modified schema that makes userId optional for client requests

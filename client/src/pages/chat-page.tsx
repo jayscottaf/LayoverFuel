@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Loader2, Send, Home } from "lucide-react";
+import { Loader2, Send,} from "lucide-react";
 
 interface Message {
   id: string;
@@ -314,7 +314,7 @@ export default function ChatPage() {
     autoResizeTextarea();
   }, [input]);
   
-  const handleImageSelect = (file: File, preview: string) => {
+  const handleImageSelect = (_: File, preview: string) => {
     // Add the new image to the array
     setTempImages(prevImages => [...prevImages, preview]);
     // No toast notification needed - the image preview is visible

@@ -227,16 +227,74 @@ export async function checkRunStatus(threadId: string, runId: string) {
   return response.data;
 }
 
-// Get messages from a thread
+// Get messages from a thread and check for log_nutrition action
 export async function getMessagesFromThread(threadId: string) {
   const response = await proxyRequestToOpenAI(
     'GET',
     `/v1/threads/${threadId}/messages`
   );
-  
+
   if (response.status !== 200) {
     throw new Error(`Failed to get messages: ${JSON.stringify(response.data)}`);
   }
-  
+
+  const messages = response.data?.data || [];
+
+  // Process messages in reverse to handle the newest message first
+  for (const msg of messages) {
+    // Only process assistant messages (not user messages)
+    if (msg.role !== 'assistant') continue;
+    
+    for (const part of msg.content) {
+      if (part.type === 'text' && part.text?.value) {
+        try {
+          // Try to find JSON objects in the text (they might be embedded in other text)
+          const text = part.text.value.trim();
+          
+          // Look for patterns that look like JSON objects
+          const jsonMatches = text.match(/\{[\s\S]*?\}/g);
+          
+          if (jsonMatches) {
+            for (const potentialJson of jsonMatches) {
+              try {
+                const parsed = JSON.parse(potentialJson);
+                console.log("Parsed JSON content:", parsed);
+                
+                if (parsed && parsed.action === 'log_nutrition') {
+                  console.log("✨ Detected log_nutrition action. Logging to backend...");
+                  
+                  try {
+                    // Use a relative URL instead of a hardcoded one to work in all environments
+                    // This ensures it works both locally and in production
+                    const logResponse = await fetch('/api/logs/nutrition', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(parsed),
+                    });
+                    
+                    if (logResponse.ok) {
+                      const logResult = await logResponse.json();
+                      console.log("✅ Nutrition log successfully sent:", logResult);
+                    } else {
+                      console.error("❌ Failed to log nutrition:", await logResponse.text());
+                    }
+                  } catch (fetchError) {
+                    console.error("❌ Error sending nutrition log:", fetchError);
+                  }
+                }
+              } catch (jsonError) {
+                // Skip invalid JSON matches
+                continue;
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error processing message content:", err);
+          // Continue processing other messages even if this one fails
+        }
+      }
+    }
+  }
+
   return response.data;
 }
