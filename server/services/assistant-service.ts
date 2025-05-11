@@ -248,25 +248,50 @@ export async function getMessagesFromThread(threadId: string) {
     for (const part of msg.content) {
       if (part.type === 'text' && part.text?.value) {
         try {
-          // Try to find JSON objects in the text (they might be embedded in other text)
+          // Get the text content from the message
           const text = part.text.value.trim();
+          console.log(`Examining message content (${text.length} chars):\n${text.substring(0, 300)}${text.length > 300 ? '...' : ''}`);
           
-          // Look for patterns that look like JSON objects
-          const jsonMatches = text.match(/\{[\s\S]*?\}/g);
+          // Check for code blocks with json syntax highlighting
+          const codeBlockMatches = text.match(/```json\s*([\s\S]*?)\s*```/g);
+          let jsonMatches: string[] = [];
           
-          if (jsonMatches) {
+          // If we have code blocks, extract the content from them
+          if (codeBlockMatches && codeBlockMatches.length > 0) {
+            console.log(`Found ${codeBlockMatches.length} JSON code blocks`);
+            
+            for (const block of codeBlockMatches) {
+              // Extract content between the code block markers
+              const codeContent = block.replace(/```json\s*/, '').replace(/\s*```$/, '').trim();
+              jsonMatches.push(codeContent);
+            }
+          }
+          
+          // Also look for raw JSON objects not in code blocks
+          const rawJsonMatches = text.match(/\{[\s\S]*?\}/g);
+          if (rawJsonMatches) {
+            console.log(`Found ${rawJsonMatches.length} potential raw JSON objects`);
+            jsonMatches = [...jsonMatches, ...rawJsonMatches];
+          }
+          
+          if (jsonMatches && jsonMatches.length > 0) {
+            console.log(`Processing ${jsonMatches.length} potential JSON objects`);
+            
             for (const potentialJson of jsonMatches) {
               try {
                 const parsed = JSON.parse(potentialJson);
-                console.log("Parsed JSON content:", parsed);
+                console.log("Successfully parsed JSON content:", parsed);
                 
                 if (parsed && parsed.action === 'log_nutrition') {
                   console.log("✨ Detected log_nutrition action. Logging to backend...");
                   
                   try {
-                    // Use a relative URL instead of a hardcoded one to work in all environments
-                    // This ensures it works both locally and in production
-                    const logResponse = await fetch('/api/logs/nutrition', {
+                    // Use an absolute URL with localhost to ensure it works within the Node.js server environment
+                    // Node.js fetch doesn't resolve relative URLs the same way as the browser
+                    const baseUrl = 'http://localhost:5000';
+                    console.log(`🔄 Sending nutrition log to ${baseUrl}/api/logs/nutrition`);
+                    
+                    const logResponse = await fetch(`${baseUrl}/api/logs/nutrition`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(parsed),
@@ -283,7 +308,10 @@ export async function getMessagesFromThread(threadId: string) {
                   }
                 }
               } catch (jsonError) {
-                // Skip invalid JSON matches
+                // Log the error and the problematic JSON for debugging
+                console.error("❌ Failed to parse JSON object:", jsonError);
+                console.error("⚠️ Problematic JSON string:", potentialJson.substring(0, 100) + (potentialJson.length > 100 ? '...' : ''));
+                // Skip invalid JSON matches and continue with the next one
                 continue;
               }
             }
