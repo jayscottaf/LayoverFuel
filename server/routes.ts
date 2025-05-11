@@ -657,6 +657,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let messages;
       try {
         messages = await getMessagesFromThread(threadId);
+        
+        // Only process the first message (newest) for nutrition logging
+        if (messages.data && messages.data.length > 0) {
+          const latestMessage = messages.data[0];
+          // Process latest message for nutrition logging only if it's from the assistant
+          if (latestMessage.role === 'assistant') {
+            await processMessageForNutritionLogging(latestMessage);
+          }
+        }
+        
         console.log("Messages retrieved:", JSON.stringify(messages.data, null, 2));
       } catch (messagesError) {
         console.error("Error getting messages:", messagesError);
