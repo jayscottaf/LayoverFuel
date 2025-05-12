@@ -1,23 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+
+    <title>Layover Fuel</title>
+
+    <!-- Favicon and App Icons -->
     <link rel="icon" href="/icons/icon-192.png" />
-    <meta name="theme-color" content="#1E40AF" />
-    <!-- Apple PWA Support -->
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+    <!-- PWA Manifest & Theme Colors -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1E40AF" /> <!-- Default/fallback -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>Layover Fuel</title>
+
+    <!-- Open Graph Meta (for social sharing) -->
+    <meta property="og:title" content="Layover Fuel" />
+    <meta property="og:description" content="Your personal nutrition and fitness assistant for travel." />
+    <meta property="og:image" content="/icons/icon-512.png" />
+    <meta property="og:url" content="https://layover-fuel.vercel.app" />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter Meta -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Layover Fuel" />
+    <meta name="twitter:description" content="Your personal nutrition and fitness assistant for travel." />
+    <meta name="twitter:image" content="/icons/icon-512.png" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
   </body>
 </html>

@@ -6,12 +6,6 @@ const app = express();
 // Increase JSON payload size limit for image uploads
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
-
-// This middleware was used for debugging but we're now disabling verbose logging
-app.use((req, res, next) => {
-  next();
-});
-
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
