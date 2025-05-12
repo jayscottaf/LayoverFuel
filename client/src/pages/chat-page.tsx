@@ -354,7 +354,7 @@ export default function ChatPage() {
               }`}
             ><div className="flex flex-col space-y-2 max-w-[75%]">
                 {message.imageUrls && message.imageUrls.length > 0 && (
-                  <div className={`flex flex-wrap gap-1 max-w-[90%] ${
+                  <div className={`flex flex-wrap gap-1 max-w-[85%] ${
                       message.role === "user" ? "ml-auto justify-end" : "mr-auto justify-start"
                     }`}>
                     {message.imageUrls.map((imageUrl, imgIndex) => (
@@ -389,64 +389,76 @@ export default function ChatPage() {
                 )}
                 
                 {((message.content.length > 0 && message.content[0]?.trim() !== "") || message.id === "processing") && (
-                  <div
-                    className={`rounded-2xl p-3 inline-block ${
-                      message.role === "user"
-                        ? "bg-blue-500 text-white rounded-tr-none"
-                        : "bg-gray-800 text-white rounded-tl-none"
-                    }`}
-                  >
-                    {message.content.map((text, i) => {
-                      // Check if text contains list-like formatting (bullets, numbers, etc.)
-                      const hasListItems = text.includes("- ") || 
-                                          /\d+\.\s/.test(text) || 
-                                          text.includes("* ") ||
-                                          text.includes("• ");
-                      
-                      if (hasListItems) {
-                        // Split by common list separators
-                        const lines = text.split(/\n/);
-                        return (
-                          <div key={i} className="mb-2">
-                            {lines.map((line, lineIndex) => {
-                              // Check if this line is a list item
-                              const isListItem = line.trim().startsWith("- ") || 
-                                              /^\d+\.\s/.test(line.trim()) ||
-                                              line.trim().startsWith("* ") ||
-                                              line.trim().startsWith("• ");
-                              
-                              if (isListItem) {
-                                return (
-                                  <div key={lineIndex} className="flex mb-1">
-                                    <div className="mr-2 flex-shrink-0">
-                                      {line.trim().startsWith("- ") || line.trim().startsWith("* ") || line.trim().startsWith("• ") ? "•" : line.trim().match(/^\d+\./)?.[0]}
-                                    </div>
-                                    <div>{line.replace(/^-\s|\*\s|•\s|\d+\.\s/, "")}</div>
+              
+              // Message Bubble Component
+              <>
+                <div
+                  className={`rounded-2xl px-5 py-4 text-2xl shadow-md inline-block relative ${
+                    message.role === "user"
+                      ? "bg-sky-500/90 text-white" // 🎨 softened blue for user
+                      : "bg-neutral-900 text-white" // 🎨 cleaner gray for assistant
+                  }`}
+                >
+                  {/* 💬 Text Content (supports lists, paragraphs) */}
+                  {message.content.map((text, i) => {
+                    const hasListItems = text.includes("- ") || 
+                                        /\d+\.\s/.test(text) || 
+                                        text.includes("* ") ||
+                                        text.includes("• ");
+
+                    if (hasListItems) {
+                      const lines = text.split(/\n/);
+                      return (
+                        <div key={i} className="mb-2">
+                          {lines.map((line, lineIndex) => {
+                            const isListItem = line.trim().startsWith("- ") || 
+                                               /^\d+\.\s/.test(line.trim()) ||
+                                               line.trim().startsWith("* ") ||
+                                               line.trim().startsWith("• ");
+
+                            if (isListItem) {
+                              return (
+                                <div key={lineIndex} className="flex mb-1">
+                                  <div className="mr-2 flex-shrink-0">
+                                    {(line.trim().startsWith("- ") || line.trim().startsWith("* ") || line.trim().startsWith("• "))
+                                      ? "•"
+                                      : line.trim().match(/^\d+\./)?.[0]}
                                   </div>
-                                );
-                              } else {
-                                return <p key={lineIndex} className="mb-1">{line}</p>;
-                              }
-                            })}
-                          </div>
-                        );
-                      } else {
-                        return (
-                          <p key={i} className="mb-1">
-                            {text}
-                          </p>
-                        );
-                      }
-                    })}
-                    
-                    {message.id === "processing" && (
-                      <div className="flex items-center mt-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse mr-1"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150 mr-1"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-300"></div>
-                      </div>
-                    )}
-                  </div>
+                                  <div>{line.replace(/^[-*•]\s|^\d+\.\s/, "")}</div>
+                                </div>
+                              );
+                            } else {
+                              return <p key={lineIndex} className="mb-1">{line}</p>;
+                            }
+                          })}
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <p key={i} className="mb-1">
+                          {text}
+                        </p>
+                      );
+                    }
+                  })}
+
+                  {/* ⏳ Loading State */}
+                  {message.id === "processing" && (
+                    <div className="flex items-center mt-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse mr-1"></div> {/* ⚫ animated pulse dot */}
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150 mr-1"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-300"></div>
+                    </div>
+                  )}
+                </div>
+              </>
+
+              // 🔧 Style notes:
+              // px-5 = left/right padding
+              // py-4 = top/bottom padding
+              // text-2xl = large readable font
+              // shadow-md = bubble depth
+
                 )}
               </div>
             </div>
