@@ -79,5 +79,6 @@ export async function handleNutritionLogPost(req: Request, res: Response) {
 import { Router } from "express";
 const router = Router();
 router.post("/", handleNutritionLogPost);
+
 export default router;
 
