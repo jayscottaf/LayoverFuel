@@ -393,7 +393,7 @@ export default function ChatPage() {
               // Message Bubble Component
               <>
                 <div
-                  className={`rounded-2xl px-5 py-4 text-2xl shadow-md inline-block relative ${
+                  className={`rounded-2xl px-3 py-1.5 md:text-xl text-xl shadow-md inline-block relative ${
                     message.role === "user"
                       ? "bg-sky-500/90 text-white" // 🎨 softened blue for user
                       : "bg-neutral-900 text-white" // 🎨 cleaner gray for assistant
@@ -512,7 +512,7 @@ export default function ChatPage() {
           </div>
         )}
 
-        <div className="flex items-end space-x-2">
+        <div className="flex items-center space-x-2">
           <ImageUpload
             onImageSelect={handleImageSelect}
             className="text-gray-400 hover:text-gray-200 p-2"

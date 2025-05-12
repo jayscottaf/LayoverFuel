@@ -1,12 +1,11 @@
 {
   "name": "Layover Fuel",
-  "short_name": "Fuel",
-  "description": "A health, fitness, and nutrition tracking PWA for travelers.",
+  "short_name": "Layover Fuel",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#1e40af",
   "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#1E40AF",
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -17,6 +16,19 @@
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
+      "screenshots": [
+        {
+          "src": "/screenshots/screen1.png",
+          "sizes": "1080x1920",
+          "type": "image/png"
+        },
+        {
+          "src": "/screenshots/screen2.png",
+          "sizes": "1280x720",
+          "type": "image/png"
+        }
+      ]
+
     }
   ]
 }
