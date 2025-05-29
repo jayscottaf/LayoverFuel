@@ -21,6 +21,165 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const handleConfirmLog = async () => {
+    if (!pendingLog) return;
+
+    try {
+      await fetch("/api/logs/nutrition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pendingLog),
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: ["✅ Meal logged!"],
+        },
+      ]);
+    } catch (err) {
+      console.error("Logging error:", err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: ["⚠️ Failed to log meal."],
+        },
+      ]);
+    } finally {
+      setPendingLog(null);
+      setIsEditing(false);
+    }
+  };
+  const [pendingLog, setPendingLog] = useState<null | {
+    description: string;
+    macros: { protein: number; carbs: number; fat: number };
+    image?: string;
+  }>(
+    null
+  );
+  
+  const [isEditing, setIsEditing] = useState(false);
+
+  {pendingLog && (
+    <div className="pending-preview border-dashed border-2 border-gray-400 p-4 my-4 rounded-xl bg-white text-black">
+      {pendingLog.image && (
+        <img
+          src={pendingLog.image}
+          alt="Pending Meal"
+          className="max-w-full rounded-lg mb-2"
+        />
+      )}
+      {isEditing ? (
+        <div className="space-y-2">
+          <input
+            className="w-full border p-2 rounded"
+            value={pendingLog.description}
+            onChange={(e) =>
+              setPendingLog((prev) =>
+                prev ? { ...prev, description: e.target.value } : prev
+              )
+            }
+          />
+          <div className="flex gap-2">
+            <input
+              className="w-1/3 border p-2 rounded"
+              type="number"
+              value={pendingLog.macros.protein}
+              onChange={(e) =>
+                setPendingLog((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        macros: {
+                          ...prev.macros,
+                          protein: Number(e.target.value),
+                        },
+                      }
+                    : prev
+                )
+              }
+              placeholder="Protein"
+            />
+            <input
+              className="w-1/3 border p-2 rounded"
+              type="number"
+              value={pendingLog.macros.carbs}
+              onChange={(e) =>
+                setPendingLog((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        macros: {
+                          ...prev.macros,
+                          carbs: Number(e.target.value),
+                        },
+                      }
+                    : prev
+                )
+              }
+              placeholder="Carbs"
+            />
+            <input
+              className="w-1/3 border p-2 rounded"
+              type="number"
+              value={pendingLog.macros.fat}
+              onChange={(e) =>
+                setPendingLog((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        macros: {
+                          ...prev.macros,
+                          fat: Number(e.target.value),
+                        },
+                      }
+                    : prev
+                )
+              }
+              placeholder="Fat"
+            />
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="font-semibold">{pendingLog.description}</p>
+          <p className="text-sm text-gray-600">
+            P: {pendingLog.macros.protein}g &nbsp;
+            C: {pendingLog.macros.carbs}g &nbsp;
+            F: {pendingLog.macros.fat}g
+          </p>
+        </>
+      )}
+
+      <div className="flex justify-center gap-3 mt-4">
+        <button
+          onClick={() => setIsEditing((prev) => !prev)}
+          className="px-3 py-1 bg-yellow-400 rounded hover:bg-yellow-500"
+        >
+          {isEditing ? "Done" : "Edit"}
+        </button>
+        <button
+          onClick={handleConfirmLog}
+          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+        >
+          ✅ Confirm
+        </button>
+        <button
+          onClick={() => {
+            setPendingLog(null);
+            setIsEditing(false);
+          }}
+          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+        >
+          ❌ Cancel
+        </button>
+      </div>
+    </div>
+  )}
 
   // Initialize a thread when the component mounts
   useEffect(() => {
@@ -49,7 +208,7 @@ export default function ChatPage() {
       const data = await response.json();
       setThreadId(data.threadId);
       localStorage.setItem("assistantThreadId", data.threadId);
-      
+
       // Add welcome message
       setMessages([
         {
@@ -79,7 +238,7 @@ export default function ChatPage() {
         throw new Error("Failed to fetch messages");
       }
       const data = await response.json();
-      
+
       // Format messages - ensure they're in chronological order (oldest first)
       // The API returns messages in reverse chronological order (newest first)
       // so we need to reverse them to display correctly
@@ -92,7 +251,7 @@ export default function ChatPage() {
             .filter((content: any) => content.type === "text")
             .map((content: any) => content.text.value)
             .filter(Boolean);
-          
+
           // Extract all image URLs (both direct URLs and file references)
           const imageUrls = msg.content
             .filter((c: any) => c.type === "image_url" || c.type === "image_file")
@@ -102,7 +261,7 @@ export default function ChatPage() {
               return null;
             })
             .filter(Boolean);
-          
+
           return {
             id: msg.id,
             role: msg.role,
@@ -110,7 +269,7 @@ export default function ChatPage() {
             imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
           };
         });
-      
+
       // Add welcome message if no messages
       if (formattedMessages.length === 0) {
         formattedMessages.push({
@@ -119,7 +278,7 @@ export default function ChatPage() {
           content: ["Welcome to Layover Fuel! I'm your personal nutrition and fitness assistant. I can help you analyze your meals, suggest workouts, and provide travel-friendly fitness tips. How can I help you today?"],
         });
       }
-      
+
       setMessages(formattedMessages);
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -145,18 +304,18 @@ export default function ChatPage() {
       imageDataArray?: string[];
     }) => {
       if (!threadId) throw new Error("No thread ID");
-      
+
       const response = await apiRequest("POST", "/api/assistant/message", {
         threadId,
         message,
         imageData,
         imageDataArray,
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to send message");
       }
-      
+
       return response.json();
     },
     onSuccess: (data) => {
@@ -170,7 +329,7 @@ export default function ChatPage() {
             .filter((content: any) => content.type === "text")
             .map((content: any) => content.text.value)
             .filter(Boolean);
-          
+
           // Extract all image URLs (both direct URLs and file references)
           const imageUrls = msg.content
             .filter((c: any) => c.type === "image_url" || c.type === "image_file")
@@ -180,7 +339,7 @@ export default function ChatPage() {
               return null;
             })
             .filter(Boolean);
-          
+
           return {
             id: msg.id,
             role: msg.role,
@@ -188,17 +347,30 @@ export default function ChatPage() {
             imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
           };
         });
-      
+
       // Update the messages state with the processed messages from the server
-      setMessages(newMessages);
+      setMessages(newMessages); 
+      // Optionally trigger pendingLog from GPT response
+      const latestAssistantMessage = newMessages.findLast((msg: Message) => msg.role === "assistant");
+      if (latestAssistantMessage && latestAssistantMessage.content.length > 0) {
+        // Naive guess based on text – in real usage you’ll extract this from GPT structuring
+        const description = latestAssistantMessage.content[0];
+
+        setPendingLog({
+          description,
+          macros: { protein: 20, carbs: 5, fat: 10 }, // Placeholder — replace with real GPT values when structured
+          image: tempImages?.[0], // First image preview
+        });
+      }
     },
+    
     onError: (error) => {
       console.error("Error sending message:", error);
-      
+
       // Try to parse the detailed error information if available
       let errorMessage = "Failed to send message. Please try again.";
       let errorTitle = "Error";
-      
+
       if (error instanceof Error) {
         // If there's a cause with structured error information
         if ('cause' in error) {
@@ -207,10 +379,10 @@ export default function ChatPage() {
             errorMessage = cause.message;
           }
         }
-        
+
         // Check for common error types in the error message
         const errorString = error.message.toLowerCase();
-        
+
         // Handle different types of errors with specific messages
         if (errorString.includes('cloud') || errorString.includes('storage')) {
           errorTitle = "Cloud Storage Error";
@@ -232,13 +404,13 @@ export default function ChatPage() {
           errorMessage = "You've made too many requests. Please wait a moment and try again.";
         }
       }
-      
+
       toast({
         title: errorTitle,
         description: errorMessage,
         variant: "destructive",
       });
-      
+
       // Remove the processing message from the UI
       setMessages(messages => messages.filter(msg => msg.id !== "processing"));
     },
@@ -247,11 +419,11 @@ export default function ChatPage() {
   // Send a message
   const sendMessage = () => {
     if (!input.trim() && tempImages.length === 0) return;
-    
+
     // Store the current images/input to use in the message
     const currentInput = input;
     const currentImages = [...tempImages];
-    
+
     // Add user message to the UI immediately
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -259,23 +431,23 @@ export default function ChatPage() {
       content: currentInput.trim() ? [currentInput] : [], // Only include non-empty content
       imageUrls: currentImages.length > 0 ? currentImages : undefined,
     };
-    
+
     setMessages((prev) => [...prev, userMessage]);
-    
+
     // Add processing message
     const processingMessage: Message = {
       id: "processing",
       role: "assistant",
       content: ["Thinking..."],
     };
-    
+
     setMessages((prev) => [...prev, processingMessage]);
-    
+
     // Clear the input and images BEFORE sending the API request
     // This ensures the UI is ready for another image immediately
     setInput("");
     setTempImages([]);
-    
+
     // Send the message with all images to the API
     try {
       sendMessageMutation.mutate({
@@ -295,31 +467,31 @@ export default function ChatPage() {
   // Handle multiple image uploads
   const [tempImages, setTempImages] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
+
   // Function to automatically adjust the textarea height based on content
   const autoResizeTextarea = () => {
     const textarea = textareaRef.current;
     if (textarea) {
       // Reset height to auto to get the correct scrollHeight
       textarea.style.height = 'auto';
-      
+
       // Set the height to match the content (with a max of 150px)
       const newHeight = Math.min(textarea.scrollHeight, 150);
       textarea.style.height = `${newHeight}px`;
     }
   };
-  
+
   // Effect to resize the textarea whenever input changes
   useEffect(() => {
     autoResizeTextarea();
   }, [input]);
-  
+
   const handleImageSelect = (_: File, preview: string) => {
     // Add the new image to the array
     setTempImages(prevImages => [...prevImages, preview]);
     // No toast notification needed - the image preview is visible
   };
-  
+
   // Remove an image from the tempImages array
   const removeImage = (index: number) => {
     setTempImages(prevImages => prevImages.filter((_, i) => i !== index));
@@ -328,9 +500,9 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-screen bg-black overflow-hidden">
       {/* Fixed Header */}
-      <div className="flex items-center justify-between px-4 py-3 fixed top-0 left-0 right-0 z-20 border-b border-zinc-800 bg-black/40 backdrop-blur-md">
+      <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top)] pb-2 fixed top-0 left-0 right-0 z-20 border-b border-zinc-800 bg-black/40 backdrop-blur-md">
         <div className="flex items-center space-x-2">
-          <h1 className="text-xl font-semibold text-white">Layover Fuel Assistant</h1>
+          <h1 className="text-xl font-semibold text-white">Layover Fuel</h1>
         </div>
         <Link href="/dashboard">
           <Button className="bg-transparent hover:bg-blue-500 text-gray-300 hover:text-white border border-gray-800 hover:border-transparent">
@@ -339,12 +511,16 @@ export default function ChatPage() {
         </Link>
       </div>
 
-      
+
       {/* Spacer to account for fixed header */}
       <div className="h-14"></div>
 
       {/* Messages container - scrollable area between fixed header and input */}
-      <div className="flex-1 overflow-y-auto p-4 bg-black pb-32">
+      <div
+        className="flex-1 overflow-y-auto p-4 bg-black pb-32"
+        style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+      >
+        {/* Messages */}
         <div className="flex flex-col space-y-4">
           {messages.map((message, index) => (
             <div
@@ -387,9 +563,9 @@ export default function ChatPage() {
                     ))}
                   </div>
                 )}
-                
+
                 {((message.content.length > 0 && message.content[0]?.trim() !== "") || message.id === "processing") && (
-              
+
               // Message Bubble Component
               <>
                 <div
@@ -468,7 +644,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input area - fixed at bottom */}
-      <div className="p-4 border-t border-zinc-800 bg-black/40 backdrop-blur-lg fixed bottom-0 left-0 right-0 z-20">
+      <div className="p-4 border-t border-zinc-800 bg-black/40 backdrop-blur-lg fixed bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-20">
         {/* Display images to be sent - as thumbnails */}
         {tempImages.length > 0 && (
           <div className="mb-4">
