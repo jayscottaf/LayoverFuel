@@ -66,14 +66,14 @@ export function calculateMacros(
     proteinMultiplier = 1.8; // 1.8g per kg of bodyweight
     fatMultiplier = 1.0; // 1.0g per kg of bodyweight
     
-    caloriesFromProtein = weightKg * proteinMultiplier * 4;
-    caloriesFromFat = weightKg * fatMultiplier * 9;
+    caloriesFromProtein = weight * proteinMultiplier * 4;
+    caloriesFromFat = weight * fatMultiplier * 9;
     caloriesFromCarbs = tdee - caloriesFromProtein - caloriesFromFat;
   }
   
   // Calculate grams for each macro
-  const protein = Math.round(weightKg * proteinMultiplier);
-  const fat = Math.round(weightKg * fatMultiplier);
+  const protein = Math.round(weight * proteinMultiplier);
+  const fat = Math.round(weight * fatMultiplier);
   const carbs = Math.round(caloriesFromCarbs / 4); // 4 calories per gram of carbs
   
   return {
