@@ -50,8 +50,8 @@ export function calculateMacros(user: User, tdee: number): {
     proteinMultiplier = 2.2; // 2.2g per kg of bodyweight
     fatMultiplier = 0.8; // 0.8g per kg of bodyweight
     
-    caloriesFromProtein = weightKg * proteinMultiplier * 4; // 4 calories per gram of protein
-    caloriesFromFat = weightKg * fatMultiplier * 9; // 9 calories per gram of fat
+    caloriesFromProtein = weight * proteinMultiplier * 4; // 4 calories per gram of protein
+    caloriesFromFat = weight * fatMultiplier * 9; // 9 calories per gram of fat
     
     // Adjust TDEE for deficit if shredding
     const adjustedTDEE = tdee * 0.85; // 15% deficit
@@ -67,8 +67,8 @@ export function calculateMacros(user: User, tdee: number): {
   }
   
   // Calculate grams for each macro
-  const protein = Math.round(weightKg * proteinMultiplier);
-  const fat = Math.round(weightKg * fatMultiplier);
+  const protein = Math.round(weight * proteinMultiplier);
+  const fat = Math.round(weight * fatMultiplier);
   const carbs = Math.round(caloriesFromCarbs / 4); // 4 calories per gram of carbs
   
   return {
