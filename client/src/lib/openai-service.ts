@@ -2,7 +2,7 @@ import OpenAI from "openai";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 
-// Initialize the OpenAI client (API key is from environment variables)
+// Initialize the OpenAI client (API key is provided by the server through the proxy)
 const openai = new OpenAI({
   baseURL: "/api/openai-proxy", // This will proxy our requests through the server
   dangerouslyAllowBrowser: true // We're using a proxy so this is safe
