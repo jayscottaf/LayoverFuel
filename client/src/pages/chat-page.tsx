@@ -61,7 +61,7 @@ export default function ChatPage() {
   }>(
     null
   );
-  
+
   const [isEditing, setIsEditing] = useState(false);
 
   {pendingLog && (
@@ -319,18 +319,19 @@ export default function ChatPage() {
       return response.json();
     },
     onSuccess: (data) => {
-      // Update messages with the new ones - make sure they're in chronological order
+      // Process and update messages with the response from the AI
+      // Ensure messages are in chronological order for proper display
       const newMessages = data.messages
-        .slice() // Create a copy of the array to avoid mutating the original
-        .reverse() // Reverse to get oldest first
+        .slice() // Create a copy to avoid mutating the original array
+        .reverse() // Reverse to get oldest messages first
         .map((msg: any) => {
-          // Extract all text contents
+          // Extract text content from each message part
           const textContents = msg.content
             .filter((content: any) => content.type === "text")
             .map((content: any) => content.text.value)
-            .filter(Boolean);
+            .filter(Boolean); // Remove empty content
 
-          // Extract all image URLs (both direct URLs and file references)
+          // Extract image URLs from the message (supports both formats)
           const imageUrls = msg.content
             .filter((c: any) => c.type === "image_url" || c.type === "image_file")
             .map((c: any) => {
@@ -348,22 +349,25 @@ export default function ChatPage() {
           };
         });
 
-      // Update the messages state with the processed messages from the server
+      // Update the chat with the complete message history
       setMessages(newMessages); 
-      // Optionally trigger pendingLog from GPT response
+
+      // Check if the AI response suggests logging nutrition data
       const latestAssistantMessage = newMessages.findLast((msg: Message) => msg.role === "assistant");
       if (latestAssistantMessage && latestAssistantMessage.content.length > 0) {
-        // Naive guess based on text – in real usage you’ll extract this from GPT structuring
+        // Extract meal description from AI response
         const description = latestAssistantMessage.content[0];
 
+        // Create a pending log entry for user confirmation
+        // TODO: Replace placeholder macros with actual AI-extracted values
         setPendingLog({
           description,
-          macros: { protein: 20, carbs: 5, fat: 10 }, // Placeholder — replace with real GPT values when structured
-          image: tempImages?.[0], // First image preview
+          macros: { protein: 20, carbs: 5, fat: 10 }, // Placeholder values
+          image: tempImages?.[0], // Use first uploaded image
         });
       }
     },
-    
+
     onError: (error) => {
       console.error("Error sending message:", error);
 
