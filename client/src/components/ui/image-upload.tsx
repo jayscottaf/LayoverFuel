@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { Camera } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 
 interface ImageUploadProps {
   onImageSelect: (file: File, preview: string) => void;

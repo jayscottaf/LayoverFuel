@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DailyCheckInCard } from "@/components/dashboard/DailyCheckInCard";
+import { DailyCheckInCard } from "../components/dashboard/DailyCheckInCard";
 
 export default function TourPage() {
   const [currentStep, setCurrentStep] = useState(1);
