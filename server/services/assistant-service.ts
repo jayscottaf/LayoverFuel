@@ -241,28 +241,29 @@ export async function getMessagesFromThread(threadId: string) {
     throw new Error(`Failed to get messages: ${JSON.stringify(response.data)}`);
   }
 
-  // Filter out JSON instructions from assistant messages for display
+  // Filter out only the JSON logging instructions from assistant messages
   const filteredData = {
     ...response.data,
     data: response.data.data.map((message: any) => {
       if (message.role === 'assistant') {
-        // Process each content part to remove JSON instructions
+        // Process each content part to remove only JSON logging instructions
         const filteredContent = message.content.map((part: any) => {
           if (part.type === 'text' && part.text?.value) {
             let text = part.text.value;
             
-            // Remove JSON code blocks
-            text = text.replace(/```json\s*[\s\S]*?\s*```/g, '');
+            // Only remove JSON code blocks that contain logging instructions
+            text = text.replace(/```json\s*\{\s*"action"\s*:\s*"log_nutrition"[\s\S]*?\}\s*```/g, '');
             
-            // Remove standalone JSON objects (but be careful not to remove legitimate text)
+            // Remove standalone JSON objects that are logging instructions
             text = text.replace(/\{\s*"action"\s*:\s*"log_nutrition"[\s\S]*?\}/g, '');
             
-            // Remove the "Here's the JSON log" text and similar phrases
+            // Remove specific phrases that introduce JSON logging
             text = text.replace(/Here's the JSON log for this meal[.:]\s*/gi, '');
             text = text.replace(/Here's the structured log for[^.]*[.:]\s*/gi, '');
             text = text.replace(/Please confirm if this looks correct to log[.:]\s*/gi, '');
+            text = text.replace(/I'll log this meal for you[.:]\s*/gi, '');
             
-            // Clean up extra whitespace and newlines
+            // Clean up extra whitespace and newlines but preserve formatting
             text = text.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
             
             // Only return the part if there's still meaningful content
