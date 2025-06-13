@@ -257,6 +257,11 @@ export async function getMessagesFromThread(threadId: string) {
             // Remove standalone JSON objects (but be careful not to remove legitimate text)
             text = text.replace(/\{\s*"action"\s*:\s*"log_nutrition"[\s\S]*?\}/g, '');
             
+            // Remove the "Here's the JSON log" text and similar phrases
+            text = text.replace(/Here's the JSON log for this meal[.:]\s*/gi, '');
+            text = text.replace(/Here's the structured log for[^.]*[.:]\s*/gi, '');
+            text = text.replace(/Please confirm if this looks correct to log[.:]\s*/gi, '');
+            
             // Clean up extra whitespace and newlines
             text = text.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
             
