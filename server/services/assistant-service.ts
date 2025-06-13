@@ -230,7 +230,7 @@ export async function checkRunStatus(threadId: string, runId: string) {
 // Store the IDs of messages that have already been processed for nutrition logging
 const processedMessageIds = new Set<string>();
 
-// Get messages from a thread without any additional processing
+// Get messages from a thread and filter out JSON instructions from display
 export async function getMessagesFromThread(threadId: string) {
   const response = await proxyRequestToOpenAI(
     'GET',
@@ -241,7 +241,50 @@ export async function getMessagesFromThread(threadId: string) {
     throw new Error(`Failed to get messages: ${JSON.stringify(response.data)}`);
   }
 
-  return response.data;
+  // Filter out JSON instructions from assistant messages for display
+  const filteredData = {
+    ...response.data,
+    data: response.data.data.map((message: any) => {
+      if (message.role === 'assistant') {
+        // Process each content part to remove JSON instructions
+        const filteredContent = message.content.map((part: any) => {
+          if (part.type === 'text' && part.text?.value) {
+            let text = part.text.value;
+            
+            // Remove JSON code blocks
+            text = text.replace(/```json\s*[\s\S]*?\s*```/g, '');
+            
+            // Remove standalone JSON objects (but be careful not to remove legitimate text)
+            text = text.replace(/\{\s*"action"\s*:\s*"log_nutrition"[\s\S]*?\}/g, '');
+            
+            // Clean up extra whitespace and newlines
+            text = text.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+            
+            // Only return the part if there's still meaningful content
+            if (text.length > 0) {
+              return {
+                ...part,
+                text: {
+                  ...part.text,
+                  value: text
+                }
+              };
+            }
+            return null;
+          }
+          return part;
+        }).filter(Boolean); // Remove null entries
+        
+        return {
+          ...message,
+          content: filteredContent
+        };
+      }
+      return message;
+    })
+  };
+
+  return filteredData;
 }
 
 // Process a message for nutrition logging - only call this once per message
