@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Loader2, Send,} from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface Message {
@@ -16,6 +16,7 @@ interface Message {
 }
 
 export default function ChatPage() {
+  const appVersion = import.meta.env.VITE_APP_VERSION;
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<string | null>(null);
@@ -59,128 +60,127 @@ export default function ChatPage() {
     description: string;
     macros: { protein: number; carbs: number; fat: number };
     image?: string;
-  }>(
-    null
-  );
+  }>(null);
 
   const [isEditing, setIsEditing] = useState(false);
 
-  {pendingLog && (
-    <div className="pending-preview border-dashed border-2 border-gray-400 p-4 my-4 rounded-xl bg-white text-black">
-      {pendingLog.image && (
-        <img
-          src={pendingLog.image}
-          alt="Pending Meal"
-          className="max-w-full rounded-lg mb-2"
-        />
-      )}
-      {isEditing ? (
-        <div className="space-y-2">
-          <input
-            className="w-full border p-2 rounded"
-            value={pendingLog.description}
-            onChange={(e) =>
-              setPendingLog((prev) =>
-                prev ? { ...prev, description: e.target.value } : prev
-              )
-            }
+  {
+    pendingLog && (
+      <div className="pending-preview border-dashed border-2 border-gray-400 p-4 my-4 rounded-xl bg-white text-black">
+        {pendingLog.image && (
+          <img
+            src={pendingLog.image}
+            alt="Pending Meal"
+            className="max-w-full rounded-lg mb-2"
           />
-          <div className="flex gap-2">
+        )}
+        {isEditing ? (
+          <div className="space-y-2">
             <input
-              className="w-1/3 border p-2 rounded"
-              type="number"
-              value={pendingLog.macros.protein}
+              className="w-full border p-2 rounded"
+              value={pendingLog.description}
               onChange={(e) =>
                 setPendingLog((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        macros: {
-                          ...prev.macros,
-                          protein: Number(e.target.value),
-                        },
-                      }
-                    : prev
+                  prev ? { ...prev, description: e.target.value } : prev,
                 )
               }
-              placeholder="Protein"
             />
-            <input
-              className="w-1/3 border p-2 rounded"
-              type="number"
-              value={pendingLog.macros.carbs}
-              onChange={(e) =>
-                setPendingLog((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        macros: {
-                          ...prev.macros,
-                          carbs: Number(e.target.value),
-                        },
-                      }
-                    : prev
-                )
-              }
-              placeholder="Carbs"
-            />
-            <input
-              className="w-1/3 border p-2 rounded"
-              type="number"
-              value={pendingLog.macros.fat}
-              onChange={(e) =>
-                setPendingLog((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        macros: {
-                          ...prev.macros,
-                          fat: Number(e.target.value),
-                        },
-                      }
-                    : prev
-                )
-              }
-              placeholder="Fat"
-            />
+            <div className="flex gap-2">
+              <input
+                className="w-1/3 border p-2 rounded"
+                type="number"
+                value={pendingLog.macros.protein}
+                onChange={(e) =>
+                  setPendingLog((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          macros: {
+                            ...prev.macros,
+                            protein: Number(e.target.value),
+                          },
+                        }
+                      : prev,
+                  )
+                }
+                placeholder="Protein"
+              />
+              <input
+                className="w-1/3 border p-2 rounded"
+                type="number"
+                value={pendingLog.macros.carbs}
+                onChange={(e) =>
+                  setPendingLog((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          macros: {
+                            ...prev.macros,
+                            carbs: Number(e.target.value),
+                          },
+                        }
+                      : prev,
+                  )
+                }
+                placeholder="Carbs"
+              />
+              <input
+                className="w-1/3 border p-2 rounded"
+                type="number"
+                value={pendingLog.macros.fat}
+                onChange={(e) =>
+                  setPendingLog((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          macros: {
+                            ...prev.macros,
+                            fat: Number(e.target.value),
+                          },
+                        }
+                      : prev,
+                  )
+                }
+                placeholder="Fat"
+              />
+            </div>
           </div>
-        </div>
-      ) : (
-        <>
-          <p className="font-semibold">{pendingLog.description}</p>
-          <p className="text-sm text-gray-600">
-            P: {pendingLog.macros.protein}g &nbsp;
-            C: {pendingLog.macros.carbs}g &nbsp;
-            F: {pendingLog.macros.fat}g
-          </p>
-        </>
-      )}
+        ) : (
+          <>
+            <p className="font-semibold">{pendingLog.description}</p>
+            <p className="text-sm text-gray-600">
+              P: {pendingLog.macros.protein}g &nbsp; C:{" "}
+              {pendingLog.macros.carbs}g &nbsp; F: {pendingLog.macros.fat}g
+            </p>
+          </>
+        )}
 
-      <div className="flex justify-center gap-3 mt-4">
-        <button
-          onClick={() => setIsEditing((prev) => !prev)}
-          className="px-3 py-1 bg-yellow-400 rounded hover:bg-yellow-500"
-        >
-          {isEditing ? "Done" : "Edit"}
-        </button>
-        <button
-          onClick={handleConfirmLog}
-          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-        >
-          ✅ Confirm
-        </button>
-        <button
-          onClick={() => {
-            setPendingLog(null);
-            setIsEditing(false);
-          }}
-          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-        >
-          ❌ Cancel
-        </button>
+        <div className="flex justify-center gap-3 mt-4">
+          <button
+            onClick={() => setIsEditing((prev) => !prev)}
+            className="px-3 py-1 bg-yellow-400 rounded hover:bg-yellow-500"
+          >
+            {isEditing ? "Done" : "Edit"}
+          </button>
+          <button
+            onClick={handleConfirmLog}
+            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+          >
+            ✅ Confirm
+          </button>
+          <button
+            onClick={() => {
+              setPendingLog(null);
+              setIsEditing(false);
+            }}
+            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            ❌ Cancel
+          </button>
+        </div>
       </div>
-    </div>
-  )}
+    );
+  }
 
   // Initialize a thread when the component mounts
   useEffect(() => {
@@ -215,7 +215,9 @@ export default function ChatPage() {
         {
           id: "welcome",
           role: "assistant",
-          content: ["Welcome to Layover Fuel! I'm your personal nutrition and fitness assistant. I can help you analyze your meals, suggest workouts, and provide travel-friendly fitness tips. How can I help you today?"],
+          content: [
+            "Welcome to Layover Fuel! I'm your personal nutrition and fitness assistant. I can help you analyze your meals, suggest workouts, and provide travel-friendly fitness tips. How can I help you today?",
+          ],
         },
       ]);
     } catch (error) {
@@ -234,7 +236,10 @@ export default function ChatPage() {
   const fetchMessages = async (tid: string) => {
     try {
       setIsLoading(true);
-      const response = await apiRequest("GET", `/api/assistant/messages/${tid}`);
+      const response = await apiRequest(
+        "GET",
+        `/api/assistant/messages/${tid}`,
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch messages");
       }
@@ -255,7 +260,9 @@ export default function ChatPage() {
 
           // Extract all image URLs (both direct URLs and file references)
           const imageUrls = msg.content
-            .filter((c: any) => c.type === "image_url" || c.type === "image_file")
+            .filter(
+              (c: any) => c.type === "image_url" || c.type === "image_file",
+            )
             .map((c: any) => {
               if (c.type === "image_url") return c.image_url.url;
               if (c.type === "image_file") return c.image_file.file_id;
@@ -276,7 +283,9 @@ export default function ChatPage() {
         formattedMessages.push({
           id: "welcome",
           role: "assistant",
-          content: ["Welcome to Layover Fuel! I'm your personal nutrition and fitness assistant. I can help you analyze your meals, suggest workouts, and provide travel-friendly fitness tips. How can I help you today?"],
+          content: [
+            "Welcome to Layover Fuel! I'm your personal nutrition and fitness assistant. I can help you analyze your meals, suggest workouts, and provide travel-friendly fitness tips. How can I help you today?",
+          ],
         });
       }
 
@@ -295,12 +304,12 @@ export default function ChatPage() {
 
   // Send a message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async ({ 
-      message, 
-      imageData, 
-      imageDataArray 
-    }: { 
-      message: string; 
+    mutationFn: async ({
+      message,
+      imageData,
+      imageDataArray,
+    }: {
+      message: string;
       imageData?: string;
       imageDataArray?: string[];
     }) => {
@@ -334,7 +343,9 @@ export default function ChatPage() {
 
           // Extract image URLs from the message (supports both formats)
           const imageUrls = msg.content
-            .filter((c: any) => c.type === "image_url" || c.type === "image_file")
+            .filter(
+              (c: any) => c.type === "image_url" || c.type === "image_file",
+            )
             .map((c: any) => {
               if (c.type === "image_url") return c.image_url.url;
               if (c.type === "image_file") return c.image_file.file_id;
@@ -351,10 +362,12 @@ export default function ChatPage() {
         });
 
       // Update the chat with the complete message history
-      setMessages(newMessages); 
+      setMessages(newMessages);
 
       // Check if the AI response suggests logging nutrition data
-      const latestAssistantMessage = newMessages.findLast((msg: Message) => msg.role === "assistant");
+      const latestAssistantMessage = newMessages.findLast(
+        (msg: Message) => msg.role === "assistant",
+      );
       if (latestAssistantMessage && latestAssistantMessage.content.length > 0) {
         // Extract meal description from AI response
         const description = latestAssistantMessage.content[0];
@@ -378,7 +391,7 @@ export default function ChatPage() {
 
       if (error instanceof Error) {
         // If there's a cause with structured error information
-        if ('cause' in error) {
+        if ("cause" in error) {
           const cause = error.cause as any;
           if (cause && cause.message) {
             errorMessage = cause.message;
@@ -389,24 +402,37 @@ export default function ChatPage() {
         const errorString = error.message.toLowerCase();
 
         // Handle different types of errors with specific messages
-        if (errorString.includes('cloud') || errorString.includes('storage')) {
+        if (errorString.includes("cloud") || errorString.includes("storage")) {
           errorTitle = "Cloud Storage Error";
-          errorMessage = "Error uploading image to cloud storage. Please try again with a different image.";
-        } else if (errorString.includes('image') || 
-                  errorString.includes('file') || 
-                  errorString.includes('too large') || 
-                  errorString.includes('size')) {
+          errorMessage =
+            "Error uploading image to cloud storage. Please try again with a different image.";
+        } else if (
+          errorString.includes("image") ||
+          errorString.includes("file") ||
+          errorString.includes("too large") ||
+          errorString.includes("size")
+        ) {
           errorTitle = "Image Error";
-          errorMessage = "Image too large. Please try with a smaller image or reduce its quality.";
-        } else if (errorString.includes('format') || errorString.includes('invalid')) {
+          errorMessage =
+            "Image too large. Please try with a smaller image or reduce its quality.";
+        } else if (
+          errorString.includes("format") ||
+          errorString.includes("invalid")
+        ) {
           errorTitle = "Format Error";
-          errorMessage = "Invalid image format. Please try with a different image.";
-        } else if (errorString.includes('timeout')) {
+          errorMessage =
+            "Invalid image format. Please try with a different image.";
+        } else if (errorString.includes("timeout")) {
           errorTitle = "Timeout Error";
-          errorMessage = "The AI took too long to respond. Please try again or ask a different question.";
-        } else if (errorString.includes('rate limit') || errorString.includes('too many requests')) {
+          errorMessage =
+            "The AI took too long to respond. Please try again or ask a different question.";
+        } else if (
+          errorString.includes("rate limit") ||
+          errorString.includes("too many requests")
+        ) {
           errorTitle = "Rate Limit";
-          errorMessage = "You've made too many requests. Please wait a moment and try again.";
+          errorMessage =
+            "You've made too many requests. Please wait a moment and try again.";
         }
       }
 
@@ -417,7 +443,9 @@ export default function ChatPage() {
       });
 
       // Remove the processing message from the UI
-      setMessages(messages => messages.filter(msg => msg.id !== "processing"));
+      setMessages((messages) =>
+        messages.filter((msg) => msg.id !== "processing"),
+      );
     },
   });
 
@@ -478,7 +506,7 @@ export default function ChatPage() {
     const textarea = textareaRef.current;
     if (textarea) {
       // Reset height to auto to get the correct scrollHeight
-      textarea.style.height = 'auto';
+      textarea.style.height = "auto";
 
       // Set the height to match the content (with a max of 150px)
       const newHeight = Math.min(textarea.scrollHeight, 150);
@@ -493,13 +521,13 @@ export default function ChatPage() {
 
   const handleImageSelect = (_: File, preview: string) => {
     // Add the new image to the array
-    setTempImages(prevImages => [...prevImages, preview]);
+    setTempImages((prevImages) => [...prevImages, preview]);
     // No toast notification needed - the image preview is visible
   };
 
   // Remove an image from the tempImages array
   const removeImage = (index: number) => {
-    setTempImages(prevImages => prevImages.filter((_, i) => i !== index));
+    setTempImages((prevImages) => prevImages.filter((_, i) => i !== index));
   };
 
   return (
@@ -507,7 +535,12 @@ export default function ChatPage() {
       {/* Fixed Header */}
       <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top)] pb-2 fixed top-0 left-0 right-0 z-20 border-b border-zinc-800 bg-black/40 backdrop-blur-md">
         <div className="flex items-center space-x-2">
-          <h1 className="text-xl font-semibold text-white">Layover Fuel</h1>
+          <h1 className="text-xl font-semibold text-white">
+            Layover Fuel{" "}
+            <span className="ml-2 bg-gray-700 text-xs text-white px-2 py-0.5 rounded">
+              v{appVersion}
+            </span>
+          </h1>
         </div>
         <Link href="/dashboard">
           <Button className="bg-transparent hover:bg-blue-500 text-gray-300 hover:text-white border border-gray-800 hover:border-transparent">
@@ -516,14 +549,16 @@ export default function ChatPage() {
         </Link>
       </div>
 
-
       {/* Spacer to account for fixed header */}
       <div className="h-14"></div>
 
       {/* Messages container - scrollable area between fixed header and input */}
       <div
         className="flex-1 overflow-y-auto p-4 bg-black pb-32"
-        style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+        style={{
+          overscrollBehavior: "contain",
+          WebkitOverflowScrolling: "touch",
+        }}
       >
         {/* Messages */}
         <div className="flex flex-col space-y-4">
@@ -533,22 +568,32 @@ export default function ChatPage() {
               className={`flex ${
                 message.role === "user" ? "justify-end" : "justify-start"
               }`}
-            ><div className="flex flex-col space-y-2 max-w-[75%]">
+            >
+              <div className="flex flex-col space-y-2 max-w-[75%]">
                 {message.imageUrls && message.imageUrls.length > 0 && (
-                  <div className={`flex flex-wrap gap-1 max-w-[85%] ${
-                      message.role === "user" ? "ml-auto justify-end" : "mr-auto justify-start"
-                    }`}>
+                  <div
+                    className={`flex flex-wrap gap-1 max-w-[85%] ${
+                      message.role === "user"
+                        ? "ml-auto justify-end"
+                        : "mr-auto justify-start"
+                    }`}
+                  >
                     {message.imageUrls.map((imageUrl, imgIndex) => (
-                      <div key={imgIndex} className={`rounded-lg overflow-hidden inline-block ${
-                        message.role === "user" ? "ml-1" : "mr-1"
-                      }`}>
+                      <div
+                        key={imgIndex}
+                        className={`rounded-lg overflow-hidden inline-block ${
+                          message.role === "user" ? "ml-1" : "mr-1"
+                        }`}
+                      >
                         <img
                           src={
                             imageUrl && imageUrl.startsWith("data:")
                               ? imageUrl
                               : imageUrl && imageUrl.startsWith("http")
                                 ? imageUrl // Direct URL (like Cloudinary)
-                                : imageUrl ? `https://api.openai.com/v1/files/${imageUrl}/content` : '' // OpenAI file reference
+                                : imageUrl
+                                  ? `https://api.openai.com/v1/files/${imageUrl}/content`
+                                  : "" // OpenAI file reference
                           }
                           alt={`Uploaded image ${imgIndex + 1}`}
                           className="max-h-[160px] max-w-[160px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
@@ -559,7 +604,7 @@ export default function ChatPage() {
                                 : imageUrl.startsWith("http")
                                   ? imageUrl
                                   : `https://api.openai.com/v1/files/${imageUrl}/content`;
-                              window.open(fullImageUrl, '_blank');
+                              window.open(fullImageUrl, "_blank");
                             }
                           }}
                           title="Click to view full-size image"
@@ -569,52 +614,56 @@ export default function ChatPage() {
                   </div>
                 )}
 
-                {((message.content.length > 0 && message.content[0]?.trim() !== "") || message.id === "processing") && (
+                {((message.content.length > 0 &&
+                  message.content[0]?.trim() !== "") ||
+                  message.id === "processing") && (
+                  // Message Bubble Component
+                  <>
+                    <div
+                      className={`rounded-2xl px-3 py-1.5 md:text-xl text-xl shadow-md inline-block relative ${
+                        message.role === "user"
+                          ? "bg-sky-500/90 text-white" // 🎨 softened blue for user
+                          : "bg-neutral-800 text-white rounded-xl shadow-md p-4 space-y-2 text-sm md:text-base" // 🎨 enhanced assistant styling
+                      }`}
+                    >
+                      {/* 💬 Enhanced Text Content with ReactMarkdown */}
+                      {message.content.map((text, i) => {
+                        if (message.role === "assistant") {
+                          return (
+                            <div
+                              key={i}
+                              className="prose prose-invert max-w-none"
+                            >
+                              <ReactMarkdown>{text}</ReactMarkdown>
+                            </div>
+                          );
+                        } else {
+                          // User messages - keep simple without prose styling
+                          return (
+                            <div key={i}>
+                              <ReactMarkdown>{text}</ReactMarkdown>
+                            </div>
+                          );
+                        }
+                      })}
 
-              // Message Bubble Component
-              <>
-                <div
-                  className={`rounded-2xl px-3 py-1.5 md:text-xl text-xl shadow-md inline-block relative ${
-                    message.role === "user"
-                      ? "bg-sky-500/90 text-white" // 🎨 softened blue for user
-                      : "bg-neutral-800 text-white rounded-xl shadow-md p-4 space-y-2 text-sm md:text-base" // 🎨 enhanced assistant styling
-                  }`}
-                >
-                  {/* 💬 Enhanced Text Content with ReactMarkdown */}
-                  {message.content.map((text, i) => {
-                    if (message.role === "assistant") {
-                      return (
-                        <div key={i} className="prose prose-invert max-w-none">
-                          <ReactMarkdown>{text}</ReactMarkdown>
+                      {/* ⏳ Loading State */}
+                      {message.id === "processing" && (
+                        <div className="flex items-center mt-1">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse mr-1"></div>{" "}
+                          {/* ⚫ animated pulse dot */}
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150 mr-1"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-300"></div>
                         </div>
-                      );
-                    } else {
-                      // User messages - keep simple without prose styling
-                      return (
-                        <div key={i}>
-                          <ReactMarkdown>{text}</ReactMarkdown>
-                        </div>
-                      );
-                    }
-                  })}
-
-                  {/* ⏳ Loading State */}
-                  {message.id === "processing" && (
-                    <div className="flex items-center mt-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse mr-1"></div> {/* ⚫ animated pulse dot */}
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150 mr-1"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-300"></div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </>
+                  </>
 
-              // 🔧 Style notes:
-              // px-5 = left/right padding
-              // py-4 = top/bottom padding
-              // text-2xl = large readable font
-              // shadow-md = bubble depth
-
+                  // 🔧 Style notes:
+                  // px-5 = left/right padding
+                  // py-4 = top/bottom padding
+                  // text-2xl = large readable font
+                  // shadow-md = bubble depth
                 )}
               </div>
             </div>
@@ -629,8 +678,13 @@ export default function ChatPage() {
         {tempImages.length > 0 && (
           <div className="mb-4">
             <div className="flex items-center mb-2">
-              <p className="text-sm text-gray-300">{tempImages.length} {tempImages.length === 1 ? 'image' : 'images'} ready to analyze</p>
-              <p className="text-xs text-gray-400 ml-2">Add a message or send as is. Click images to preview full size.</p>
+              <p className="text-sm text-gray-300">
+                {tempImages.length}{" "}
+                {tempImages.length === 1 ? "image" : "images"} ready to analyze
+              </p>
+              <p className="text-xs text-gray-400 ml-2">
+                Add a message or send as is. Click images to preview full size.
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               {tempImages.map((img, index) => (
@@ -639,7 +693,7 @@ export default function ChatPage() {
                     src={img}
                     alt={`Preview ${index + 1}`}
                     className="h-20 w-20 object-cover rounded-lg border border-gray-600 hover:opacity-90 transition-opacity"
-                    onClick={() => window.open(img, '_blank')}
+                    onClick={() => window.open(img, "_blank")}
                     title="Click to view full-size image"
                   />
                   <button
@@ -688,9 +742,9 @@ export default function ChatPage() {
                   sendMessage();
                 }
               }}
-              style={{ 
-                overflowY: 'hidden', // Changed from 'auto' for better auto-resizing
-                minHeight: '40px',
+              style={{
+                overflowY: "hidden", // Changed from 'auto' for better auto-resizing
+                minHeight: "40px",
               }}
               // Standard spelling attributes
               spellCheck="true"
@@ -708,7 +762,11 @@ export default function ChatPage() {
             variant="ghost"
             className="h-10 w-10 rounded-full bg-blue-500 text-white hover:bg-blue-600"
             onClick={sendMessage}
-            disabled={sendMessageMutation.isPending || isLoading || (!input.trim() && tempImages.length === 0)}
+            disabled={
+              sendMessageMutation.isPending ||
+              isLoading ||
+              (!input.trim() && tempImages.length === 0)
+            }
           >
             {sendMessageMutation.isPending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
