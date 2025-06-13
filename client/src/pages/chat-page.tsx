@@ -6,6 +6,7 @@ import { ImageUpload } from "@/components/ui/image-upload";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Loader2, Send,} from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   id: string;
@@ -579,185 +580,21 @@ export default function ChatPage() {
                       : "bg-neutral-800 text-white rounded-xl shadow-md p-4 space-y-2 text-sm md:text-base" // 🎨 enhanced assistant styling
                   }`}
                 >
-                  {/* 💬 Enhanced Text Content for Assistant Messages */}
+                  {/* 💬 Enhanced Text Content with ReactMarkdown */}
                   {message.content.map((text, i) => {
-                    // Check if this is nutrition/macro data
-                    const hasNutritionData = text.includes("Calories") || 
-                                           text.includes("Protein") || 
-                                           text.includes("Total Estimated Nutrition") ||
-                                           /\*\*[A-Za-z]+\*\*\s*\d+/g.test(text);
-
-                    // Check for meal titles with emojis
-                    const mealTitleMatch = text.match(/^([🍔🍕🥗🍎🥪🍫🥜🍖🥙🍗🌮🥐🍞🧀🥓🍳🥨🍌🍊🍇🥝🍓🥒🥕🌽🥦🍅🥬🥑🍆🥔🍠🥖🥯🧅🌶️🥒🫒🍄🥜🌰🥥🥭🍍🥥🍈🍉🫐🍒🍑🥤🧃☕🍵🥛🍯🧈🧂🥄🍴🥢🍽️].+?)[:.]?\s*/);
-                    
                     if (message.role === "assistant") {
-                      // Handle nutrition data formatting
-                      if (hasNutritionData) {
-                        return (
-                          <div key={i} className="space-y-3">
-                            {/* Check for meal title */}
-                            {mealTitleMatch && (
-                              <h3 className="font-semibold text-lg mb-3 text-blue-300">
-                                {mealTitleMatch[1]}
-                              </h3>
-                            )}
-                            
-                            {/* Check for "Total Estimated Nutrition" header */}
-                            {text.includes("Total Estimated Nutrition") && (
-                              <h4 className="font-semibold text-blue-400 mb-2 border-b border-gray-600 pb-1">
-                                📊 Total Estimated Nutrition
-                              </h4>
-                            )}
-                            
-                            {/* Extract and format macro data */}
-                            {(() => {
-                              const macroMatches = {
-                                calories: text.match(/\*\*Calories\*\*\s*(\d+)/i) || text.match(/Calories:\s*(\d+)/i),
-                                protein: text.match(/\*\*Protein\*\*\s*(\d+\.?\d*)g?/i) || text.match(/Protein:\s*(\d+\.?\d*)g?/i),  
-                                carbs: text.match(/\*\*Carbs\*\*\s*(\d+\.?\d*)g?/i) || text.match(/Carbs:\s*(\d+\.?\d*)g?/i),
-                                fat: text.match(/\*\*Fat\*\*\s*(\d+\.?\d*)g?/i) || text.match(/Fat:\s*(\d+\.?\d*)g?/i),
-                                fiber: text.match(/\*\*Fiber\*\*\s*(\d+\.?\d*)g?/i) || text.match(/Fiber:\s*(\d+\.?\d*)g?/i)
-                              };
-                              
-                              const hasMacros = Object.values(macroMatches).some(match => match);
-                              
-                              if (hasMacros) {
-                                return (
-                                  <div className="bg-neutral-700/50 rounded-lg p-3 mt-2">
-                                    <div className="grid grid-cols-2 gap-2 text-sm">
-                                      {macroMatches.calories && (
-                                        <div className="flex justify-between">
-                                          <span className="text-gray-300">Calories:</span>
-                                          <span className="font-semibold text-orange-400">{macroMatches.calories[1]}</span>
-                                        </div>
-                                      )}
-                                      {macroMatches.protein && (
-                                        <div className="flex justify-between">
-                                          <span className="text-gray-300">Protein:</span>  
-                                          <span className="font-semibold text-red-400">{macroMatches.protein[1]}g</span>
-                                        </div>
-                                      )}
-                                      {macroMatches.carbs && (
-                                        <div className="flex justify-between">
-                                          <span className="text-gray-300">Carbs:</span>
-                                          <span className="font-semibold text-blue-400">{macroMatches.carbs[1]}g</span>
-                                        </div>
-                                      )}
-                                      {macroMatches.fat && (
-                                        <div className="flex justify-between">
-                                          <span className="text-gray-300">Fat:</span>
-                                          <span className="font-semibold text-yellow-400">{macroMatches.fat[1]}g</span>
-                                        </div>
-                                      )}
-                                      {macroMatches.fiber && (
-                                        <div className="flex justify-between col-span-2">
-                                          <span className="text-gray-300">Fiber:</span>
-                                          <span className="font-semibold text-green-400">{macroMatches.fiber[1]}g</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              }
-                              
-                              // Regular text formatting for non-macro content
-                              const cleanText = text
-                                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-                                .replace(/\*([^*]+)\*/g, '<em>$1</em>');
-                              
-                              return (
-                                <div 
-                                  dangerouslySetInnerHTML={{ __html: cleanText }}
-                                  className="leading-relaxed"
-                                />
-                              );
-                            })()}
-                          </div>
-                        );
-                      }
-                      
-                      // Handle list items for assistant
-                      const hasListItems = text.includes("- ") || 
-                                          /\d+\.\s/.test(text) || 
-                                          text.includes("* ") ||
-                                          text.includes("• ");
-
-                      if (hasListItems) {
-                        const lines = text.split(/\n/);
-                        return (
-                          <div key={i} className="space-y-1">
-                            {lines.map((line, lineIndex) => {
-                              const isListItem = line.trim().startsWith("- ") || 
-                                                 /^\d+\.\s/.test(line.trim()) ||
-                                                 line.trim().startsWith("* ") ||
-                                                 line.trim().startsWith("• ");
-
-                              if (isListItem) {
-                                return (
-                                  <div key={lineIndex} className="flex items-start space-x-2">
-                                    <div className="text-blue-400 flex-shrink-0 mt-1">
-                                      {(line.trim().startsWith("- ") || line.trim().startsWith("* ") || line.trim().startsWith("• "))
-                                        ? "•"
-                                        : line.trim().match(/^\d+\./)?.[0]}
-                                    </div>
-                                    <div className="leading-relaxed">{line.replace(/^[-*•]\s|^\d+\.\s/, "")}</div>
-                                  </div>
-                                );
-                              } else {
-                                return <p key={lineIndex} className="leading-relaxed">{line}</p>;
-                              }
-                            })}
-                          </div>
-                        );
-                      } else {
-                        // Regular paragraph for assistant
-                        return (
-                          <p key={i} className="leading-relaxed">
-                            {text}
-                          </p>
-                        );
-                      }
+                      return (
+                        <div key={i} className="prose prose-invert max-w-none">
+                          <ReactMarkdown>{text}</ReactMarkdown>
+                        </div>
+                      );
                     } else {
-                      // User message formatting (keep simpler)
-                      const hasListItems = text.includes("- ") || 
-                                          /\d+\.\s/.test(text) || 
-                                          text.includes("* ") ||
-                                          text.includes("• ");
-
-                      if (hasListItems) {
-                        const lines = text.split(/\n/);
-                        return (
-                          <div key={i} className="mb-2">
-                            {lines.map((line, lineIndex) => {
-                              const isListItem = line.trim().startsWith("- ") || 
-                                                 /^\d+\.\s/.test(line.trim()) ||
-                                                 line.trim().startsWith("* ") ||
-                                                 line.trim().startsWith("• ");
-
-                              if (isListItem) {
-                                return (
-                                  <div key={lineIndex} className="flex mb-1">
-                                    <div className="mr-2 flex-shrink-0">
-                                      {(line.trim().startsWith("- ") || line.trim().startsWith("* ") || line.trim().startsWith("• "))
-                                        ? "•"
-                                        : line.trim().match(/^\d+\./)?.[0]}
-                                    </div>
-                                    <div>{line.replace(/^[-*•]\s|^\d+\.\s/, "")}</div>
-                                  </div>
-                                );
-                              } else {
-                                return <p key={lineIndex} className="mb-1">{line}</p>;
-                              }
-                            })}
-                          </div>
-                        );
-                      } else {
-                        return (
-                          <p key={i} className="mb-1">
-                            {text}
-                          </p>
-                        );
-                      }
+                      // User messages - keep simple without prose styling
+                      return (
+                        <div key={i}>
+                          <ReactMarkdown>{text}</ReactMarkdown>
+                        </div>
+                      );
                     }
                   })}
 
