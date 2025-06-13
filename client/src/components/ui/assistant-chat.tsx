@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "../../lib/queryClient";
-import { useToast } from "../../hooks/use-toast";
-import { ImageUpload } from "./image-upload";
-import { Button } from "./button";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { Button } from "@/components/ui/button";
 import { Loader2, Send } from "lucide-react";
 
 interface Message {

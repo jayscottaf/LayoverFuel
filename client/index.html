@@ -34,72 +34,7 @@
   </head>
   <body>
     <div id="root"></div>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script>
-      function App() {
-        return React.createElement('div', {
-          style: { 
-            minHeight: '100vh', 
-            backgroundColor: '#f9fafb', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center' 
-          }
-        }, React.createElement('div', {
-          style: { textAlign: 'center' }
-        }, [
-          React.createElement('h1', { 
-            key: 'title',
-            style: { 
-              fontSize: '2.5rem', 
-              fontWeight: 'bold', 
-              color: '#111827', 
-              marginBottom: '1rem' 
-            } 
-          }, 'Layover Fuel'),
-          React.createElement('p', { 
-            key: 'subtitle',
-            style: { 
-              fontSize: '1.25rem', 
-              color: '#6b7280', 
-              marginBottom: '2rem' 
-            } 
-          }, 'Your fitness companion for travelers'),
-          React.createElement('div', {
-            key: 'buttons',
-            style: { display: 'flex', gap: '1rem', justifyContent: 'center' }
-          }, [
-            React.createElement('a', {
-              key: 'chat',
-              href: '/api/dashboard',
-              style: {
-                backgroundColor: '#2563eb',
-                color: 'white',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '0.5rem',
-                textDecoration: 'none',
-                fontWeight: '500'
-              }
-            }, 'Start Chat'),
-            React.createElement('a', {
-              key: 'dashboard',
-              href: '/api/dashboard',
-              style: {
-                backgroundColor: '#6b7280',
-                color: 'white',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '0.5rem',
-                textDecoration: 'none',
-                fontWeight: '500'
-              }
-            }, 'Dashboard')
-          ])
-        ]));
-      }
-      
-      ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
-    </script>
+    <script type="module" src="/src/main.tsx"></script>
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
   </body>
 </html>

@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Button } from "./button";
+import { Button } from "@/components/ui/button";
 import { MessageSquare, ArrowLeft } from "lucide-react";
 
 export default function DemoPage() {

@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { DashboardHeader } from "../dashboard/DashboardHeader";
-import { Sidebar } from "../dashboard/Sidebar";
-import { MobileNavigation } from "../dashboard/MobileNavigation";
-import { Button } from "./button";
-import { Input } from "./input";
-import { Heading } from "./heading";
-import { apiRequest } from "../../lib/queryClient";
-import { useToast } from "../../hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./form";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { Sidebar } from "@/components/dashboard/Sidebar";
+import { MobileNavigation } from "@/components/dashboard/MobileNavigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Heading } from "@/components/ui/heading";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Card, CardContent, CardHeader, CardTitle } from "./card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
-import { calculateTDEE } from "../../lib/utils/tdee-calculator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { calculateTDEE } from "@/lib/utils/tdee-calculator";
 
 const profileSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),

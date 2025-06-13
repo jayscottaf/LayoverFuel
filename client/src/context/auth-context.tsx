@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { apiRequest } from "../../lib/queryClient";
-import { useToast } from "../../hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   isAuthenticated: boolean;

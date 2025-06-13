@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { OnboardingSidebar } from "./OnboardingSidebar";
 import { OnboardingChat } from "./OnboardingChat";
-import { apiRequest } from "../../lib/queryClient";
-import { useToast } from "../../hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export function OnboardingView() {
   const [initialQuestion, setInitialQuestion] = useState<string>("");

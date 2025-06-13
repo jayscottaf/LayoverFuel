@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ChatBubble } from "./ChatBubble";
-import { apiRequest } from "../../lib/queryClient";
-import { useToast } from "../../hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface OnboardingChatProps {
   initialQuestion: string;

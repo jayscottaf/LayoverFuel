@@ -1,4 +1,4 @@
-import { Dashboard, DashboardData } from "../dashboard/Dashboard";
+import { Dashboard, DashboardData } from "@/components/dashboard/Dashboard";
 
 interface DashboardPageProps {
   demoData?: DashboardData;

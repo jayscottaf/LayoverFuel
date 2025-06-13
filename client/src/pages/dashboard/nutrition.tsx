@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { DashboardHeader } from "../dashboard/DashboardHeader";
-import { Sidebar } from "../dashboard/Sidebar";
-import { MobileNavigation } from "../dashboard/MobileNavigation";
-import { MacroDistributionChart } from "../dashboard/MacroDistributionChart";
-import { Button } from "./button";
-import { Input } from "./input";
-import { Heading } from "./heading";
-import { apiRequest } from "../../lib/queryClient";
-import { useToast } from "../../hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./form";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { Sidebar } from "@/components/dashboard/Sidebar";
+import { MobileNavigation } from "@/components/dashboard/MobileNavigation";
+import { MacroDistributionChart } from "@/components/dashboard/MacroDistributionChart";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Heading } from "@/components/ui/heading";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Card, CardContent, CardHeader, CardTitle } from "./card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const nutritionSchema = z.object({
   calories: z.string().transform(v => Number(v)).refine(v => !isNaN(v) && v >= 0, {
