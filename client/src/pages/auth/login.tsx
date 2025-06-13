@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { AuthLayout } from "@/components/layouts/AuthLayout";
+import { AuthLayout } from "../layouts/AuthLayout";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/auth-context";
+import { Button } from "./button";
+import { Input } from "./input";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./form";
+import { useToast } from "../../hooks/use-toast";
+import { useAuth } from "../../context/auth-context";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),

@@ -9,7 +9,7 @@ import { DailyPlanCard } from "./DailyPlanCard";
 import { DailyCheckInCard } from "./DailyCheckInCard";
 import { MobileNavigation } from "./MobileNavigation";
 import { Heading } from "../ui/heading";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 
 export interface DashboardData {
   user: {
