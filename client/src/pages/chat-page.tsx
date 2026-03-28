@@ -341,7 +341,7 @@ export default function ChatPage() {
     }
   };
 
-  const sendMessage = (text?: string) => {
+  const sendMessage = async (text?: string) => {
     const msg = text ?? input;
     if (!msg.trim() && tempImages.length === 0) return;
     const currentInput = msg.trim();
@@ -352,29 +352,25 @@ export default function ChatPage() {
     setInlineLog(null);
     setInlineLogExpanded(false);
 
-    // Path A: Photo-only — structured analysis, no chat thread
+    // Path A: Photo-only — bypass chat UI entirely; show only analysis card
     if (currentImages.length > 0 && !currentInput) {
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(), role: "user", content: [],
-        imageUrls: currentImages, createdAt: Math.floor(Date.now() / 1000),
-      }]);
       setAnalysisLoading(true);
       setPendingLog(null);
-      runMealAnalysis(currentImages[0]).then(log => {
-        if (log) {
-          setPendingLog(log);
-        } else {
-          toast({
-            title: "Analysis failed",
-            description: "Couldn't identify this meal. Add a text question to chat instead.",
-            variant: "destructive",
-          });
-        }
-      }).finally(() => setAnalysisLoading(false));
+      const log = await runMealAnalysis(currentImages[0]);
+      setAnalysisLoading(false);
+      if (log) {
+        setPendingLog(log);
+      } else {
+        toast({
+          title: "Analysis failed",
+          description: "Couldn't identify this meal. Add a text question to chat instead.",
+          variant: "destructive",
+        });
+      }
       return;
     }
 
-    // Path B: Text (+ optional photo) — conversational chat + parallel silent analysis
+    // Path B: Text (+ optional photo) — conversational chat + gated inline log chip
     setMessages(prev => [
       ...prev,
       {
@@ -386,15 +382,22 @@ export default function ChatPage() {
       { id: "processing", role: "assistant", content: ["Thinking..."] },
     ]);
 
-    sendMessageMutation.mutate({ message: currentInput, imageDataArray: currentImages.length > 0 ? currentImages : undefined });
-
     if (currentImages.length > 0) {
-      runMealAnalysis(currentImages[0]).then(log => {
+      // Wait for BOTH chat + analysis to complete before showing the chip
+      try {
+        const [, log] = await Promise.all([
+          sendMessageMutation.mutateAsync({ message: currentInput, imageDataArray: currentImages }),
+          runMealAnalysis(currentImages[0]),
+        ]);
         if (log) {
           setInlineLog(log);
           setInlineLogExpanded(false);
         }
-      });
+      } catch {
+        // sendMessageMutation.onError already shows a toast; analysis errors are swallowed silently
+      }
+    } else {
+      sendMessageMutation.mutate({ message: currentInput });
     }
   };
 
