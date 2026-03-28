@@ -55,6 +55,7 @@ export const healthLogs = pgTable("health_logs", {
   steps: integer("steps"),
   distanceWalked: real("distance_walked"),
   activeEnergy: integer("active_energy"),
+  water: integer("water"),
   notes: text("notes"),
 });
 

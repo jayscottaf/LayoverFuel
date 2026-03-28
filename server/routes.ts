@@ -372,8 +372,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           proteinProgress,
           currentSteps: healthLog?.steps || 0,
           stepsProgress: healthLog?.steps ? Math.round((healthLog.steps / 10000) * 100) : 0,
-          water: 0, // Would need to track this separately
-          waterProgress: 0,
+          water: healthLog?.water || 0,
+          waterProgress: healthLog?.water ? Math.round((healthLog.water / 8) * 100) : 0,
         },
         dailyPlan,
         healthLog,
@@ -382,6 +382,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Dashboard error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Water tracking shortcut
+  app.post("/api/logs/water", async (req: Request, res: Response) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const { glasses } = req.body;
+      const today = new Date();
+      const existingLog = await storage.getHealthLogByDate(req.session.userId, today);
+      const todayStr = today.toISOString().split('T')[0];
+      let healthLog;
+      if (existingLog) {
+        healthLog = await storage.updateHealthLog(existingLog.id, { water: glasses });
+      } else {
+        healthLog = await storage.createHealthLog({ date: todayStr, userId: req.session.userId, water: glasses });
+      }
+      res.status(200).json(healthLog);
+    } catch (error) {
       res.status(500).json({ message: "Server error" });
     }
   });
