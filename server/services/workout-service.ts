@@ -41,7 +41,7 @@ export async function generateWorkoutPlan(user: User): Promise<WorkoutPlan> {
       
       Fitness Goal: ${user.fitnessGoal} (${user.fitnessGoal === 'shred' ? 'fat loss' : 'maintenance/muscle retention'})
       Activity Level: ${user.activityLevel}
-      Gym Memberships: ${user.gymMemberships?.length > 0 ? user.gymMemberships.join(', ') : 'None'}
+      Gym Memberships: ${(user.gymMemberships?.length ?? 0) > 0 ? user.gymMemberships!.join(', ') : 'None'}
       Max Travel Time: ${user.maxCommuteMinutes} minutes
       
       Create a workout plan that:
@@ -88,7 +88,7 @@ export async function generateWorkoutPlan(user: User): Promise<WorkoutPlan> {
       response_format: { type: "json_object" },
     });
 
-    const workoutPlan = JSON.parse(chatResponse.choices[0].message.content);
+    const workoutPlan = JSON.parse(chatResponse.choices[0].message.content ?? '{}');
     return workoutPlan as WorkoutPlan;
   } catch (error) {
     console.error("Error generating workout plan:", error);

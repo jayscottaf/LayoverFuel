@@ -26,7 +26,7 @@ const workoutSchema = z.object({
   notes: z.string().optional(),
 });
 
-type WorkoutFormValues = z.infer<typeof workoutSchema>;
+type WorkoutFormValues = z.input<typeof workoutSchema>;
 
 export default function WorkoutPage() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -34,7 +34,7 @@ export default function WorkoutPage() {
   const queryClient = useQueryClient();
 
   // Fetch dashboard data to get current workout plan
-  const { data: dashboardData, isLoading } = useQuery({
+  const { data: dashboardData, isLoading } = useQuery<any>({
     queryKey: ['/api/dashboard'],
   });
 
@@ -177,14 +177,14 @@ export default function WorkoutPage() {
                     <div className="mt-4 border-t pt-4">
                       <h4 className="font-medium mb-2">Workout Sections:</h4>
                       <div className="space-y-3">
-                        {dashboardData.dailyPlan.workout.sections.map((section, i) => (
+                        {dashboardData.dailyPlan.workout.sections.map((section: any, i: number) => (
                           <div key={i} className="bg-gray-50 p-3 rounded-lg">
                             <div className="flex justify-between">
                               <span className="font-medium">{section.name}</span>
                               <span className="text-sm text-gray-500">{section.duration}</span>
                             </div>
                             <ul className="mt-1 text-sm text-gray-600">
-                              {section.exercises.map((exercise, j) => (
+                              {section.exercises.map((exercise: any, j: number) => (
                                 <li key={j}>
                                   {exercise.sets} x {exercise.reps} {exercise.name}
                                 </li>

@@ -289,7 +289,7 @@ export function DailyPlanCard({ plan }: DailyPlanCardProps) {
                           <svg 
                             key={i}
                             xmlns="http://www.w3.org/2000/svg" 
-                            className={`h-4 w-4 ${i < Math.floor(plan.workout.gymRecommendation.rating) ? "text-yellow-400" : "text-gray-300"}`} 
+                            className={`h-4 w-4 ${i < Math.floor(plan.workout.gymRecommendation!.rating) ? "text-yellow-400" : "text-gray-300"}`} 
                             viewBox="0 0 20 20" 
                             fill="currentColor"
                           >

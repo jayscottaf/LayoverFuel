@@ -38,7 +38,7 @@ export async function generateMealPlan(
       Generate a travel-friendly meal plan for someone staying at a hotel with the following details:
       
       Fitness Goal: ${user.fitnessGoal} (${user.fitnessGoal === 'shred' ? 'fat loss' : 'maintenance/muscle retention'})
-      Dietary Restrictions: ${user.dietaryRestrictions?.length > 0 ? user.dietaryRestrictions.join(', ') : 'None'}
+      Dietary Restrictions: ${(user.dietaryRestrictions?.length ?? 0) > 0 ? user.dietaryRestrictions!.join(', ') : 'None'}
       
       Daily Targets:
       - Calories: ${calorieTarget} kcal
@@ -96,7 +96,7 @@ export async function generateMealPlan(
       response_format: { type: "json_object" },
     });
 
-    const mealPlan = JSON.parse(chatResponse.choices[0].message.content);
+    const mealPlan = JSON.parse(chatResponse.choices[0].message.content ?? '{}');
     return mealPlan as MealPlan;
   } catch (error) {
     console.error("Error generating meal plan:", error);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Sidebar } from "@/components/dashboard/Sidebar";
@@ -42,7 +42,7 @@ export default function NutritionPage() {
   const queryClient = useQueryClient();
 
   // Fetch dashboard data to get current nutrition logs and targets
-  const { data: dashboardData, isLoading } = useQuery({
+  const { data: dashboardData, isLoading } = useQuery<any>({
     queryKey: ['/api/dashboard'],
   });
 

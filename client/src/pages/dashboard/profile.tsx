@@ -37,7 +37,7 @@ const profileSchema = z.object({
   gymMemberships: z.string().optional(),
 });
 
-type ProfileFormValues = z.infer<typeof profileSchema>;
+type ProfileFormValues = z.input<typeof profileSchema>;
 
 export default function ProfilePage() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -46,7 +46,7 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
 
   // Fetch user profile data
-  const { data: userData, isLoading } = useQuery({
+  const { data: userData, isLoading } = useQuery<any>({
     queryKey: ['/api/user/profile'],
   });
 
@@ -106,8 +106,8 @@ export default function ProfilePage() {
         if (age > 0 && heightCm > 0 && weightKg > 0 && gender && activityLevel) {
           const tdee = calculateTDEE({
             age,
-            heightCm,
-            weightKg,
+            height: heightCm,
+            weight: weightKg,
             gender,
             activityLevel
           });
@@ -229,7 +229,7 @@ export default function ProfilePage() {
                     <div className="flex items-center justify-center mb-6">
                       <div className="w-24 h-24 rounded-full bg-primary-100 flex items-center justify-center">
                         <span className="text-primary-700 font-bold text-2xl">
-                          {userData.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
+                          {userData.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?'}
                         </span>
                       </div>
                     </div>

@@ -104,7 +104,7 @@ export async function processOnboardingMessage(
           response_format: { type: "json_object" },
         });
 
-        const extractedData = JSON.parse(chatResponse.choices[0].message.content);
+        const extractedData = JSON.parse(chatResponse.choices[0].message.content ?? '{}');
         response.value = {
           age: extractedData.age,
           heightCm: extractedData.heightCm,
@@ -153,7 +153,7 @@ export async function processOnboardingMessage(
             messages: [{role: "user", content: promptText}],
           });
 
-          const result = chatResponse.choices[0].message.content.trim().toLowerCase();
+          const result = (chatResponse.choices[0].message.content ?? '').trim().toLowerCase();
           if (result === "shred" || result === "sustain") {
             response.value = result;
           } else {
@@ -188,7 +188,7 @@ export async function processOnboardingMessage(
             messages: [{role: "user", content: promptText}],
           });
 
-          const result = chatResponse.choices[0].message.content.trim().toLowerCase();
+          const result = (chatResponse.choices[0].message.content ?? '').trim().toLowerCase();
           if (["lightly_active", "moderate", "very_active"].includes(result)) {
             response.value = result;
           } else {
@@ -216,7 +216,7 @@ export async function processOnboardingMessage(
           response_format: { type: "json_object" },
         });
 
-        const parsed = JSON.parse(chatResponse.choices[0].message.content);
+        const parsed = JSON.parse(chatResponse.choices[0].message.content ?? '[]');
         response.value = Array.isArray(parsed) ? parsed : [];
       } catch (error) {
         response.value = [];
@@ -239,7 +239,7 @@ export async function processOnboardingMessage(
           response_format: { type: "json_object" },
         });
 
-        const parsed = JSON.parse(chatResponse.choices[0].message.content);
+        const parsed = JSON.parse(chatResponse.choices[0].message.content ?? '[]');
         response.value = Array.isArray(parsed) ? parsed : [];
       } catch (error) {
         response.value = [];
@@ -307,8 +307,8 @@ async function generateOnboardingCompletionMessage(userData: User): Promise<stri
       
       Name: ${userData.name}
       Age: ${userData.age}
-      Height: ${userData.heightCm} cm
-      Weight: ${userData.weightKg} kg
+      Height: ${userData.height} cm
+      Weight: ${userData.weight} kg
       Gender: ${userData.gender}
       Fitness Goal: ${userData.fitnessGoal}
       Activity Level: ${userData.activityLevel}
@@ -326,7 +326,7 @@ async function generateOnboardingCompletionMessage(userData: User): Promise<stri
       messages: [{role: "user", content: promptText}],
     });
 
-    return chatResponse.choices[0].message.content;
+    return chatResponse.choices[0].message.content ?? "Thanks for completing your profile! Your dashboard is now ready with personalized recommendations tailored to your needs. Check it out to see your daily plan.";
   } catch (error) {
     console.error("Error generating completion message:", error);
     return "Thanks for completing your profile! Your dashboard is now ready with personalized recommendations tailored to your needs. Check it out to see your daily plan.";
@@ -351,7 +351,7 @@ export async function generateDailyMotivation(user: User): Promise<string> {
       messages: [{role: "user", content: promptText}],
     });
 
-    return chatResponse.choices[0].message.content;
+    return chatResponse.choices[0].message.content ?? "Stay consistent with your routine even when traveling - every small workout counts toward your goals!";
   } catch (error) {
     console.error("Error generating daily motivation:", error);
     return "Stay consistent with your routine even when traveling - every small workout counts toward your goals!";
@@ -378,7 +378,7 @@ export async function processFeedback(feedback: string, user: User): Promise<str
       messages: [{role: "user", content: promptText}],
     });
 
-    return chatResponse.choices[0].message.content;
+    return chatResponse.choices[0].message.content ?? "Thanks for sharing! We'll take your feedback into account to adjust your plan. Keep up the good work!";
   } catch (error) {
     console.error("Error processing feedback:", error);
     return "Thanks for sharing! We'll take your feedback into account to adjust your plan. Keep up the good work!";
