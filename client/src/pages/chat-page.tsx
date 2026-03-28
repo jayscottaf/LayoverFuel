@@ -326,7 +326,6 @@ export default function ChatPage() {
   const runMealAnalysis = async (imageData: string): Promise<MealLog | null> => {
     try {
       const res = await apiRequest("POST", "/api/meal-analysis", { imageData });
-      if (!res.ok) return null;
       const data: MealAnalysisApiResponse = await res.json();
       if (!data.result) return null;
       const r = data.result;
