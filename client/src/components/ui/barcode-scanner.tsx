@@ -38,18 +38,19 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
+  // Effect only depends on scanKey — NOT on `scanning`.
+  // This is intentional: setScanning(false) is called inside the decode
+  // callback, but that state change must NOT trigger effect cleanup, because
+  // the async barcode lookup is still in flight at that moment. If cleanup ran,
+  // it would set `cancelled = true` and kill the lookup before it resolves.
+  // scanKey is incremented by tryAgain(), which is the only signal to restart.
   useEffect(() => {
-    if (!scanning) return;
-    // `cancelled` is ONLY set true on effect cleanup (unmount / scanKey change).
-    // It is NOT set in the decode callback, so async lookup handlers can still run
-    // after a barcode is detected.
     let cancelled = false;
     let localControls: { stop: () => void } | null = null;
     const codeReader = new BrowserMultiFormatReader();
 
     const lookupBarcode = (code: string) => {
-      setScanning(false);
-      setLookingUp(true);
+      // Camera has already been stopped; just run the network lookup
       apiRequest("GET", `/api/barcode/${encodeURIComponent(code)}`)
         .then(res => res.json())
         .then((data: BarcodeApiResponse) => {
@@ -73,8 +74,12 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
           videoRef.current,
           (result, _error, controls) => {
             if (cancelled || !result) return;
-            // Stop the camera but do NOT set cancelled — the lookup must still complete
             controls.stop();
+            // Flip UI to loading state synchronously, then start async lookup.
+            // setScanning(false) does NOT trigger this effect's cleanup because
+            // `scanning` is not in the dependency array.
+            setScanning(false);
+            setLookingUp(true);
             lookupBarcode(result.getText());
           }
         );
@@ -87,10 +92,11 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
     })();
 
     return () => {
+      // Only place `cancelled` is set — on effect cleanup (unmount or tryAgain)
       cancelled = true;
       localControls?.stop();
     };
-  }, [scanning, scanKey]);
+  }, [scanKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLog = async () => {
     if (!product) return;
@@ -119,7 +125,7 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
     setNotFound(false);
     setProduct(null);
     setScanning(true);
-    setScanKey(k => k + 1);
+    setScanKey(k => k + 1); // Triggers the effect to restart the camera
   };
 
   const openChat = () => {
@@ -177,7 +183,6 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
                   <div className="absolute top-0 right-0 w-7 h-7 border-t-2 border-r-2 border-indigo-400 rounded-tr" />
                   <div className="absolute bottom-0 left-0 w-7 h-7 border-b-2 border-l-2 border-indigo-400 rounded-bl" />
                   <div className="absolute bottom-0 right-0 w-7 h-7 border-b-2 border-r-2 border-indigo-400 rounded-br" />
-                  {/* Animated scan line */}
                   <div
                     className="absolute inset-x-2 h-px bg-indigo-400"
                     style={{ animation: "scanLine 1.8s ease-in-out infinite" }}
@@ -231,7 +236,6 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
         {/* Product found */}
         {product && !lookingUp && (
           <div className="w-full max-w-sm space-y-3">
-            {/* Product card */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
               <p className="text-xs text-indigo-400 font-semibold uppercase tracking-wider mb-2">
                 Product Found
@@ -259,7 +263,6 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
               </div>
             </div>
 
-            {/* Serving stepper */}
             <div className="bg-gray-900 rounded-2xl p-4 flex items-center justify-between">
               <div>
                 <p className="text-white text-sm font-medium">Servings</p>
@@ -282,7 +285,6 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
               </div>
             </div>
 
-            {/* Log button */}
             <button
               onClick={handleLog}
               disabled={isLogging}

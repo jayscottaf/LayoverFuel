@@ -849,6 +849,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  interface OFFNutriments {
+    "energy-kcal_serving"?: number;
+    "energy-kcal_100g"?: number;
+    "energy_serving"?: number;
+    "energy_100g"?: number;
+    "proteins_serving"?: number;
+    "proteins_100g"?: number;
+    "carbohydrates_serving"?: number;
+    "carbohydrates_100g"?: number;
+    "fat_serving"?: number;
+    "fat_100g"?: number;
+  }
+  interface OFFResponse {
+    status: number;
+    product?: {
+      product_name?: string;
+      brands?: string;
+      serving_size?: string;
+      serving_quantity?: string | number;
+      nutriments?: OFFNutriments;
+    };
+  }
+
   // Barcode lookup — proxies Open Food Facts to avoid CORS issues
   app.get("/api/barcode/:code", async (req: Request, res: Response) => {
     try {
@@ -856,7 +879,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await fetch(
         `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,brands,serving_size,serving_quantity,nutriments`
       );
-      const data: any = await response.json();
+      const data = await response.json() as OFFResponse;
 
       if (data.status !== 1 || !data.product) {
         return res.status(200).json({ notFound: true });
@@ -864,7 +887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const p = data.product;
       const n = p.nutriments || {};
-      const servingQty = p.serving_quantity ? parseFloat(p.serving_quantity) : 100;
+      const servingQty = p.serving_quantity ? Number(p.serving_quantity) : 100;
       const scale = servingQty / 100;
 
       // Prefer per-serving values; fall back to per-100g × scale
