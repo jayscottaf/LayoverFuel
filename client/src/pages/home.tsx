@@ -171,7 +171,8 @@ function ShortcutEditor({ initial, onSave, onCancel }: ShortcutEditorProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={onCancel}>
       <div
-        className="w-full max-w-lg bg-gray-950 border border-gray-800 rounded-t-3xl p-5 pb-8 space-y-4"
+        className="w-full max-w-lg bg-gray-950 border border-gray-800 rounded-t-3xl p-5 pb-8 space-y-4 overflow-y-auto"
+        style={{ maxHeight: "90dvh" }}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">

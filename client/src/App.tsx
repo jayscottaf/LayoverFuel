@@ -8,6 +8,8 @@ import NotFound from "@/pages/not-found";
 import TourPage from "@/pages/tour";
 import ChatPage from "@/pages/chat-page";
 import HomePage from "@/pages/home";
+import LogPage from "@/pages/log";
+import ProfilePage from "@/pages/profile";
 import { MobileNavigation } from "@/components/dashboard/MobileNavigation";
 
 function Router() {
@@ -16,6 +18,8 @@ function Router() {
       <Switch>
         <Route path="/" component={HomePage} />
         <Route path="/chat" component={ChatPage} />
+        <Route path="/log" component={LogPage} />
+        <Route path="/profile" component={ProfilePage} />
         <Route path="/tour" component={TourPage} />
         <Route component={NotFound} />
       </Switch>
