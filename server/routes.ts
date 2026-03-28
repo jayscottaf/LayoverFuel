@@ -849,6 +849,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Barcode lookup — proxies Open Food Facts to avoid CORS issues
+  app.get("/api/barcode/:code", async (req: Request, res: Response) => {
+    try {
+      const { code } = req.params;
+      const response = await fetch(
+        `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,brands,serving_size,serving_quantity,nutriments`
+      );
+      const data: any = await response.json();
+
+      if (data.status !== 1 || !data.product) {
+        return res.status(200).json({ notFound: true });
+      }
+
+      const p = data.product;
+      const n = p.nutriments || {};
+      const servingQty = p.serving_quantity ? parseFloat(p.serving_quantity) : 100;
+      const scale = servingQty / 100;
+
+      // Prefer per-serving values; fall back to per-100g × scale
+      const calories =
+        n["energy-kcal_serving"] ??
+        (n["energy-kcal_100g"] !== undefined
+          ? n["energy-kcal_100g"] * scale
+          : n["energy_serving"] !== undefined
+          ? n["energy_serving"] / 4.184
+          : n["energy_100g"] !== undefined
+          ? (n["energy_100g"] / 4.184) * scale
+          : null);
+
+      const protein =
+        n["proteins_serving"] ??
+        (n["proteins_100g"] !== undefined ? n["proteins_100g"] * scale : null);
+
+      const carbs =
+        n["carbohydrates_serving"] ??
+        (n["carbohydrates_100g"] !== undefined ? n["carbohydrates_100g"] * scale : null);
+
+      const fat =
+        n["fat_serving"] ??
+        (n["fat_100g"] !== undefined ? n["fat_100g"] * scale : null);
+
+      if (calories === null || protein === null || carbs === null || fat === null) {
+        return res.status(200).json({ notFound: true });
+      }
+
+      return res.status(200).json({
+        name: p.product_name || "Unknown Product",
+        brand: p.brands || "",
+        servingSize: p.serving_size || `${Math.round(servingQty)}g`,
+        calories: Math.round(calories),
+        protein: Math.round(protein * 10) / 10,
+        carbs: Math.round(carbs * 10) / 10,
+        fat: Math.round(fat * 10) / 10,
+      });
+    } catch (error) {
+      console.error("Barcode lookup error:", error);
+      return res.status(200).json({ notFound: true });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

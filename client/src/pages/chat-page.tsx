@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/ui/image-upload";
-import { Send, X, Check, Pencil, RotateCcw, Zap } from "lucide-react";
+import { BarcodeScanner } from "@/components/ui/barcode-scanner";
+import { Send, X, Check, Pencil, RotateCcw, Zap, ScanBarcode } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface Message {
@@ -75,9 +76,11 @@ export default function ChatPage() {
   const [pendingLog, setPendingLog] = useState<PendingLog | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const quickPrompts = getQuickPrompts();
 
@@ -464,6 +467,14 @@ export default function ChatPage() {
             onImageSelect={(_, preview) => setTempImages(prev => [...prev, preview])}
             disabled={isLoading || sendMessageMutation.isPending}
           />
+          <button
+            onClick={() => setShowScanner(true)}
+            disabled={isLoading || sendMessageMutation.isPending}
+            className="shrink-0 p-1.5 text-gray-500 hover:text-indigo-400 disabled:opacity-30 transition-colors"
+            title="Scan barcode"
+          >
+            <ScanBarcode className="h-5 w-5" />
+          </button>
           <textarea
             ref={textareaRef}
             value={input}
@@ -488,6 +499,14 @@ export default function ChatPage() {
           </button>
         </div>
       </div>
+
+      {/* Barcode Scanner */}
+      {showScanner && (
+        <BarcodeScanner
+          onClose={() => setShowScanner(false)}
+          onLogSuccess={() => queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] })}
+        />
+      )}
     </div>
   );
 }

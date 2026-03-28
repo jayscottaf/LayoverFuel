@@ -26,6 +26,7 @@ A travel fitness companion app for frequent flyers. Helps users track nutrition,
 
 - **Home Screen**: Cal AI-style calorie ring (SVG progress), macro bars, 1-tap water tracking (8-glass grid), travel shortcuts (Airport Meal, Hotel Breakfast, Snap Meal), daily plan display
 - **AI Chat**: Full OpenAI Assistants thread, meal analysis, pending log confirmation card with edit/confirm/skip
+- **Barcode Scanner**: `BarcodeScanner` component (`client/src/components/ui/barcode-scanner.tsx`) — full-screen camera overlay using `@zxing/browser`, proxies Open Food Facts API via `GET /api/barcode/:code`, serving stepper, macros scale in real-time. Entry points: home page Quick Log row + chat input bar barcode icon.
 - **Travel Mode**: Session storage prefill — tapping a travel shortcut on home opens chat with pre-filled message
 - **Water Tracking**: Real-time tap-to-add on home screen, persisted to `health_logs.water` column
 - **Bottom Navigation**: Fixed 4-tab nav (Home / Chat / Log / Profile) with active state indicators
