@@ -27,7 +27,7 @@ function LoadingScreen() {
 
 function AuthedApp() {
   return (
-    <div className="relative bg-black" style={{ minHeight: "100dvh" }}>
+    <div className="bg-black flex flex-col" style={{ height: "100dvh" }}>
       <Switch>
         <Route path="/" component={HomePage} />
         <Route path="/chat" component={ChatPage} />
