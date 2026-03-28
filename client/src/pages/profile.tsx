@@ -190,8 +190,12 @@ export default function ProfilePage() {
   };
 
   const saveHeight = () => {
-    const ft = parseInt(tempFeet) || 0;
+    const ft = parseInt(tempFeet);
     const inches = parseInt(tempInches) || 0;
+    if (!ft || ft < 1 || ft > 8 || inches < 0 || inches > 11) {
+      toast({ title: "Invalid height", description: "Enter a valid height (e.g. 5 ft, 8 in).", variant: "destructive" });
+      return;
+    }
     mutation.mutate({ height: ftInToCm(ft, inches) });
   };
 
