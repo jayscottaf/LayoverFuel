@@ -238,7 +238,7 @@ export default function ChatPage() {
   const isEmpty = messages.length === 0 && !isLoading;
 
   return (
-    <div className="flex flex-col bg-black" style={{ height: "100dvh" }}>
+    <div className="flex flex-col bg-black flex-1 min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-black/80 backdrop-blur-md shrink-0">
         <div>
