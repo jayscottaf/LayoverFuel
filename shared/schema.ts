@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, real, date, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, real, date, json, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -18,6 +18,7 @@ export const users = pgTable("users", {
   tdee: integer("tdee"),
   dietaryRestrictions: text("dietary_restrictions").array(),
   assistantThreadId: text("assistant_thread_id"),
+  quickLogMode: boolean("quick_log_mode").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

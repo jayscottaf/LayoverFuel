@@ -328,7 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ message: "Unauthorized" });
     }
     try {
-      const allowed = ["name", "age", "height", "weight", "gender", "fitnessGoal", "activityLevel", "dietaryRestrictions", "gymMemberships", "maxCommuteMinutes"];
+      const allowed = ["name", "age", "height", "weight", "gender", "fitnessGoal", "activityLevel", "dietaryRestrictions", "gymMemberships", "maxCommuteMinutes", "quickLogMode"];
       const updates: Record<string, any> = {};
       for (const key of allowed) {
         if (req.body[key] !== undefined) updates[key] = req.body[key];

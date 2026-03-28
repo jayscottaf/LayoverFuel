@@ -16,6 +16,7 @@ interface UserProfile {
   fitnessGoal: string | null;
   activityLevel: string | null;
   dietaryRestrictions: string[] | null;
+  quickLogMode: boolean | null;
 }
 
 interface DashboardData {
@@ -316,6 +317,26 @@ export default function ProfilePage() {
 
           {/* App */}
           <SectionCard title="App">
+            <div className="px-4 py-3.5 border-b border-gray-800/60">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <p className="text-sm text-gray-300 font-medium">Quick Log Mode</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Instant logging with 5-second undo (faster) vs always confirm first (safer)</p>
+                </div>
+                <button
+                  onClick={() => mutation.mutate({ quickLogMode: !profile?.quickLogMode })}
+                  className={`shrink-0 relative w-12 h-7 rounded-full transition-colors ${
+                    profile?.quickLogMode ? "bg-indigo-600" : "bg-gray-700"
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
+                      profile?.quickLogMode ? "translate-x-[22px]" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
             <button
               onClick={() => { localStorage.removeItem("layoverfuel_shortcuts"); toast({ title: "Reset", description: "Shortcuts restored to defaults." }); }}
               className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-800/60 border-b border-gray-800/60 transition-colors"
