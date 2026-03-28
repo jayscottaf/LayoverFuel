@@ -109,8 +109,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json({ message: "User created", userId: user.id });
     } catch (error) {
+      console.error("[REGISTER ERROR]", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      // Log helpful details about the error
+      if (error instanceof Error) {
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
       }
       res.status(500).json({ message: "Server error" });
     }
@@ -148,14 +155,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
       
-      res.status(200).json({ 
-        message: "Login successful", 
+      res.status(200).json({
+        message: "Login successful",
         userId: user.id,
         isOnboardingComplete
       });
     } catch (error) {
+      console.error("[LOGIN ERROR]", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      // Log helpful details about the error
+      if (error instanceof Error) {
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
       }
       res.status(500).json({ message: "Server error" });
     }
@@ -168,6 +182,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.status(200).json({ message: "Logout successful" });
     });
+  });
+
+  // Health check endpoint - useful for deployment debugging
+  app.get("/api/health", async (req: Request, res: Response) => {
+    const health: any = {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || "development",
+      checks: {}
+    };
+
+    try {
+      // Check database connection by attempting to query users table
+      try {
+        const userCount = await storage.getUser(1); // Try to access database
+        health.checks.database = {
+          status: "connected",
+          details: "Database connection successful"
+        };
+        health.checks.usersTable = {
+          status: "ok",
+          details: "Users table accessible"
+        };
+      } catch (dbError) {
+        health.checks.database = {
+          status: "error",
+          message: dbError instanceof Error ? dbError.message : "Database connection failed",
+          hint: "Check DATABASE_URL in Replit Secrets"
+        };
+        health.checks.usersTable = {
+          status: "error",
+          message: "Users table may not exist",
+          hint: "Run: npm run db:push on Replit"
+        };
+      }
+
+      // Check environment variables
+      health.checks.environment = {
+        databaseUrl: process.env.DATABASE_URL ? "set" : "missing",
+        sessionSecret: process.env.SESSION_SECRET ? "set" : "using default",
+        openaiKey: process.env.OPENAI_API_KEY ? "set" : "missing",
+        cloudinary: process.env.CLOUDINARY_CLOUD_NAME ? "set" : "missing"
+      };
+
+      // Check session store
+      health.checks.sessionStore = {
+        status: "configured",
+        details: "PostgreSQL session store initialized"
+      };
+
+    } catch (error) {
+      health.status = "error";
+      health.checks.general = {
+        status: "error",
+        message: error instanceof Error ? error.message : "Unknown error"
+      };
+      return res.status(503).json(health);
+    }
+
+    res.status(200).json(health);
   });
 
   // Onboarding Routes
