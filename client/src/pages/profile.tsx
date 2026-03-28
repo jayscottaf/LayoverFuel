@@ -23,9 +23,9 @@ interface DashboardData {
 }
 
 function cmToFtIn(cm: number): { feet: number; inches: number } {
-  const totalInches = cm / 2.54;
-  const feet = Math.floor(totalInches / 12);
-  const inches = Math.round(totalInches % 12);
+  const roundedTotalInches = Math.round(cm / 2.54);
+  const feet = Math.floor(roundedTotalInches / 12);
+  const inches = roundedTotalInches % 12;
   return { feet, inches };
 }
 
