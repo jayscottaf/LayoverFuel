@@ -155,113 +155,10 @@ function WaterTracker({ glasses, onAdd, onRemove }: { glasses: number; onAdd: ()
   );
 }
 
-interface ShortcutEditorProps {
-  initial?: Partial<Shortcut>;
-  onSave: (s: Omit<Shortcut, "id">) => void;
-  onCancel: () => void;
-}
-
-function ShortcutEditor({ initial, onSave, onCancel }: ShortcutEditorProps) {
-  const [emoji, setEmoji] = useState(initial?.emoji ?? "✈️");
-  const [label, setLabel] = useState(initial?.label ?? "");
-  const [subtext, setSubtext] = useState(initial?.subtext ?? "");
-  const [message, setMessage] = useState(initial?.message ?? "");
-  const [showPicker, setShowPicker] = useState(false);
-
-  const canSave = label.trim() && message.trim();
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={onCancel}>
-      <div
-        className="w-full max-w-lg bg-gray-950 border border-gray-800 rounded-t-3xl p-5 pb-8 space-y-4 overflow-y-auto"
-        style={{ maxHeight: "90dvh" }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-white font-semibold">{initial?.label ? "Edit Shortcut" : "New Shortcut"}</h2>
-          <button onClick={onCancel} className="text-gray-500 hover:text-white">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Emoji picker */}
-        <div>
-          <label className="text-xs text-gray-400 mb-1.5 block">Icon</label>
-          <button
-            onClick={() => setShowPicker(p => !p)}
-            className="text-3xl bg-gray-900 rounded-xl p-2.5 border border-gray-700 hover:border-indigo-500/50 transition-colors"
-          >
-            {emoji}
-          </button>
-          {showPicker && (
-            <div className="mt-2 grid grid-cols-10 gap-1.5 bg-gray-900 rounded-2xl p-3 border border-gray-800">
-              {EMOJI_OPTIONS.map(e => (
-                <button
-                  key={e}
-                  onClick={() => { setEmoji(e); setShowPicker(false); }}
-                  className={`text-xl p-1 rounded-lg hover:bg-gray-700 transition-colors ${emoji === e ? "bg-indigo-600/30 ring-1 ring-indigo-500" : ""}`}
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Label */}
-        <div>
-          <label className="text-xs text-gray-400 mb-1.5 block">Label</label>
-          <input
-            className="w-full bg-gray-900 text-white text-sm rounded-xl px-3 py-2.5 border border-gray-700 focus:outline-none focus:border-indigo-500"
-            placeholder="e.g. Hotel Gym"
-            value={label}
-            onChange={e => setLabel(e.target.value)}
-            maxLength={20}
-          />
-        </div>
-
-        {/* Subtext */}
-        <div>
-          <label className="text-xs text-gray-400 mb-1.5 block">Short description</label>
-          <input
-            className="w-full bg-gray-900 text-white text-sm rounded-xl px-3 py-2.5 border border-gray-700 focus:outline-none focus:border-indigo-500"
-            placeholder="e.g. Quick workout"
-            value={subtext}
-            onChange={e => setSubtext(e.target.value)}
-            maxLength={30}
-          />
-        </div>
-
-        {/* Chat message */}
-        <div>
-          <label className="text-xs text-gray-400 mb-1.5 block">Chat message to send</label>
-          <textarea
-            className="w-full bg-gray-900 text-white text-sm rounded-xl px-3 py-2.5 border border-gray-700 focus:outline-none focus:border-indigo-500 resize-none"
-            placeholder="e.g. I just finished a hotel gym session. Can you log a 45-min moderate workout?"
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-            rows={3}
-          />
-        </div>
-
-        <button
-          disabled={!canSave}
-          onClick={() => onSave({ emoji, label: label.trim(), subtext: subtext.trim(), message: message.trim() })}
-          className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
-        >
-          <Check className="h-4 w-4" /> Save Shortcut
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function HomePage() {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const [shortcuts, setShortcuts] = useState<Shortcut[]>(loadShortcuts);
-  const [editMode, setEditMode] = useState(false);
-  const [editorTarget, setEditorTarget] = useState<Shortcut | null | "new">(null);
   const [showScanner, setShowScanner] = useState(false);
   const [showSnapToLog, setShowSnapToLog] = useState(false);
 
@@ -280,26 +177,6 @@ export default function HomePage() {
   const openChatWith = (message: string) => {
     sessionStorage.setItem("chatPrefill", message);
     navigate("/chat");
-  };
-
-  const updateShortcuts = (next: Shortcut[]) => {
-    setShortcuts(next);
-    saveShortcuts(next);
-  };
-
-  const removeShortcut = (id: string) => updateShortcuts(shortcuts.filter(s => s.id !== id));
-
-  const addShortcut = (data: Omit<Shortcut, "id">) => {
-    const next = [...shortcuts, { ...data, id: `custom_${Date.now()}` }];
-    updateShortcuts(next);
-    setEditorTarget(null);
-  };
-
-  const editShortcut = (updated: Omit<Shortcut, "id">) => {
-    if (!editorTarget || editorTarget === "new") return;
-    const next = shortcuts.map(s => s.id === editorTarget.id ? { ...s, ...updated } : s);
-    updateShortcuts(next);
-    setEditorTarget(null);
   };
 
   const greeting = () => {
@@ -343,116 +220,135 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Calorie Ring */}
-          <div className="bg-gray-900 rounded-3xl p-6 flex flex-col items-center gap-4">
-            <CalorieRing current={stats?.currentCalories ?? 0} target={macros?.targetCalories ?? stats?.tdee ?? 2000} />
-            <div className="flex gap-4 w-full">
+          {/* HERO: Quick Log */}
+          <button
+            onClick={() => setShowSnapToLog(true)}
+            className="w-full bg-gradient-to-br from-indigo-600 to-blue-600 rounded-3xl p-8 flex flex-col items-center justify-center gap-3 hover:from-indigo-500 hover:to-blue-500 active:scale-[0.98] transition-all shadow-lg shadow-indigo-500/20 border border-indigo-500/30"
+            style={{ minHeight: "200px" }}
+          >
+            <div className="bg-white/10 rounded-full p-6 backdrop-blur-sm">
+              <Camera className="h-12 w-12 text-white" />
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-white">Snap to Log</p>
+              <p className="text-indigo-200 text-sm mt-1">Take a photo to instantly log your meal</p>
+            </div>
+          </button>
+
+          {/* Compact Calorie Summary */}
+          <div className="bg-gray-900 rounded-3xl p-5">
+            {/* Calorie Ring - Smaller */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Today's Calories</p>
+                <p className="text-3xl font-bold text-white">
+                  {(stats?.currentCalories ?? 0).toLocaleString()}
+                  <span className="text-lg text-gray-500"> / {(macros?.targetCalories ?? stats?.tdee ?? 2000).toLocaleString()}</span>
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {Math.max((macros?.targetCalories ?? stats?.tdee ?? 2000) - (stats?.currentCalories ?? 0), 0)} remaining
+                </p>
+              </div>
+              <div className="relative flex items-center justify-center">
+                <svg width={80} height={80} className="-rotate-90">
+                  <circle cx={40} cy={40} r={35} fill="none" stroke="#1f2937" strokeWidth={6} />
+                  <circle
+                    cx={40} cy={40} r={35}
+                    fill="none" stroke="url(#ringGradSmall)" strokeWidth={6}
+                    strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 35}
+                    strokeDashoffset={2 * Math.PI * 35 * (1 - Math.min((stats?.currentCalories ?? 0) / Math.max(macros?.targetCalories ?? stats?.tdee ?? 2000, 1), 1))}
+                    style={{ transition: "stroke-dashoffset 0.6s ease" }}
+                  />
+                  <defs>
+                    <linearGradient id="ringGradSmall" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#3b82f6" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <span className="absolute text-xl font-bold text-white">
+                  {Math.round(((stats?.currentCalories ?? 0) / Math.max(macros?.targetCalories ?? stats?.tdee ?? 2000, 1)) * 100)}%
+                </span>
+              </div>
+            </div>
+
+            {/* Inline Macros */}
+            <div className="flex gap-3 mb-4">
               <MacroBar label="Protein" current={stats?.currentProtein ?? 0} target={macros?.protein ?? 150} color="bg-blue-500" />
               <MacroBar label="Carbs" current={data?.nutritionLog?.carbs ?? 0} target={macros?.carbs ?? 200} color="bg-emerald-500" />
               <MacroBar label="Fat" current={data?.nutritionLog?.fat ?? 0} target={macros?.fat ?? 65} color="bg-amber-500" />
             </div>
+
+            {/* Inline Water Tracker */}
+            <div className="pt-4 border-t border-gray-800">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Droplets className="h-4 w-4 text-cyan-400" />
+                  <span className="text-sm font-medium text-white">Water</span>
+                </div>
+                <span className="text-xs text-gray-400">{currentWater} / 8 glasses</span>
+              </div>
+              <div className="flex gap-1">
+                {Array.from({ length: 8 }, (_, i) => (
+                  <button
+                    key={i}
+                    onClick={i < currentWater ? handleRemoveWater : handleAddWater}
+                    className={`flex-1 h-7 rounded-lg transition-all ${
+                      i < currentWater ? "bg-cyan-500/80 hover:bg-cyan-400" : "bg-gray-800 hover:bg-gray-700 border border-gray-700"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Water Tracker */}
-          <WaterTracker glasses={currentWater} onAdd={handleAddWater} onRemove={handleRemoveWater} />
-
-          {/* Travel Quick-Log */}
+          {/* Quick Actions - Simplified */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Quick Log — Traveler Mode
+                Quick Actions
               </p>
-              <button
-                onClick={() => setEditMode(p => !p)}
-                className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${
-                  editMode ? "bg-indigo-600 text-white" : "text-indigo-400 hover:text-indigo-300"
-                }`}
-              >
-                {editMode ? (
-                  <><Check className="h-3 w-3" /> Done</>
-                ) : (
-                  <><Pencil className="h-3 w-3" /> Edit</>
-                )}
-              </button>
-            </div>
-
-            {/* Quick-log buttons — always visible, outside editable grid */}
-            <div className="flex gap-2 mb-2.5">
-              <button
-                onClick={() => setShowSnapToLog(true)}
-                className="flex-1 bg-indigo-600/10 border border-indigo-500/30 rounded-2xl p-3 flex items-center gap-3 hover:bg-indigo-600/20 active:scale-[0.98] transition-all"
-              >
-                <div className="bg-indigo-500/20 rounded-xl p-2 shrink-0">
-                  <Camera className="h-5 w-5 text-indigo-400" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-white">Snap to Log</p>
-                  <p className="text-xs text-gray-500">Photo meal analysis</p>
-                </div>
-              </button>
-              <button
-                onClick={() => setShowScanner(true)}
-                className="flex-1 bg-indigo-600/10 border border-indigo-500/30 rounded-2xl p-3 flex items-center gap-3 hover:bg-indigo-600/20 active:scale-[0.98] transition-all"
-              >
-                <div className="bg-indigo-500/20 rounded-xl p-2 shrink-0">
-                  <ScanBarcode className="h-5 w-5 text-indigo-400" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-white">Scan Barcode</p>
-                  <p className="text-xs text-gray-500">Packaged food</p>
-                </div>
-              </button>
-            </div>
-
-            {/* Shortcut grid — wraps naturally */}
-            <div className="grid grid-cols-3 gap-2">
-              {shortcuts.map(shortcut => (
-                <div key={shortcut.id} className="relative">
-                  <button
-                    onClick={() => {
-                      if (editMode) setEditorTarget(shortcut);
-                      else openChatWith(shortcut.message);
-                    }}
-                    className={`w-full bg-gray-900 rounded-2xl p-3 flex flex-col items-center gap-1.5 transition-all ${
-                      editMode
-                        ? "ring-1 ring-indigo-500/40 hover:ring-indigo-500 active:scale-95"
-                        : "hover:bg-gray-800 active:scale-95"
-                    }`}
-                  >
-                    <span className="text-2xl">{shortcut.emoji}</span>
-                    <span className="text-xs font-medium text-white leading-tight text-center">{shortcut.label}</span>
-                    {!editMode && (
-                      <span className="text-xs text-gray-500 text-center leading-tight">{shortcut.subtext}</span>
-                    )}
-                    {editMode && (
-                      <span className="text-xs text-indigo-400 flex items-center gap-0.5">
-                        <Pencil className="h-2.5 w-2.5" /> Edit
-                      </span>
-                    )}
-                  </button>
-
-                  {/* Remove button */}
-                  {editMode && (
-                    <button
-                      onClick={() => removeShortcut(shortcut.id)}
-                      className="absolute -top-1.5 -right-1.5 bg-red-600 hover:bg-red-500 rounded-full p-0.5 shadow-lg transition-colors z-10"
-                    >
-                      <X className="h-3.5 w-3.5 text-white" />
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              {/* Add new shortcut card */}
-              {editMode && (
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setEditorTarget("new")}
-                  className="bg-gray-900/50 border border-dashed border-gray-700 rounded-2xl p-3 flex flex-col items-center gap-1.5 hover:border-indigo-500/50 hover:bg-gray-900 transition-all active:scale-95"
+                  onClick={() => setShowScanner(true)}
+                  className="text-xs text-gray-400 hover:text-indigo-400 flex items-center gap-1"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center">
-                    <Plus className="h-4 w-4 text-gray-400" />
+                  <ScanBarcode className="h-3.5 w-3.5" />
+                  Barcode
+                </button>
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="text-xs text-gray-400 hover:text-indigo-400 flex items-center gap-1"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </button>
+              </div>
+            </div>
+
+            {/* Horizontal scrollable shortcuts */}
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+              {shortcuts.slice(0, 5).map(shortcut => (
+                <button
+                  key={shortcut.id}
+                  onClick={() => openChatWith(shortcut.message)}
+                  className="shrink-0 bg-gray-900 rounded-2xl px-4 py-3 flex items-center gap-3 hover:bg-gray-800 active:scale-95 transition-all min-w-[160px]"
+                >
+                  <span className="text-2xl">{shortcut.emoji}</span>
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-white leading-tight">{shortcut.label}</p>
+                    <p className="text-xs text-gray-500 leading-tight">{shortcut.subtext}</p>
                   </div>
-                  <span className="text-xs text-gray-500">Add new</span>
+                </button>
+              ))}
+              {shortcuts.length > 5 && (
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="shrink-0 bg-gray-900/50 border border-dashed border-gray-700 rounded-2xl px-4 py-3 flex items-center gap-2 hover:bg-gray-900 transition-all min-w-[120px]"
+                >
+                  <Plus className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-400">See all</span>
                 </button>
               )}
             </div>
@@ -526,15 +422,6 @@ export default function HomePage() {
           )}
         </div>
       </div>
-
-      {/* Shortcut Editor Modal */}
-      {editorTarget !== null && (
-        <ShortcutEditor
-          initial={editorTarget === "new" ? undefined : editorTarget}
-          onSave={editorTarget === "new" ? addShortcut : editShortcut}
-          onCancel={() => setEditorTarget(null)}
-        />
-      )}
 
       {/* Barcode Scanner */}
       {showScanner && (

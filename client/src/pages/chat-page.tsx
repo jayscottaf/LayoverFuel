@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { BarcodeScanner } from "@/components/ui/barcode-scanner";
-import { Send, X, Check, Pencil, RotateCcw, Zap, ScanBarcode, ChevronRight, Camera, Loader2 } from "lucide-react";
+import { Send, X, RotateCcw, Zap, ScanBarcode, Camera } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface Message {
@@ -15,62 +15,32 @@ interface Message {
   createdAt?: number;
 }
 
-interface MealLog {
-  description: string;
-  calories: number;
-  macros: { protein: number; carbs: number; fat: number };
-  image?: string;
-}
-
-interface MealAnalysisApiResponse {
-  message: string;
-  result: {
-    estimate: { calories: number; protein: number; carbs: number; fat: number };
-    foodItems: string[];
-    analysis: string;
-    suggestions: string;
-  };
-}
-
-interface DashboardStats {
-  stats: {
-    currentCalories: number;
-    currentProtein: number;
-    macros: { targetCalories: number; protein: number };
-  };
-}
-
 function getQuickPrompts(): string[] {
   const hour = new Date().getHours();
   if (hour >= 5 && hour < 11) return [
-    "Log my breakfast",
     "What should I eat before my flight?",
-    "Morning workout idea",
-    "How much protein do I need today?",
+    "Morning workout ideas?",
+    "Is this breakfast choice good?",
   ];
   if (hour >= 11 && hour < 14) return [
-    "Log my lunch",
-    "Best airport meal options",
-    "How am I doing on calories today?",
-    "Quick hotel room workout",
+    "Best airport meal options?",
+    "Quick hotel room workout?",
+    "Am I on track today?",
   ];
   if (hour >= 14 && hour < 18) return [
-    "Log a snack",
-    "Afternoon energy tips",
-    "Hotel gym workout plan",
-    "Am I on track for my goal?",
+    "Afternoon energy tips?",
+    "Hotel gym workout plan?",
+    "Healthy snack ideas?",
   ];
   if (hour >= 18 && hour < 22) return [
-    "Log my dinner",
-    "Summarize my day",
-    "How was my protein intake?",
-    "Healthy room service options",
+    "Healthy room service options?",
+    "How was my day?",
+    "Dinner recommendations?",
   ];
   return [
-    "Log a late meal",
     "How did I do today?",
-    "Tomorrow's nutrition plan",
-    "Recovery tips for travel",
+    "Tomorrow's nutrition plan?",
+    "Recovery tips for travel?",
   ];
 }
 
@@ -84,123 +54,12 @@ function getDateLabel(ts: number): string {
   return d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 }
 
-function MealLogCard({
-  log,
-  onLog,
-  onDismiss,
-  remainingCal,
-  remainingPro,
-  isLogging,
-}: {
-  log: MealLog;
-  onLog: (updated: MealLog) => void;
-  onDismiss: () => void;
-  remainingCal: number;
-  remainingPro: number;
-  isLogging: boolean;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [desc, setDesc] = useState(log.description);
-  const [macros, setMacros] = useState(log.macros);
-  const [cal, setCal] = useState(log.calories);
-
-  const current = editing ? { description: desc, calories: cal, macros } : log;
-
-  return (
-    <div className="bg-gray-900 border border-indigo-500/40 rounded-2xl p-4 w-full max-w-sm mx-auto">
-      <p className="text-xs text-indigo-400 font-semibold uppercase tracking-wider mb-2">Log this meal?</p>
-
-      {log.image && (
-        <img src={log.image} alt="Meal" className="w-full rounded-xl mb-3 max-h-40 object-cover" />
-      )}
-
-      {editing ? (
-        <div className="space-y-2">
-          <input
-            className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2 border border-gray-700 focus:outline-none focus:border-indigo-500"
-            value={desc}
-            onChange={e => setDesc(e.target.value)}
-            placeholder="Meal description"
-          />
-          <div className="grid grid-cols-4 gap-1.5">
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Cal</p>
-              <input
-                type="number"
-                className="w-full bg-gray-800 text-white text-xs rounded-xl px-2 py-1.5 border border-gray-700 focus:outline-none focus:border-indigo-500 text-center"
-                value={cal}
-                onChange={e => setCal(Number(e.target.value))}
-              />
-            </div>
-            {(["protein", "carbs", "fat"] as const).map(k => (
-              <div key={k}>
-                <p className="text-xs text-gray-500 mb-1 capitalize">{k}</p>
-                <input
-                  type="number"
-                  className="w-full bg-gray-800 text-white text-xs rounded-xl px-2 py-1.5 border border-gray-700 focus:outline-none focus:border-indigo-500 text-center"
-                  value={macros[k]}
-                  onChange={e => setMacros(prev => ({ ...prev, [k]: Number(e.target.value) }))}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div>
-          <p className="text-white font-medium text-sm">{log.description}</p>
-          <div className="flex gap-3 mt-1.5">
-            <span className="text-xs text-white font-semibold">{log.calories} cal</span>
-            <span className="text-xs text-gray-400">P: {log.macros.protein}g · C: {log.macros.carbs}g · F: {log.macros.fat}g</span>
-          </div>
-        </div>
-      )}
-
-      {/* Fits your day */}
-      {remainingCal > 0 && (
-        <div className="mt-2.5 pt-2.5 border-t border-gray-800 flex items-center justify-between">
-          <span className="text-xs text-gray-500">Remaining today</span>
-          <span className="text-xs font-medium text-gray-300">{remainingCal} cal · {remainingPro}g protein</span>
-        </div>
-      )}
-
-      <div className="flex gap-2 mt-3">
-        <button
-          onClick={() => setEditing(p => !p)}
-          className="flex items-center gap-1 flex-1 justify-center py-2 rounded-xl bg-gray-800 text-gray-300 text-sm hover:bg-gray-700 transition-colors"
-        >
-          <Pencil className="h-3.5 w-3.5" /> {editing ? "Done" : "Edit"}
-        </button>
-        <button
-          onClick={() => onLog(current)}
-          disabled={isLogging}
-          className="flex items-center gap-1 flex-1 justify-center py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition-colors"
-        >
-          {isLogging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-          Log it
-        </button>
-        <button
-          onClick={onDismiss}
-          className="flex items-center gap-1 flex-1 justify-center py-2 rounded-xl bg-gray-800 text-gray-400 text-sm hover:bg-gray-700 transition-colors"
-        >
-          <X className="h-3.5 w-3.5" /> Skip
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [tempImages, setTempImages] = useState<string[]>([]);
-
-  const [pendingLog, setPendingLog] = useState<MealLog | null>(null);
-  const [inlineLog, setInlineLog] = useState<MealLog | null>(null);
-  const [inlineLogExpanded, setInlineLogExpanded] = useState(false);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [isLogging, setIsLogging] = useState(false);
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -209,12 +68,6 @@ export default function ChatPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const quickPrompts = getQuickPrompts();
-
-  const { data: dashboard } = useQuery<DashboardStats>({ queryKey: ["/api/dashboard"] });
-  const targetCal = dashboard?.stats?.macros?.targetCalories ?? 0;
-  const targetPro = dashboard?.stats?.macros?.protein ?? 0;
-  const remainingCal = Math.max(targetCal - (dashboard?.stats?.currentCalories ?? 0), 0);
-  const remainingPro = Math.max(targetPro - (dashboard?.stats?.currentProtein ?? 0), 0);
 
   useEffect(() => {
     const prefill = sessionStorage.getItem("chatPrefill");
@@ -236,7 +89,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, pendingLog, inlineLog, analysisLoading]);
+  }, [messages]);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -267,8 +120,6 @@ export default function ChatPage() {
     setMessages([]);
     setThreadId(null);
     setShowClearConfirm(false);
-    setPendingLog(null);
-    setInlineLog(null);
     await createThread();
   };
 
@@ -323,23 +174,6 @@ export default function ChatPage() {
     },
   });
 
-  const runMealAnalysis = async (imageData: string): Promise<MealLog | null> => {
-    try {
-      const res = await apiRequest("POST", "/api/meal-analysis", { imageData });
-      const data: MealAnalysisApiResponse = await res.json();
-      if (!data.result) return null;
-      const r = data.result;
-      return {
-        description: r.foodItems?.length ? r.foodItems.join(", ") : "Detected meal",
-        calories: r.estimate.calories,
-        macros: { protein: r.estimate.protein, carbs: r.estimate.carbs, fat: r.estimate.fat },
-        image: imageData,
-      };
-    } catch {
-      return null;
-    }
-  };
-
   const sendMessage = async (text?: string) => {
     const msg = text ?? input;
     if (!msg.trim() && tempImages.length === 0) return;
@@ -348,78 +182,25 @@ export default function ChatPage() {
 
     setInput("");
     setTempImages([]);
-    setInlineLog(null);
-    setInlineLogExpanded(false);
 
-    // Path A: Photo-only — bypass chat UI entirely; show only analysis card
-    if (currentImages.length > 0 && !currentInput) {
-      setAnalysisLoading(true);
-      setPendingLog(null);
-      const log = await runMealAnalysis(currentImages[0]);
-      setAnalysisLoading(false);
-      if (log) {
-        setPendingLog(log);
-      } else {
-        toast({
-          title: "Analysis failed",
-          description: "Couldn't identify this meal. Add a text question to chat instead.",
-          variant: "destructive",
-        });
-      }
-      return;
-    }
+    // Add helper text for photo-only messages
+    const messageText = currentInput || (currentImages.length > 0 ? "Can you analyze this meal for me?" : "");
+    if (!messageText) return;
 
-    // Path B: Text (+ optional photo) — conversational chat + gated inline log chip
+    // All messages go through conversational chat (no bypass)
     setMessages(prev => [
       ...prev,
       {
         id: Date.now().toString(), role: "user",
-        content: currentInput ? [currentInput] : [],
+        content: [messageText],
         imageUrls: currentImages.length > 0 ? currentImages : undefined,
         createdAt: Math.floor(Date.now() / 1000),
       },
       { id: "processing", role: "assistant", content: ["Thinking..."] },
     ]);
 
-    if (currentImages.length > 0) {
-      // Wait for BOTH chat + analysis to complete before showing the chip
-      try {
-        const [, log] = await Promise.all([
-          sendMessageMutation.mutateAsync({ message: currentInput, imageDataArray: currentImages }),
-          runMealAnalysis(currentImages[0]),
-        ]);
-        if (log) {
-          setInlineLog(log);
-          setInlineLogExpanded(false);
-        }
-      } catch {
-        // sendMessageMutation.onError already shows a toast; analysis errors are swallowed silently
-      }
-    } else {
-      sendMessageMutation.mutate({ message: currentInput });
-    }
-  };
-
-  const logMeal = async (log: MealLog, onSuccess: () => void) => {
-    setIsLogging(true);
-    try {
-      await apiRequest("POST", "/api/logs/nutrition", {
-        date: new Date().toISOString().slice(0, 10),
-        calories: log.calories,
-        protein: log.macros.protein,
-        carbs: log.macros.carbs,
-        fat: log.macros.fat,
-        mealStyle: log.description,
-        notes: "Photo analysis",
-      });
-      await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      toast({ title: "Logged!", description: `${log.description} added to today's log.` });
-      onSuccess();
-    } catch {
-      toast({ title: "Error", description: "Failed to log. Please try again.", variant: "destructive" });
-    } finally {
-      setIsLogging(false);
-    }
+    // Send to assistant (with or without images)
+    sendMessageMutation.mutate({ message: messageText, imageDataArray: currentImages.length > 0 ? currentImages : undefined });
   };
 
   const messagesWithSeparators: Array<
@@ -438,7 +219,7 @@ export default function ChatPage() {
     messagesWithSeparators.push({ type: "message", message, index });
   });
 
-  const isEmpty = messages.length === 0 && !isLoading && !analysisLoading;
+  const isEmpty = messages.length === 0 && !isLoading;
 
   return (
     <div className="flex flex-col bg-black flex-1 min-h-0">
@@ -491,8 +272,8 @@ export default function ChatPage() {
                 <Zap className="h-8 w-8 text-indigo-400" />
               </div>
               <h2 className="text-white font-semibold text-lg mb-1">Layover Fuel AI</h2>
-              <p className="text-gray-400 text-sm max-w-xs">Log meals, get workout ideas, and stay on track — no matter where you're flying.</p>
-              <p className="text-gray-600 text-xs mt-2">Tip: send a food photo with no text to instantly log it.</p>
+              <p className="text-gray-400 text-sm max-w-xs">Your AI fitness coach for life on the road. Ask questions, get advice, and stay on track.</p>
+              <p className="text-gray-600 text-xs mt-2">Tip: Send photos with questions to get personalized meal advice.</p>
             </div>
             <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
               {quickPrompts.map((prompt) => (
@@ -561,56 +342,6 @@ export default function ChatPage() {
           );
         })}
 
-        {/* Analysis loading state (photo-only path) */}
-        {analysisLoading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-900 rounded-2xl px-4 py-3 flex items-center gap-3 max-w-[80%]">
-              <Loader2 className="h-4 w-4 text-indigo-400 animate-spin shrink-0" />
-              <p className="text-sm text-gray-300">Analysing your meal...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Full log card (photo-only path) */}
-        {pendingLog && !analysisLoading && (
-          <MealLogCard
-            log={pendingLog}
-            onLog={updated => logMeal(updated, () => { setPendingLog(null); })}
-            onDismiss={() => setPendingLog(null)}
-            remainingCal={remainingCal}
-            remainingPro={remainingPro}
-            isLogging={isLogging}
-          />
-        )}
-
-        {/* Inline log chip (photo + text path) */}
-        {inlineLog && !pendingLog && (
-          inlineLogExpanded ? (
-            <MealLogCard
-              log={inlineLog}
-              onLog={updated => logMeal(updated, () => { setInlineLog(null); setInlineLogExpanded(false); })}
-              onDismiss={() => { setInlineLog(null); setInlineLogExpanded(false); }}
-              remainingCal={remainingCal}
-              remainingPro={remainingPro}
-              isLogging={isLogging}
-            />
-          ) : (
-            <div
-              className="flex items-center gap-3 bg-gray-900 border border-indigo-500/30 rounded-2xl px-4 py-3 mx-auto max-w-sm cursor-pointer hover:border-indigo-500/60 transition-colors"
-              onClick={() => setInlineLogExpanded(true)}
-            >
-              <div className="bg-indigo-600/20 rounded-xl p-2 shrink-0">
-                <Camera className="h-4 w-4 text-indigo-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-medium truncate">{inlineLog.description}</p>
-                <p className="text-gray-400 text-xs">{inlineLog.calories} cal · Tap to log</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-gray-500 shrink-0" />
-            </div>
-          )
-        )}
-
         <div ref={messagesEndRef} />
       </div>
 
@@ -652,11 +383,11 @@ export default function ChatPage() {
         <div className="flex items-end gap-2 bg-gray-900 rounded-2xl px-3 py-2 border border-gray-800 focus-within:border-indigo-500/50 transition-colors">
           <ImageUpload
             onImageSelect={(_, preview) => setTempImages(prev => [...prev, preview])}
-            disabled={isLoading || sendMessageMutation.isPending || analysisLoading}
+            disabled={isLoading || sendMessageMutation.isPending}
           />
           <button
             onClick={() => setShowScanner(true)}
-            disabled={isLoading || sendMessageMutation.isPending || analysisLoading}
+            disabled={isLoading || sendMessageMutation.isPending}
             className="shrink-0 p-1.5 text-gray-500 hover:text-indigo-400 disabled:opacity-30 transition-colors"
             title="Scan barcode"
           >
@@ -672,14 +403,14 @@ export default function ChatPage() {
                 sendMessage();
               }
             }}
-            placeholder={tempImages.length > 0 ? "Ask a question, or send without text to log…" : "Message your AI coach..."}
+            placeholder={tempImages.length > 0 ? "Ask a question about this food..." : "Message your AI coach..."}
             className="flex-1 bg-transparent text-white text-sm resize-none outline-none min-h-[24px] max-h-[150px] placeholder-gray-500"
             rows={1}
-            disabled={isLoading || sendMessageMutation.isPending || analysisLoading}
+            disabled={isLoading || sendMessageMutation.isPending}
           />
           <button
             onClick={() => sendMessage()}
-            disabled={(!input.trim() && tempImages.length === 0) || isLoading || sendMessageMutation.isPending || analysisLoading}
+            disabled={(!input.trim() && tempImages.length === 0) || isLoading || sendMessageMutation.isPending}
             className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-white p-2 rounded-xl transition-colors shrink-0"
           >
             <Send className="h-4 w-4" />
