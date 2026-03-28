@@ -2,9 +2,10 @@ import type { ReactNode } from "react";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Dumbbell, Droplets, Flame, ChevronRight, Zap, Plus, X, Pencil, Check, GripVertical, ScanBarcode } from "lucide-react";
+import { Dumbbell, Droplets, Flame, ChevronRight, Zap, Plus, X, Pencil, Check, GripVertical, ScanBarcode, Camera } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { BarcodeScanner } from "@/components/ui/barcode-scanner";
+import { SnapToLog } from "@/components/ui/snap-to-log";
 
 interface DashboardData {
   user: { name: string; goal: string };
@@ -262,6 +263,7 @@ export default function HomePage() {
   const [editMode, setEditMode] = useState(false);
   const [editorTarget, setEditorTarget] = useState<Shortcut | null | "new">(null);
   const [showScanner, setShowScanner] = useState(false);
+  const [showSnapToLog, setShowSnapToLog] = useState(false);
 
   const { data, isLoading } = useQuery<DashboardData>({ queryKey: ["/api/dashboard"] });
 
@@ -374,20 +376,33 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Barcode scan button — always visible, outside editable grid */}
-            <button
-              onClick={() => setShowScanner(true)}
-              className="w-full mb-2.5 bg-indigo-600/10 border border-indigo-500/30 rounded-2xl p-3 flex items-center gap-3 hover:bg-indigo-600/20 active:scale-[0.98] transition-all"
-            >
-              <div className="bg-indigo-500/20 rounded-xl p-2.5 shrink-0">
-                <ScanBarcode className="h-5 w-5 text-indigo-400" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-medium text-white">Scan Barcode</p>
-                <p className="text-xs text-gray-500">Instant nutrition from packaged food</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-gray-600 shrink-0" />
-            </button>
+            {/* Quick-log buttons — always visible, outside editable grid */}
+            <div className="flex gap-2 mb-2.5">
+              <button
+                onClick={() => setShowSnapToLog(true)}
+                className="flex-1 bg-indigo-600/10 border border-indigo-500/30 rounded-2xl p-3 flex items-center gap-3 hover:bg-indigo-600/20 active:scale-[0.98] transition-all"
+              >
+                <div className="bg-indigo-500/20 rounded-xl p-2 shrink-0">
+                  <Camera className="h-5 w-5 text-indigo-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-white">Snap to Log</p>
+                  <p className="text-xs text-gray-500">Photo meal analysis</p>
+                </div>
+              </button>
+              <button
+                onClick={() => setShowScanner(true)}
+                className="flex-1 bg-indigo-600/10 border border-indigo-500/30 rounded-2xl p-3 flex items-center gap-3 hover:bg-indigo-600/20 active:scale-[0.98] transition-all"
+              >
+                <div className="bg-indigo-500/20 rounded-xl p-2 shrink-0">
+                  <ScanBarcode className="h-5 w-5 text-indigo-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-white">Scan Barcode</p>
+                  <p className="text-xs text-gray-500">Packaged food</p>
+                </div>
+              </button>
+            </div>
 
             {/* Shortcut grid — wraps naturally */}
             <div className="grid grid-cols-3 gap-2">
@@ -525,6 +540,14 @@ export default function HomePage() {
       {showScanner && (
         <BarcodeScanner
           onClose={() => setShowScanner(false)}
+          onLogSuccess={() => queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] })}
+        />
+      )}
+
+      {/* Snap to Log */}
+      {showSnapToLog && (
+        <SnapToLog
+          onClose={() => setShowSnapToLog(false)}
           onLogSuccess={() => queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] })}
         />
       )}

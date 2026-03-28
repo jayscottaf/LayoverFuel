@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { BarcodeScanner } from "@/components/ui/barcode-scanner";
-import { Send, X, Check, Pencil, RotateCcw, Zap, ScanBarcode } from "lucide-react";
+import { Send, X, Check, Pencil, RotateCcw, Zap, ScanBarcode, ChevronRight, Camera, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface Message {
@@ -12,16 +12,34 @@ interface Message {
   role: "user" | "assistant";
   content: string[];
   imageUrls?: string[];
-  createdAt?: number; // Unix timestamp
+  createdAt?: number;
 }
 
-interface PendingLog {
+interface MealLog {
   description: string;
+  calories: number;
   macros: { protein: number; carbs: number; fat: number };
   image?: string;
 }
 
-// Contextual quick prompts based on time of day
+interface MealAnalysisApiResponse {
+  message: string;
+  result: {
+    estimate: { calories: number; protein: number; carbs: number; fat: number };
+    foodItems: string[];
+    analysis: string;
+    suggestions: string;
+  };
+}
+
+interface DashboardStats {
+  stats: {
+    currentCalories: number;
+    currentProtein: number;
+    macros: { targetCalories: number; protein: number };
+  };
+}
+
 function getQuickPrompts(): string[] {
   const hour = new Date().getHours();
   if (hour >= 5 && hour < 11) return [
@@ -56,7 +74,6 @@ function getQuickPrompts(): string[] {
   ];
 }
 
-// Format a Unix timestamp into a human-readable date label
 function getDateLabel(ts: number): string {
   const d = new Date(ts * 1000);
   const today = new Date();
@@ -67,24 +84,138 @@ function getDateLabel(ts: number): string {
   return d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 }
 
+function MealLogCard({
+  log,
+  onLog,
+  onDismiss,
+  remainingCal,
+  remainingPro,
+  isLogging,
+}: {
+  log: MealLog;
+  onLog: (updated: MealLog) => void;
+  onDismiss: () => void;
+  remainingCal: number;
+  remainingPro: number;
+  isLogging: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [desc, setDesc] = useState(log.description);
+  const [macros, setMacros] = useState(log.macros);
+  const [cal, setCal] = useState(log.calories);
+
+  const current = editing ? { description: desc, calories: cal, macros } : log;
+
+  return (
+    <div className="bg-gray-900 border border-indigo-500/40 rounded-2xl p-4 w-full max-w-sm mx-auto">
+      <p className="text-xs text-indigo-400 font-semibold uppercase tracking-wider mb-2">Log this meal?</p>
+
+      {log.image && (
+        <img src={log.image} alt="Meal" className="w-full rounded-xl mb-3 max-h-40 object-cover" />
+      )}
+
+      {editing ? (
+        <div className="space-y-2">
+          <input
+            className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2 border border-gray-700 focus:outline-none focus:border-indigo-500"
+            value={desc}
+            onChange={e => setDesc(e.target.value)}
+            placeholder="Meal description"
+          />
+          <div className="grid grid-cols-4 gap-1.5">
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Cal</p>
+              <input
+                type="number"
+                className="w-full bg-gray-800 text-white text-xs rounded-xl px-2 py-1.5 border border-gray-700 focus:outline-none focus:border-indigo-500 text-center"
+                value={cal}
+                onChange={e => setCal(Number(e.target.value))}
+              />
+            </div>
+            {(["protein", "carbs", "fat"] as const).map(k => (
+              <div key={k}>
+                <p className="text-xs text-gray-500 mb-1 capitalize">{k}</p>
+                <input
+                  type="number"
+                  className="w-full bg-gray-800 text-white text-xs rounded-xl px-2 py-1.5 border border-gray-700 focus:outline-none focus:border-indigo-500 text-center"
+                  value={macros[k]}
+                  onChange={e => setMacros(prev => ({ ...prev, [k]: Number(e.target.value) }))}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <p className="text-white font-medium text-sm">{log.description}</p>
+          <div className="flex gap-3 mt-1.5">
+            <span className="text-xs text-white font-semibold">{log.calories} cal</span>
+            <span className="text-xs text-gray-400">P: {log.macros.protein}g · C: {log.macros.carbs}g · F: {log.macros.fat}g</span>
+          </div>
+        </div>
+      )}
+
+      {/* Fits your day */}
+      {remainingCal > 0 && (
+        <div className="mt-2.5 pt-2.5 border-t border-gray-800 flex items-center justify-between">
+          <span className="text-xs text-gray-500">Remaining today</span>
+          <span className="text-xs font-medium text-gray-300">{remainingCal} cal · {remainingPro}g protein</span>
+        </div>
+      )}
+
+      <div className="flex gap-2 mt-3">
+        <button
+          onClick={() => setEditing(p => !p)}
+          className="flex items-center gap-1 flex-1 justify-center py-2 rounded-xl bg-gray-800 text-gray-300 text-sm hover:bg-gray-700 transition-colors"
+        >
+          <Pencil className="h-3.5 w-3.5" /> {editing ? "Done" : "Edit"}
+        </button>
+        <button
+          onClick={() => onLog(current)}
+          disabled={isLogging}
+          className="flex items-center gap-1 flex-1 justify-center py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+        >
+          {isLogging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+          Log it
+        </button>
+        <button
+          onClick={onDismiss}
+          className="flex items-center gap-1 flex-1 justify-center py-2 rounded-xl bg-gray-800 text-gray-400 text-sm hover:bg-gray-700 transition-colors"
+        >
+          <X className="h-3.5 w-3.5" /> Skip
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [tempImages, setTempImages] = useState<string[]>([]);
-  const [pendingLog, setPendingLog] = useState<PendingLog | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
+
+  const [pendingLog, setPendingLog] = useState<MealLog | null>(null);
+  const [inlineLog, setInlineLog] = useState<MealLog | null>(null);
+  const [inlineLogExpanded, setInlineLogExpanded] = useState(false);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [isLogging, setIsLogging] = useState(false);
+
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
   const quickPrompts = getQuickPrompts();
 
-  // Load prefill from sessionStorage (set by travel shortcuts on home screen)
+  const { data: dashboard } = useQuery<DashboardStats>({ queryKey: ["/api/dashboard"] });
+  const targetCal = dashboard?.stats?.macros?.targetCalories ?? 0;
+  const targetPro = dashboard?.stats?.macros?.protein ?? 0;
+  const remainingCal = Math.max(targetCal - (dashboard?.stats?.currentCalories ?? 0), 0);
+  const remainingPro = Math.max(targetPro - (dashboard?.stats?.currentProtein ?? 0), 0);
+
   useEffect(() => {
     const prefill = sessionStorage.getItem("chatPrefill");
     if (prefill) {
@@ -105,7 +236,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, pendingLog, inlineLog, analysisLoading]);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -137,6 +268,7 @@ export default function ChatPage() {
     setThreadId(null);
     setShowClearConfirm(false);
     setPendingLog(null);
+    setInlineLog(null);
     await createThread();
   };
 
@@ -191,41 +323,107 @@ export default function ChatPage() {
     },
   });
 
-  const sendMessage = (text?: string) => {
-    const msg = text ?? input;
-    if (!msg.trim() && tempImages.length === 0) return;
-    const currentInput = msg;
-    const currentImages = [...tempImages];
-
-    setMessages(prev => [
-      ...prev,
-      { id: Date.now().toString(), role: "user", content: currentInput.trim() ? [currentInput] : [], imageUrls: currentImages.length > 0 ? currentImages : undefined, createdAt: Math.floor(Date.now() / 1000) },
-      { id: "processing", role: "assistant", content: ["Thinking..."] },
-    ]);
-    setInput("");
-    setTempImages([]);
-    sendMessageMutation.mutate({ message: currentInput, imageDataArray: currentImages.length > 0 ? currentImages : undefined });
-  };
-
-  const handleConfirmLog = async () => {
-    if (!pendingLog) return;
+  const runMealAnalysis = async (imageData: string): Promise<MealLog | null> => {
     try {
-      await fetch("/api/logs/nutrition", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(pendingLog),
-      });
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: ["✅ Meal logged successfully!"], createdAt: Math.floor(Date.now() / 1000) }]);
+      const res = await apiRequest("POST", "/api/meal-analysis", { imageData });
+      if (!res.ok) return null;
+      const data: MealAnalysisApiResponse = await res.json();
+      if (!data.result) return null;
+      const r = data.result;
+      return {
+        description: r.foodItems?.length ? r.foodItems.join(", ") : "Detected meal",
+        calories: r.estimate.calories,
+        macros: { protein: r.estimate.protein, carbs: r.estimate.carbs, fat: r.estimate.fat },
+        image: imageData,
+      };
     } catch {
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", content: ["⚠️ Failed to log meal."], createdAt: Math.floor(Date.now() / 1000) }]);
-    } finally {
-      setPendingLog(null);
-      setIsEditing(false);
+      return null;
     }
   };
 
-  // Build a list of messages with date separator markers inserted
-  const messagesWithSeparators: Array<{ type: "separator"; label: string } | { type: "message"; message: Message; index: number }> = [];
+  const sendMessage = (text?: string) => {
+    const msg = text ?? input;
+    if (!msg.trim() && tempImages.length === 0) return;
+    const currentInput = msg.trim();
+    const currentImages = [...tempImages];
+
+    setInput("");
+    setTempImages([]);
+    setInlineLog(null);
+    setInlineLogExpanded(false);
+
+    // Path A: Photo-only — structured analysis, no chat thread
+    if (currentImages.length > 0 && !currentInput) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(), role: "user", content: [],
+        imageUrls: currentImages, createdAt: Math.floor(Date.now() / 1000),
+      }]);
+      setAnalysisLoading(true);
+      setPendingLog(null);
+      runMealAnalysis(currentImages[0]).then(log => {
+        if (log) {
+          setPendingLog(log);
+        } else {
+          toast({
+            title: "Analysis failed",
+            description: "Couldn't identify this meal. Add a text question to chat instead.",
+            variant: "destructive",
+          });
+        }
+      }).finally(() => setAnalysisLoading(false));
+      return;
+    }
+
+    // Path B: Text (+ optional photo) — conversational chat + parallel silent analysis
+    setMessages(prev => [
+      ...prev,
+      {
+        id: Date.now().toString(), role: "user",
+        content: currentInput ? [currentInput] : [],
+        imageUrls: currentImages.length > 0 ? currentImages : undefined,
+        createdAt: Math.floor(Date.now() / 1000),
+      },
+      { id: "processing", role: "assistant", content: ["Thinking..."] },
+    ]);
+
+    sendMessageMutation.mutate({ message: currentInput, imageDataArray: currentImages.length > 0 ? currentImages : undefined });
+
+    if (currentImages.length > 0) {
+      runMealAnalysis(currentImages[0]).then(log => {
+        if (log) {
+          setInlineLog(log);
+          setInlineLogExpanded(false);
+        }
+      });
+    }
+  };
+
+  const logMeal = async (log: MealLog, onSuccess: () => void) => {
+    setIsLogging(true);
+    try {
+      await apiRequest("POST", "/api/logs/nutrition", {
+        date: new Date().toISOString().slice(0, 10),
+        calories: log.calories,
+        protein: log.macros.protein,
+        carbs: log.macros.carbs,
+        fat: log.macros.fat,
+        mealStyle: log.description,
+        notes: "Photo analysis",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      toast({ title: "Logged!", description: `${log.description} added to today's log.` });
+      onSuccess();
+    } catch {
+      toast({ title: "Error", description: "Failed to log. Please try again.", variant: "destructive" });
+    } finally {
+      setIsLogging(false);
+    }
+  };
+
+  const messagesWithSeparators: Array<
+    | { type: "separator"; label: string }
+    | { type: "message"; message: Message; index: number }
+  > = [];
   let lastDateLabel = "";
   messages.forEach((message, index) => {
     if (message.createdAt) {
@@ -238,7 +436,7 @@ export default function ChatPage() {
     messagesWithSeparators.push({ type: "message", message, index });
   });
 
-  const isEmpty = messages.length === 0 && !isLoading;
+  const isEmpty = messages.length === 0 && !isLoading && !analysisLoading;
 
   return (
     <div className="flex flex-col bg-black flex-1 min-h-0">
@@ -284,7 +482,6 @@ export default function ChatPage() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 pb-4 space-y-4" style={{ WebkitOverflowScrolling: "touch" }}>
 
-        {/* Empty / Welcome state */}
         {isEmpty && (
           <div className="flex flex-col items-center justify-center h-full gap-6 pb-8">
             <div className="text-center">
@@ -293,6 +490,7 @@ export default function ChatPage() {
               </div>
               <h2 className="text-white font-semibold text-lg mb-1">Layover Fuel AI</h2>
               <p className="text-gray-400 text-sm max-w-xs">Log meals, get workout ideas, and stay on track — no matter where you're flying.</p>
+              <p className="text-gray-600 text-xs mt-2">Tip: send a food photo with no text to instantly log it.</p>
             </div>
             <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
               {quickPrompts.map((prompt) => (
@@ -308,7 +506,6 @@ export default function ChatPage() {
           </div>
         )}
 
-        {/* Message list with date separators */}
         {messagesWithSeparators.map((item, i) => {
           if (item.type === "separator") {
             return (
@@ -324,7 +521,6 @@ export default function ChatPage() {
           return (
             <div key={message.id + index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
               <div className="flex flex-col gap-1 max-w-[80%]">
-                {/* Images */}
                 {message.imageUrls && message.imageUrls.length > 0 && (
                   <div className={`flex flex-wrap gap-1 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                     {message.imageUrls.map((url, idx) => (
@@ -338,8 +534,6 @@ export default function ChatPage() {
                     ))}
                   </div>
                 )}
-
-                {/* Bubble */}
                 {(message.content.length > 0 && message.content[0]?.trim() !== "") || message.id === "processing" ? (
                   <div className={`rounded-2xl px-4 py-3 text-sm ${
                     message.role === "user"
@@ -365,63 +559,54 @@ export default function ChatPage() {
           );
         })}
 
-        {/* Pending Log Confirmation Card */}
-        {pendingLog && (
-          <div className="bg-gray-900 border border-indigo-500/40 rounded-2xl p-4 mx-auto max-w-sm">
-            <p className="text-xs text-indigo-400 font-semibold uppercase tracking-wider mb-2">Log this meal?</p>
-            {pendingLog.image && (
-              <img src={pendingLog.image} alt="Meal" className="w-full rounded-xl mb-3 max-h-40 object-cover" />
-            )}
-            {isEditing ? (
-              <div className="space-y-2">
-                <input
-                  className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2 border border-gray-700 focus:outline-none focus:border-indigo-500"
-                  value={pendingLog.description}
-                  onChange={e => setPendingLog(prev => prev ? { ...prev, description: e.target.value } : prev)}
-                  placeholder="Meal description"
-                />
-                <div className="flex gap-2">
-                  {(["protein", "carbs", "fat"] as const).map(macro => (
-                    <input
-                      key={macro}
-                      type="number"
-                      className="flex-1 bg-gray-800 text-white text-sm rounded-xl px-2 py-2 border border-gray-700 focus:outline-none focus:border-indigo-500"
-                      value={pendingLog.macros[macro]}
-                      onChange={e => setPendingLog(prev => prev ? { ...prev, macros: { ...prev.macros, [macro]: Number(e.target.value) } } : prev)}
-                      placeholder={macro}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div>
-                <p className="text-white font-medium text-sm">{pendingLog.description}</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  P: {pendingLog.macros.protein}g · C: {pendingLog.macros.carbs}g · F: {pendingLog.macros.fat}g
-                </p>
-              </div>
-            )}
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => setIsEditing(p => !p)}
-                className="flex items-center gap-1 flex-1 justify-center py-2 rounded-xl bg-gray-800 text-gray-300 text-sm hover:bg-gray-700"
-              >
-                <Pencil className="h-3.5 w-3.5" /> {isEditing ? "Done" : "Edit"}
-              </button>
-              <button
-                onClick={handleConfirmLog}
-                className="flex items-center gap-1 flex-1 justify-center py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500"
-              >
-                <Check className="h-3.5 w-3.5" /> Log it
-              </button>
-              <button
-                onClick={() => { setPendingLog(null); setIsEditing(false); }}
-                className="flex items-center gap-1 flex-1 justify-center py-2 rounded-xl bg-gray-800 text-gray-400 text-sm hover:bg-gray-700"
-              >
-                <X className="h-3.5 w-3.5" /> Skip
-              </button>
+        {/* Analysis loading state (photo-only path) */}
+        {analysisLoading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-900 rounded-2xl px-4 py-3 flex items-center gap-3 max-w-[80%]">
+              <Loader2 className="h-4 w-4 text-indigo-400 animate-spin shrink-0" />
+              <p className="text-sm text-gray-300">Analysing your meal...</p>
             </div>
           </div>
+        )}
+
+        {/* Full log card (photo-only path) */}
+        {pendingLog && !analysisLoading && (
+          <MealLogCard
+            log={pendingLog}
+            onLog={updated => logMeal(updated, () => { setPendingLog(null); })}
+            onDismiss={() => setPendingLog(null)}
+            remainingCal={remainingCal}
+            remainingPro={remainingPro}
+            isLogging={isLogging}
+          />
+        )}
+
+        {/* Inline log chip (photo + text path) */}
+        {inlineLog && !pendingLog && (
+          inlineLogExpanded ? (
+            <MealLogCard
+              log={inlineLog}
+              onLog={updated => logMeal(updated, () => { setInlineLog(null); setInlineLogExpanded(false); })}
+              onDismiss={() => { setInlineLog(null); setInlineLogExpanded(false); }}
+              remainingCal={remainingCal}
+              remainingPro={remainingPro}
+              isLogging={isLogging}
+            />
+          ) : (
+            <div
+              className="flex items-center gap-3 bg-gray-900 border border-indigo-500/30 rounded-2xl px-4 py-3 mx-auto max-w-sm cursor-pointer hover:border-indigo-500/60 transition-colors"
+              onClick={() => setInlineLogExpanded(true)}
+            >
+              <div className="bg-indigo-600/20 rounded-xl p-2 shrink-0">
+                <Camera className="h-4 w-4 text-indigo-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-sm font-medium truncate">{inlineLog.description}</p>
+                <p className="text-gray-400 text-xs">{inlineLog.calories} cal · Tap to log</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-gray-500 shrink-0" />
+            </div>
+          )
         )}
 
         <div ref={messagesEndRef} />
@@ -444,7 +629,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Quick prompt chips — shown when there are messages (not in empty state) */}
+      {/* Quick prompt chips */}
       {!isEmpty && (
         <div className="flex gap-2 px-4 py-2 overflow-x-auto shrink-0 scrollbar-hide">
           {quickPrompts.map((prompt) => (
@@ -465,11 +650,11 @@ export default function ChatPage() {
         <div className="flex items-end gap-2 bg-gray-900 rounded-2xl px-3 py-2 border border-gray-800 focus-within:border-indigo-500/50 transition-colors">
           <ImageUpload
             onImageSelect={(_, preview) => setTempImages(prev => [...prev, preview])}
-            disabled={isLoading || sendMessageMutation.isPending}
+            disabled={isLoading || sendMessageMutation.isPending || analysisLoading}
           />
           <button
             onClick={() => setShowScanner(true)}
-            disabled={isLoading || sendMessageMutation.isPending}
+            disabled={isLoading || sendMessageMutation.isPending || analysisLoading}
             className="shrink-0 p-1.5 text-gray-500 hover:text-indigo-400 disabled:opacity-30 transition-colors"
             title="Scan barcode"
           >
@@ -485,14 +670,14 @@ export default function ChatPage() {
                 sendMessage();
               }
             }}
-            placeholder="Message your AI coach..."
+            placeholder={tempImages.length > 0 ? "Ask a question, or send without text to log…" : "Message your AI coach..."}
             className="flex-1 bg-transparent text-white text-sm resize-none outline-none min-h-[24px] max-h-[150px] placeholder-gray-500"
             rows={1}
-            disabled={isLoading || sendMessageMutation.isPending}
+            disabled={isLoading || sendMessageMutation.isPending || analysisLoading}
           />
           <button
             onClick={() => sendMessage()}
-            disabled={(!input.trim() && tempImages.length === 0) || isLoading || sendMessageMutation.isPending}
+            disabled={(!input.trim() && tempImages.length === 0) || isLoading || sendMessageMutation.isPending || analysisLoading}
             className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-white p-2 rounded-xl transition-colors shrink-0"
           >
             <Send className="h-4 w-4" />

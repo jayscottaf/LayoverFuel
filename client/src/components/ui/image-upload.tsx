@@ -6,9 +6,10 @@ interface ImageUploadProps {
   onImageSelect: (file: File, preview: string) => void;
   className?: string;
   disabled?: boolean;
+  children?: React.ReactNode;
 }
 
-export function ImageUpload({ onImageSelect, className = "", disabled = false }: ImageUploadProps) {
+export function ImageUpload({ onImageSelect, className = "", disabled = false, children }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -150,7 +151,7 @@ export function ImageUpload({ onImageSelect, className = "", disabled = false }:
         disabled={disabled}
         title="Upload food photo"
       >
-        <Camera className="h-5 w-5" />
+        {children ?? <Camera className="h-5 w-5" />}
       </button>
     </>
   );
