@@ -1,32 +1,32 @@
 import { User } from "@shared/schema";
 
-// Mifflin-St Jeor Equation for calculating Basal Metabolic Rate (BMR)
+// Mifflin-St Jeor Equation for BMR — requires kg and cm
 function calculateBMR(user: User): number {
-  const weight = user.weight ?? 70;
-  const height = user.height ?? 170;
+  const weightKg = (user.weight ?? 154) / 2.205; // stored in lbs → convert to kg
+  const heightCm = user.height ?? 170;            // stored in cm (correct)
   const age = user.age ?? 30;
-  const gender = user.gender ?? 'male';
-  
-  if (gender === 'male') {
-    return Math.round(10 * weight + 6.25 * height - 5 * age + 5);
+  const gender = user.gender ?? "male";
+
+  if (gender === "male") {
+    return Math.round(10 * weightKg + 6.25 * heightCm - 5 * age + 5);
   } else {
-    return Math.round(10 * weight + 6.25 * height - 5 * age - 161);
+    return Math.round(10 * weightKg + 6.25 * heightCm - 5 * age - 161);
   }
 }
 
-// Activity multipliers for TDEE calculation
-const activityMultipliers = {
-  lightly_active: 1.375, // Light exercise 1-3 days/week
-  moderate: 1.55,       // Moderate exercise 3-5 days/week
-  very_active: 1.725    // Hard exercise 6-7 days/week
+// Activity multipliers keyed to the actual values saved in the database
+const activityMultipliers: Record<string, number> = {
+  sedentary: 1.2,           // Little to no exercise
+  lightly_active: 1.375,    // Light exercise 1–3 days/week
+  moderately_active: 1.55,  // Moderate exercise 3–5 days/week
+  very_active: 1.725,       // Hard exercise 6–7 days/week
+  extra_active: 1.9,        // Very hard exercise + physical job
 };
 
 // Calculate Total Daily Energy Expenditure (TDEE)
 export function calculateTDEE(user: User): number {
   const bmr = calculateBMR(user);
-  const activityLevel = user.activityLevel as keyof typeof activityMultipliers;
-  const multiplier = activityMultipliers[activityLevel] || activityMultipliers.moderate;
-  
+  const multiplier = activityMultipliers[user.activityLevel ?? ""] ?? 1.55;
   return Math.round(bmr * multiplier);
 }
 
@@ -35,52 +35,57 @@ export function calculateMacros(user: User, tdee: number): {
   protein: number;
   carbs: number;
   fat: number;
+  targetCalories: number;
   caloriesFromProtein: number;
   caloriesFromCarbs: number;
   caloriesFromFat: number;
 } {
   const { fitnessGoal } = user;
-  const weight = user.weight ?? 70;
-  
-  let proteinMultiplier: number;
-  let fatMultiplier: number;
-  let caloriesFromProtein: number;
-  let caloriesFromFat: number;
-  let caloriesFromCarbs: number;
-  
-  // Adjust macros based on fitness goal
-  if (fitnessGoal === 'shred') {
-    // Higher protein, moderate fat for fat loss
-    proteinMultiplier = 2.2; // 2.2g per kg of bodyweight
-    fatMultiplier = 0.8; // 0.8g per kg of bodyweight
-    
-    caloriesFromProtein = weight * proteinMultiplier * 4; // 4 calories per gram of protein
-    caloriesFromFat = weight * fatMultiplier * 9; // 9 calories per gram of fat
-    
-    // Adjust TDEE for deficit if shredding
-    const adjustedTDEE = tdee * 0.85; // 15% deficit
-    caloriesFromCarbs = adjustedTDEE - caloriesFromProtein - caloriesFromFat;
-  } else {
-    // Moderate protein, moderate fat for maintenance
-    proteinMultiplier = 1.8; // 1.8g per kg of bodyweight
-    fatMultiplier = 1.0; // 1.0g per kg of bodyweight
-    
-    caloriesFromProtein = weight * proteinMultiplier * 4;
-    caloriesFromFat = weight * fatMultiplier * 9;
-    caloriesFromCarbs = tdee - caloriesFromProtein - caloriesFromFat;
+  const weightKg = (user.weight ?? 154) / 2.205;
+
+  let targetCalories: number;
+  let proteinPerKg: number;
+  let fatPerKg: number;
+
+  switch (fitnessGoal) {
+    case "lose_weight":
+      targetCalories = Math.round(tdee * 0.82); // 18% deficit
+      proteinPerKg = 2.2;  // High protein to preserve muscle
+      fatPerKg = 0.8;
+      break;
+    case "gain_muscle":
+      targetCalories = Math.round(tdee * 1.1);  // 10% surplus
+      proteinPerKg = 2.0;
+      fatPerKg = 1.0;
+      break;
+    case "endurance":
+      targetCalories = tdee;
+      proteinPerKg = 1.6;
+      fatPerKg = 0.7;      // Lower fat → more room for carbs
+      break;
+    case "maintain":
+    default:
+      targetCalories = tdee;
+      proteinPerKg = 1.8;
+      fatPerKg = 0.9;
+      break;
   }
-  
-  // Calculate grams for each macro
-  const protein = Math.round(weight * proteinMultiplier);
-  const fat = Math.round(weight * fatMultiplier);
-  const carbs = Math.round(caloriesFromCarbs / 4); // 4 calories per gram of carbs
-  
+
+  const protein = Math.max(0, Math.round(weightKg * proteinPerKg));
+  const fat = Math.max(0, Math.round(weightKg * fatPerKg));
+
+  const caloriesFromProtein = protein * 4;
+  const caloriesFromFat = fat * 9;
+  const caloriesFromCarbs = Math.max(0, targetCalories - caloriesFromProtein - caloriesFromFat);
+  const carbs = Math.max(0, Math.round(caloriesFromCarbs / 4));
+
   return {
     protein,
     carbs,
     fat,
-    caloriesFromProtein: Math.round(caloriesFromProtein),
-    caloriesFromCarbs: Math.round(caloriesFromCarbs),
-    caloriesFromFat: Math.round(caloriesFromFat)
+    targetCalories,
+    caloriesFromProtein,
+    caloriesFromCarbs,
+    caloriesFromFat,
   };
 }

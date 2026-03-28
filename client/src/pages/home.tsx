@@ -9,7 +9,7 @@ interface DashboardData {
   user: { name: string; goal: string };
   stats: {
     tdee: number;
-    macros: { protein: number; carbs: number; fat: number };
+    macros: { protein: number; carbs: number; fat: number; targetCalories: number };
     currentCalories: number;
     calorieProgress: number;
     currentProtein: number;
@@ -341,7 +341,7 @@ export default function HomePage() {
 
           {/* Calorie Ring */}
           <div className="bg-gray-900 rounded-3xl p-6 flex flex-col items-center gap-4">
-            <CalorieRing current={stats?.currentCalories ?? 0} target={stats?.tdee ?? 2000} />
+            <CalorieRing current={stats?.currentCalories ?? 0} target={macros?.targetCalories ?? stats?.tdee ?? 2000} />
             <div className="flex gap-4 w-full">
               <MacroBar label="Protein" current={stats?.currentProtein ?? 0} target={macros?.protein ?? 150} color="bg-blue-500" />
               <MacroBar label="Carbs" current={data?.nutritionLog?.carbs ?? 0} target={macros?.carbs ?? 200} color="bg-emerald-500" />

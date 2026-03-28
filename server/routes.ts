@@ -335,7 +335,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const user = await storage.updateUser(req.session.userId, updates);
       if (!user) return res.status(404).json({ message: "User not found" });
-      const { password, ...userWithoutPassword } = user;
+      // Recalculate and persist TDEE whenever any profile field changes
+      const freshTDEE = calculateTDEE(user);
+      const updatedUser = await storage.updateUser(req.session.userId, { tdee: freshTDEE });
+      const { password, ...userWithoutPassword } = updatedUser ?? user;
       res.status(200).json(userWithoutPassword);
     } catch (error) {
       res.status(500).json({ message: "Server error" });
@@ -354,8 +357,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Calculate nutritional needs based on TDEE
-      const tdee = user.tdee || calculateTDEE(user);
+      // Always recalculate fresh — never use stale cached value
+      const tdee = calculateTDEE(user);
       const macros = calculateMacros(user, tdee);
       
       // Get today's date for logs
@@ -381,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           macros.protein,
           macros.carbs,
           macros.fat,
-          tdee
+          macros.targetCalories
         );
         
         const workoutPlan = await generateWorkoutPlan(user);
@@ -405,7 +408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : 0;
       
       const calorieProgress = nutritionLog?.calories 
-        ? Math.round((nutritionLog.calories / tdee) * 100) 
+        ? Math.round((nutritionLog.calories / macros.targetCalories) * 100) 
         : 0;
       
       // Response with dashboard data
@@ -635,6 +638,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               moderately_active: "Moderately Active", very_active: "Very Active",
               extra_active: "Extra Active",
             };
+            const userTDEE = calculateTDEE(user);
+            const userMacros = calculateMacros(user, userTDEE);
             profileContext = [
               `[User Profile]`,
               `Name: ${user.name}`,
@@ -646,6 +651,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               user.activityLevel ? `Activity: ${ACTIVITY_LABELS[user.activityLevel] ?? user.activityLevel}` : null,
               user.dietaryRestrictions?.length ? `Dietary: ${user.dietaryRestrictions.join(", ")}` : null,
               user.gymMemberships?.length ? `Gym memberships: ${user.gymMemberships.join(", ")}` : null,
+              `Daily targets: ${userMacros.targetCalories} kcal | Protein: ${userMacros.protein}g | Carbs: ${userMacros.carbs}g | Fat: ${userMacros.fat}g`,
               `[End Profile]`,
             ].filter(Boolean).join("\n");
           }
