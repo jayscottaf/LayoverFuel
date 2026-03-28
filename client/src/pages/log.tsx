@@ -38,7 +38,6 @@ function StatPill({ icon, label, value, unit, color }: {
 
 export default function LogPage() {
   const [, navigate] = useLocation();
-  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery<DashboardData>({ queryKey: ["/api/dashboard"] });
 
