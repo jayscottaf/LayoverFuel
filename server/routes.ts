@@ -53,6 +53,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   app.use("/api/logs/nutrition", nutritionRoutes);
   // Auth Routes
+  // Dev-only instant login — only works in development
+  app.post("/api/auth/dev-login", async (req: Request, res: Response) => {
+    if (process.env.NODE_ENV !== "development") {
+      return res.status(404).json({ message: "Not found" });
+    }
+    try {
+      const devEmail = "dev@layoverfuel.dev";
+      let user = await storage.getUserByEmail(devEmail);
+      if (!user) {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash("devpassword", salt);
+        user = await storage.createUser({ email: devEmail, password: hashedPassword, name: "Dev User" });
+      }
+      req.session.userId = user.id;
+      await new Promise<void>((resolve, reject) => req.session.save(err => err ? reject(err) : resolve()));
+      const { password, ...userWithoutPassword } = user;
+      res.status(200).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Dev login error:", error);
+      res.status(500).json({ message: "Dev login failed" });
+    }
+  });
+
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const data = registerSchema.parse(req.body);

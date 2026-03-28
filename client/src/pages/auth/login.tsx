@@ -3,9 +3,10 @@ import { useLocation, Link } from "wouter";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, FlaskConical } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Enter a valid email" }),
@@ -15,7 +16,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, checkAuth } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
@@ -25,6 +26,19 @@ export default function Login() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
+
+  const devLogin = async () => {
+    setIsSubmitting(true);
+    try {
+      const res = await apiRequest("POST", "/api/auth/dev-login", {});
+      if (res.ok) {
+        await checkAuth();
+        navigate("/");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
@@ -101,6 +115,25 @@ export default function Login() {
               {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Signing in...</> : "Sign in"}
             </button>
           </form>
+
+          {import.meta.env.DEV && (
+            <>
+              <div className="flex items-center gap-3 mt-1">
+                <div className="flex-1 h-px bg-gray-800" />
+                <span className="text-xs text-gray-600">dev only</span>
+                <div className="flex-1 h-px bg-gray-800" />
+              </div>
+              <button
+                type="button"
+                onClick={devLogin}
+                disabled={isSubmitting}
+                className="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-400 hover:text-gray-200 text-sm font-medium py-2.5 rounded-xl transition-colors border border-gray-700"
+              >
+                <FlaskConical className="h-3.5 w-3.5" />
+                Skip login (dev)
+              </button>
+            </>
+          )}
         </div>
 
         <p className="text-center text-sm text-gray-500">
