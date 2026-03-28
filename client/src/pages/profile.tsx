@@ -1,152 +1,384 @@
-import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import { User, Target, Activity, Scale, Ruler, ChevronRight, MessageCircle, LogOut, Settings } from "lucide-react";
+import { useState } from "react";
+import type { ReactNode } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { User, ChevronRight, Check, LogOut, RefreshCw } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserProfile {
+  id: number;
   name: string;
   email: string;
-  age: number;
-  weight: number;
-  height: number;
-  activityLevel: string;
-  fitnessGoal: string;
+  age: number | null;
+  weight: number | null;
+  height: number | null;
+  gender: string | null;
+  fitnessGoal: string | null;
+  activityLevel: string | null;
+  dietaryRestrictions: string[] | null;
 }
 
 interface DashboardData {
-  user: { name: string; goal: string };
   stats: { tdee: number; macros: { protein: number; carbs: number; fat: number } };
 }
 
-const GOAL_LABELS: Record<string, string> = {
-  lose_weight: "Lose Weight",
-  maintain: "Maintain Weight",
-  gain_muscle: "Build Muscle",
-  endurance: "Improve Endurance",
-};
+const GOAL_OPTIONS = [
+  { value: "lose_weight", label: "Lose Weight" },
+  { value: "maintain", label: "Maintain Weight" },
+  { value: "gain_muscle", label: "Build Muscle" },
+  { value: "endurance", label: "Improve Endurance" },
+];
 
-const ACTIVITY_LABELS: Record<string, string> = {
-  sedentary: "Sedentary",
-  lightly_active: "Lightly Active",
-  moderately_active: "Moderately Active",
-  very_active: "Very Active",
-  extra_active: "Extra Active",
-};
+const ACTIVITY_OPTIONS = [
+  { value: "sedentary", label: "Sedentary", sub: "Little to no exercise" },
+  { value: "lightly_active", label: "Lightly Active", sub: "1–3 days/week" },
+  { value: "moderately_active", label: "Moderately Active", sub: "3–5 days/week" },
+  { value: "very_active", label: "Very Active", sub: "6–7 days/week" },
+  { value: "extra_active", label: "Extra Active", sub: "Twice a day" },
+];
+
+const GENDER_OPTIONS = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "other", label: "Other" },
+  { value: "prefer_not_to_say", label: "Prefer not to say" },
+];
+
+const DIETARY_OPTIONS = [
+  "None", "Vegetarian", "Vegan", "Gluten-free", "Dairy-free",
+  "Keto", "Paleo", "Halal", "Kosher", "Low-sodium",
+];
+
+function getLabel(options: { value: string; label: string }[], value: string | null | undefined) {
+  return options.find(o => o.value === value)?.label ?? value ?? "—";
+}
+
+// ─── Field Editor Sheet ───────────────────────────────────────────────────────
+
+interface EditorSheetProps {
+  title: string;
+  onClose: () => void;
+  onSave: (value: any) => void;
+  children: ReactNode;
+}
+
+function EditorSheet({ title, onClose, onSave, children }: EditorSheetProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="w-full max-w-lg bg-gray-950 border border-gray-800 rounded-t-3xl px-5 pt-4 pb-8 space-y-4 overflow-y-auto"
+        style={{ maxHeight: "85dvh" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between py-1">
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-sm">Cancel</button>
+          <h3 className="text-white font-semibold">{title}</h3>
+          <button onClick={onSave} className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm">Save</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── Settings Row ─────────────────────────────────────────────────────────────
+
+function SettingsRow({ label, value, onTap, last = false }: {
+  label: string; value: string; onTap: () => void; last?: boolean;
+}) {
+  return (
+    <button
+      onClick={onTap}
+      className={`w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-800/60 transition-colors active:bg-gray-800 ${!last ? "border-b border-gray-800/60" : ""}`}
+    >
+      <span className="text-sm text-gray-300">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-500 max-w-[180px] truncate text-right">{value}</span>
+        <ChevronRight className="h-4 w-4 text-gray-600 shrink-0" />
+      </div>
+    </button>
+  );
+}
+
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1">{title}</p>
+      <div className="bg-gray-900 rounded-2xl overflow-hidden">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
-  const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
+  const { data: profile, isLoading } = useQuery<UserProfile>({ queryKey: ["/api/user/profile"] });
   const { data: dashData } = useQuery<DashboardData>({ queryKey: ["/api/dashboard"] });
-  const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/user/profile"] });
 
-  const openChat = (msg: string) => {
-    sessionStorage.setItem("chatPrefill", msg);
-    navigate("/chat");
+  const [editing, setEditing] = useState<string | null>(null);
+
+  // Temp state for editors
+  const [tempStr, setTempStr] = useState("");
+  const [tempNum, setTempNum] = useState("");
+  const [tempArr, setTempArr] = useState<string[]>([]);
+
+  const mutation = useMutation({
+    mutationFn: (updates: Partial<UserProfile>) =>
+      apiRequest("PATCH", "/api/user/profile", updates).then(r => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      setEditing(null);
+      toast({ title: "Saved", description: "Profile updated." });
+    },
+    onError: () => toast({ title: "Error", description: "Failed to save.", variant: "destructive" }),
+  });
+
+  const openStr = (field: string, current: string | null | undefined) => {
+    setTempStr(current ?? "");
+    setEditing(field);
   };
+
+  const openNum = (field: string, current: number | null | undefined) => {
+    setTempNum(current != null ? String(current) : "");
+    setEditing(field);
+  };
+
+  const openArr = (field: string, current: string[] | null | undefined) => {
+    setTempArr(current ?? []);
+    setEditing(field);
+  };
+
+  const saveStr = (field: string) => mutation.mutate({ [field]: tempStr });
+  const saveNum = (field: string, float = false) => mutation.mutate({ [field]: float ? parseFloat(tempNum) : parseInt(tempNum) });
+  const saveArr = (field: string) => mutation.mutate({ [field]: tempArr });
 
   const handleLogout = async () => {
     await apiRequest("POST", "/api/auth/logout", {});
     window.location.href = "/";
   };
 
-  const stats = dashData?.stats;
+  const tdee = dashData?.stats?.tdee;
+  const macros = dashData?.stats?.macros;
+
+  const fmt = (v: number | null | undefined, unit: string) => v ? `${v}${unit}` : "—";
+  const dietLabel = profile?.dietaryRestrictions?.length
+    ? profile.dietaryRestrictions.join(", ")
+    : "None";
 
   return (
-    <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
-      <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+    <>
+      <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div className="max-w-lg mx-auto px-4 pt-4 space-y-5">
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">Profile</h1>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-400 transition-colors"
-          >
-            <LogOut className="h-4 w-4" /> Sign out
-          </button>
-        </div>
-
-        {/* Avatar card */}
-        <div className="bg-gray-900 rounded-3xl p-6 flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
-            <User className="h-8 w-8 text-indigo-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold text-white truncate">{profile?.name ?? dashData?.user?.name ?? "—"}</h2>
-            <p className="text-sm text-gray-400 truncate">{profile?.email ?? ""}</p>
-            <p className="text-xs text-indigo-400 mt-1">{GOAL_LABELS[profile?.fitnessGoal ?? ""] ?? dashData?.user?.goal ?? "No goal set"}</p>
-          </div>
-        </div>
-
-        {/* Nutrition targets */}
-        {stats && (
-          <div className="bg-gray-900 rounded-2xl p-4 space-y-3">
-            <p className="text-sm font-semibold text-white">Daily Targets</p>
-            {[
-              { label: "Calories", value: `${stats.tdee} kcal`, color: "text-orange-400" },
-              { label: "Protein", value: `${stats.macros?.protein ?? 0}g`, color: "text-blue-400" },
-              { label: "Carbs", value: `${stats.macros?.carbs ?? 0}g`, color: "text-emerald-400" },
-              { label: "Fat", value: `${stats.macros?.fat ?? 0}g`, color: "text-amber-400" },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="flex items-center justify-between py-1">
-                <span className="text-sm text-gray-400">{label}</span>
-                <span className={`text-sm font-semibold ${color}`}>{value}</span>
+          {/* Avatar + targets hero */}
+          <div className="bg-gray-900 rounded-3xl p-5">
+            {/* Avatar row */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
+                <User className="h-7 w-7 text-indigo-400" />
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* Body stats */}
-        {profile && (
-          <div className="bg-gray-900 rounded-2xl p-4 space-y-3">
-            <p className="text-sm font-semibold text-white">Body Stats</p>
-            {[
-              { icon: Scale, label: "Weight", value: profile.weight ? `${profile.weight} lbs` : "—" },
-              { icon: Ruler, label: "Height", value: profile.height ? `${profile.height} cm` : "—" },
-              { icon: Activity, label: "Activity level", value: ACTIVITY_LABELS[profile.activityLevel] ?? profile.activityLevel ?? "—" },
-              { icon: Target, label: "Goal", value: GOAL_LABELS[profile.fitnessGoal] ?? profile.fitnessGoal ?? "—" },
-            ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="flex items-center gap-3 py-1">
-                <Icon className="h-4 w-4 text-gray-500 shrink-0" />
-                <span className="text-sm text-gray-400 flex-1">{label}</span>
-                <span className="text-sm text-white font-medium">{value}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-lg font-bold text-white truncate">{profile?.name ?? "—"}</p>
+                <p className="text-xs text-gray-400 truncate">{profile?.email ?? ""}</p>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
 
-        {/* Update profile via chat */}
-        <button
-          onClick={() => openChat("I'd like to update my profile. My current stats are: ")}
-          className="w-full flex items-center gap-4 bg-gray-900 rounded-2xl p-4 hover:bg-gray-800 transition-colors active:scale-98"
-        >
-          <div className="bg-indigo-500/20 rounded-xl p-3">
-            <MessageCircle className="h-5 w-5 text-indigo-400" />
+            {/* Calorie + macro targets */}
+            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Daily Targets</p>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { label: "Calories", value: tdee ? `${tdee}` : "—", unit: "kcal", color: "text-orange-400" },
+                { label: "Protein", value: macros?.protein ? `${macros.protein}` : "—", unit: "g", color: "text-blue-400" },
+                { label: "Carbs", value: macros?.carbs ? `${macros.carbs}` : "—", unit: "g", color: "text-emerald-400" },
+                { label: "Fat", value: macros?.fat ? `${macros.fat}` : "—", unit: "g", color: "text-amber-400" },
+              ].map(({ label, value, unit, color }) => (
+                <div key={label} className="bg-gray-800 rounded-xl p-2.5 text-center">
+                  <p className={`text-base font-bold ${color}`}>{value}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">{unit}</p>
+                  <p className="text-[10px] text-gray-500">{label}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="text-left flex-1">
-            <p className="text-white font-medium text-sm">Update with AI</p>
-            <p className="text-xs text-gray-400">Tell me your new stats and I'll update your plan</p>
-          </div>
-          <ChevronRight className="h-5 w-5 text-gray-600" />
-        </button>
 
-        {/* Reset shortcuts */}
-        <button
-          onClick={() => {
-            localStorage.removeItem("layoverfuel_shortcuts");
-            alert("Shortcuts reset to defaults.");
-          }}
-          className="w-full flex items-center gap-4 bg-gray-900 rounded-2xl p-4 hover:bg-gray-800 transition-colors"
-        >
-          <div className="bg-gray-800 rounded-xl p-3">
-            <Settings className="h-5 w-5 text-gray-400" />
-          </div>
-          <div className="text-left flex-1">
-            <p className="text-white font-medium text-sm">Reset Quick Shortcuts</p>
-            <p className="text-xs text-gray-400">Restore the default traveler shortcuts</p>
-          </div>
-        </button>
+          {/* Goal */}
+          <SectionCard title="Goal">
+            <div className="px-4 py-3">
+              <p className="text-xs text-gray-500 mb-2">Fitness goal</p>
+              <div className="grid grid-cols-2 gap-2">
+                {GOAL_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => mutation.mutate({ fitnessGoal: opt.value })}
+                    className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-colors ${
+                      profile?.fitnessGoal === opt.value
+                        ? "bg-indigo-600 text-white"
+                        : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* Personal */}
+          <SectionCard title="Personal">
+            <SettingsRow label="Name" value={profile?.name ?? "—"} onTap={() => openStr("name", profile?.name)} />
+            <SettingsRow label="Age" value={fmt(profile?.age, " yrs")} onTap={() => openNum("age", profile?.age)} />
+            <SettingsRow label="Gender" value={getLabel(GENDER_OPTIONS, profile?.gender)} onTap={() => openStr("gender", profile?.gender)} last />
+          </SectionCard>
+
+          {/* Body */}
+          <SectionCard title="Body">
+            <SettingsRow label="Weight" value={fmt(profile?.weight, " lbs")} onTap={() => openNum("weight", profile?.weight)} />
+            <SettingsRow label="Height" value={fmt(profile?.height, " cm")} onTap={() => openNum("height", profile?.height)} last />
+          </SectionCard>
+
+          {/* Activity */}
+          <SectionCard title="Activity">
+            <div className="px-4 py-3 space-y-1.5">
+              {ACTIVITY_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => mutation.mutate({ activityLevel: opt.value })}
+                  className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl transition-colors ${
+                    profile?.activityLevel === opt.value
+                      ? "bg-indigo-600/20 border border-indigo-500/40"
+                      : "hover:bg-gray-800"
+                  }`}
+                >
+                  <div className="text-left">
+                    <p className={`text-sm font-medium ${profile?.activityLevel === opt.value ? "text-indigo-300" : "text-gray-300"}`}>
+                      {opt.label}
+                    </p>
+                    <p className="text-xs text-gray-500">{opt.sub}</p>
+                  </div>
+                  {profile?.activityLevel === opt.value && (
+                    <Check className="h-4 w-4 text-indigo-400 shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </SectionCard>
+
+          {/* Dietary */}
+          <SectionCard title="Dietary">
+            <SettingsRow label="Restrictions" value={dietLabel} onTap={() => openArr("dietaryRestrictions", profile?.dietaryRestrictions)} last />
+          </SectionCard>
+
+          {/* App */}
+          <SectionCard title="App">
+            <button
+              onClick={() => { localStorage.removeItem("layoverfuel_shortcuts"); toast({ title: "Reset", description: "Shortcuts restored to defaults." }); }}
+              className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-800/60 border-b border-gray-800/60 transition-colors"
+            >
+              <span className="text-sm text-gray-300">Reset Quick Shortcuts</span>
+              <RefreshCw className="h-4 w-4 text-gray-500" />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-800/60 transition-colors"
+            >
+              <span className="text-sm text-red-400">Sign out</span>
+              <LogOut className="h-4 w-4 text-red-400" />
+            </button>
+          </SectionCard>
+
+        </div>
       </div>
-    </div>
+
+      {/* ── Editors ── */}
+
+      {/* Text field editor (name) */}
+      {editing === "name" && (
+        <EditorSheet title="Name" onClose={() => setEditing(null)} onSave={() => saveStr("name")}>
+          <input
+            autoFocus
+            className="w-full bg-gray-900 text-white text-base rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-indigo-500"
+            value={tempStr}
+            onChange={e => setTempStr(e.target.value)}
+            placeholder="Your name"
+          />
+        </EditorSheet>
+      )}
+
+      {/* Gender picker */}
+      {editing === "gender" && (
+        <EditorSheet title="Gender" onClose={() => setEditing(null)} onSave={() => saveStr("gender")}>
+          <div className="space-y-2">
+            {GENDER_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setTempStr(opt.value)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${
+                  tempStr === opt.value ? "bg-indigo-600/20 border border-indigo-500/40" : "bg-gray-900 hover:bg-gray-800"
+                }`}
+              >
+                <span className={`text-sm ${tempStr === opt.value ? "text-indigo-300" : "text-gray-300"}`}>{opt.label}</span>
+                {tempStr === opt.value && <Check className="h-4 w-4 text-indigo-400" />}
+              </button>
+            ))}
+          </div>
+        </EditorSheet>
+      )}
+
+      {/* Number editors (age, weight, height) */}
+      {(editing === "age" || editing === "weight" || editing === "height") && (
+        <EditorSheet
+          title={editing === "age" ? "Age" : editing === "weight" ? "Weight (lbs)" : "Height (cm)"}
+          onClose={() => setEditing(null)}
+          onSave={() => saveNum(editing, editing === "weight")}
+        >
+          <div className="space-y-2">
+            <input
+              autoFocus
+              type="number"
+              inputMode="decimal"
+              className="w-full bg-gray-900 text-white text-2xl font-semibold rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-indigo-500 text-center"
+              value={tempNum}
+              onChange={e => setTempNum(e.target.value)}
+              placeholder="0"
+            />
+            <p className="text-xs text-center text-gray-500">
+              {editing === "age" ? "years" : editing === "weight" ? "pounds" : "centimeters"}
+            </p>
+          </div>
+        </EditorSheet>
+      )}
+
+      {/* Dietary restrictions multi-select */}
+      {editing === "dietaryRestrictions" && (
+        <EditorSheet title="Dietary Restrictions" onClose={() => setEditing(null)} onSave={() => saveArr("dietaryRestrictions")}>
+          <div className="grid grid-cols-2 gap-2">
+            {DIETARY_OPTIONS.map(opt => {
+              const selected = opt === "None" ? tempArr.length === 0 : tempArr.includes(opt);
+              return (
+                <button
+                  key={opt}
+                  onClick={() => {
+                    if (opt === "None") { setTempArr([]); return; }
+                    setTempArr(prev => prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]);
+                  }}
+                  className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-colors flex items-center justify-between gap-2 ${
+                    selected ? "bg-indigo-600/20 border border-indigo-500/40 text-indigo-300" : "bg-gray-900 text-gray-400 hover:bg-gray-800"
+                  }`}
+                >
+                  <span>{opt}</span>
+                  {selected && <Check className="h-3.5 w-3.5 text-indigo-400 shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </EditorSheet>
+      )}
+    </>
   );
 }

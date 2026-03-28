@@ -275,16 +275,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    
     try {
       const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Don't return password
+      if (!user) return res.status(404).json({ message: "User not found" });
       const { password, ...userWithoutPassword } = user;
-      
+      res.status(200).json(userWithoutPassword);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/user/profile", async (req: Request, res: Response) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const allowed = ["name", "age", "height", "weight", "gender", "fitnessGoal", "activityLevel", "dietaryRestrictions", "gymMemberships", "maxCommuteMinutes"];
+      const updates: Record<string, any> = {};
+      for (const key of allowed) {
+        if (req.body[key] !== undefined) updates[key] = req.body[key];
+      }
+      const user = await storage.updateUser(req.session.userId, updates);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      const { password, ...userWithoutPassword } = user;
       res.status(200).json(userWithoutPassword);
     } catch (error) {
       res.status(500).json({ message: "Server error" });
