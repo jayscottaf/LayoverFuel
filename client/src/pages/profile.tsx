@@ -22,6 +22,23 @@ interface DashboardData {
   stats: { tdee: number; macros: { protein: number; carbs: number; fat: number } };
 }
 
+function cmToFtIn(cm: number): { feet: number; inches: number } {
+  const totalInches = cm / 2.54;
+  const feet = Math.floor(totalInches / 12);
+  const inches = Math.round(totalInches % 12);
+  return { feet, inches };
+}
+
+function ftInToCm(feet: number, inches: number): number {
+  return Math.round((feet * 12 + inches) * 2.54);
+}
+
+function fmtHeight(cm: number | null | undefined): string {
+  if (cm == null) return "—";
+  const { feet, inches } = cmToFtIn(cm);
+  return `${feet}'${inches}"`;
+}
+
 const GOAL_OPTIONS = [
   { value: "lose_weight", label: "Lose Weight" },
   { value: "maintain", label: "Maintain Weight" },
@@ -126,6 +143,8 @@ export default function ProfilePage() {
   const [tempStr, setTempStr] = useState("");
   const [tempNum, setTempNum] = useState("");
   const [tempArr, setTempArr] = useState<string[]>([]);
+  const [tempFeet, setTempFeet] = useState("");
+  const [tempInches, setTempInches] = useState("");
 
   const mutation = useMutation({
     mutationFn: (updates: Partial<UserProfile>) =>
@@ -157,6 +176,24 @@ export default function ProfilePage() {
   const saveStr = (field: string) => mutation.mutate({ [field]: tempStr });
   const saveNum = (field: string, float = false) => mutation.mutate({ [field]: float ? parseFloat(tempNum) : parseInt(tempNum) });
   const saveArr = (field: string) => mutation.mutate({ [field]: tempArr });
+
+  const openHeight = (currentCm: number | null | undefined) => {
+    if (currentCm != null) {
+      const { feet, inches } = cmToFtIn(currentCm);
+      setTempFeet(String(feet));
+      setTempInches(String(inches));
+    } else {
+      setTempFeet("");
+      setTempInches("");
+    }
+    setEditing("height");
+  };
+
+  const saveHeight = () => {
+    const ft = parseInt(tempFeet) || 0;
+    const inches = parseInt(tempInches) || 0;
+    mutation.mutate({ height: ftInToCm(ft, inches) });
+  };
 
   const handleLogout = async () => {
     await apiRequest("POST", "/api/auth/logout", {});
@@ -239,7 +276,7 @@ export default function ProfilePage() {
           {/* Body */}
           <SectionCard title="Body">
             <SettingsRow label="Weight" value={fmt(profile?.weight, " lbs")} onTap={() => openNum("weight", profile?.weight)} />
-            <SettingsRow label="Height" value={fmt(profile?.height, " cm")} onTap={() => openNum("height", profile?.height)} last />
+            <SettingsRow label="Height" value={fmtHeight(profile?.height)} onTap={() => openHeight(profile?.height)} last />
           </SectionCard>
 
           {/* Activity */}
@@ -330,10 +367,10 @@ export default function ProfilePage() {
         </EditorSheet>
       )}
 
-      {/* Number editors (age, weight, height) */}
-      {(editing === "age" || editing === "weight" || editing === "height") && (
+      {/* Number editors (age, weight) */}
+      {(editing === "age" || editing === "weight") && (
         <EditorSheet
-          title={editing === "age" ? "Age" : editing === "weight" ? "Weight (lbs)" : "Height (cm)"}
+          title={editing === "age" ? "Age" : "Weight (lbs)"}
           onClose={() => setEditing(null)}
           onSave={() => saveNum(editing, editing === "weight")}
         >
@@ -348,8 +385,46 @@ export default function ProfilePage() {
               placeholder="0"
             />
             <p className="text-xs text-center text-gray-500">
-              {editing === "age" ? "years" : editing === "weight" ? "pounds" : "centimeters"}
+              {editing === "age" ? "years" : "pounds"}
             </p>
+          </div>
+        </EditorSheet>
+      )}
+
+      {/* Height editor — feet & inches */}
+      {editing === "height" && (
+        <EditorSheet title="Height" onClose={() => setEditing(null)} onSave={saveHeight}>
+          <div className="space-y-3">
+            <div className="flex gap-3">
+              <div className="flex-1 space-y-1.5">
+                <p className="text-xs text-center text-gray-500">Feet</p>
+                <input
+                  autoFocus
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={8}
+                  className="w-full bg-gray-900 text-white text-2xl font-semibold rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-indigo-500 text-center"
+                  value={tempFeet}
+                  onChange={e => setTempFeet(e.target.value)}
+                  placeholder="5"
+                />
+              </div>
+              <div className="flex-1 space-y-1.5">
+                <p className="text-xs text-center text-gray-500">Inches</p>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={11}
+                  className="w-full bg-gray-900 text-white text-2xl font-semibold rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-indigo-500 text-center"
+                  value={tempInches}
+                  onChange={e => setTempInches(e.target.value)}
+                  placeholder="8"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-center text-gray-500">e.g. 5 feet 8 inches = 5'8"</p>
           </div>
         </EditorSheet>
       )}
