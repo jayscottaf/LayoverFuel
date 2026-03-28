@@ -204,7 +204,6 @@ export default function ProfilePage() {
     window.location.href = "/";
   };
 
-  const tdee = dashData?.stats?.tdee;
   const macros = dashData?.stats?.macros;
 
   const fmt = (v: number | null | undefined, unit: string) => v ? `${v}${unit}` : "—";
