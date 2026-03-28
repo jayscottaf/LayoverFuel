@@ -19,7 +19,7 @@ interface UserProfile {
 }
 
 interface DashboardData {
-  stats: { tdee: number; macros: { protein: number; carbs: number; fat: number } };
+  stats: { tdee: number; macros: { protein: number; carbs: number; fat: number; targetCalories: number } };
 }
 
 function cmToFtIn(cm: number): { feet: number; inches: number } {
@@ -234,7 +234,7 @@ export default function ProfilePage() {
             <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Daily Targets</p>
             <div className="grid grid-cols-4 gap-2">
               {[
-                { label: "Calories", value: tdee ? `${tdee}` : "—", unit: "kcal", color: "text-orange-400" },
+                { label: "Calories", value: macros?.targetCalories ? `${macros.targetCalories}` : "—", unit: "kcal", color: "text-orange-400" },
                 { label: "Protein", value: macros?.protein ? `${macros.protein}` : "—", unit: "g", color: "text-blue-400" },
                 { label: "Carbs", value: macros?.carbs ? `${macros.carbs}` : "—", unit: "g", color: "text-emerald-400" },
                 { label: "Fat", value: macros?.fat ? `${macros.fat}` : "—", unit: "g", color: "text-amber-400" },
