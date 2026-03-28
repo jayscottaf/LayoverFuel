@@ -32,6 +32,7 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
   const [lookingUp, setLookingUp] = useState(false);
   const [product, setProduct] = useState<ProductInfo | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [cameraError, setCameraError] = useState(false);
   const [servings, setServings] = useState(1);
   const [isLogging, setIsLogging] = useState(false);
   const queryClient = useQueryClient();
@@ -76,7 +77,7 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
       } catch {
         if (!cancelled) {
           setScanning(false);
-          setNotFound(true);
+          setCameraError(true);
         }
       }
     })();
@@ -115,9 +116,10 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
 
   const tryAgain = () => {
     setNotFound(false);
+    setCameraError(false);
     setProduct(null);
     setScanning(true);
-    setScanKey(k => k + 1); // Triggers the effect to restart the camera
+    setScanKey(k => k + 1);
   };
 
   const openChat = () => {
@@ -225,6 +227,28 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
           </div>
         )}
 
+        {/* Camera unavailable */}
+        {cameraError && (
+          <div className="text-center space-y-4 max-w-xs w-full">
+            <div className="w-16 h-16 rounded-2xl bg-gray-900 border border-gray-800 flex items-center justify-center mx-auto">
+              <X className="h-8 w-8 text-red-500" />
+            </div>
+            <div>
+              <p className="text-white font-semibold text-lg">Camera unavailable</p>
+              <p className="text-gray-400 text-sm mt-1">
+                Camera access was denied or your device doesn't support scanning. You can still log food via the AI chat.
+              </p>
+            </div>
+            <button
+              onClick={openChat}
+              className="w-full py-3 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Log food in chat
+            </button>
+          </div>
+        )}
+
         {/* Product found */}
         {product && !lookingUp && (
           <div className="w-full max-w-sm space-y-3">
@@ -289,12 +313,21 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
               {isLogging ? "Logging..." : "Log it"}
             </button>
 
-            <button
-              onClick={tryAgain}
-              className="w-full py-2.5 text-gray-500 text-sm hover:text-gray-300 transition-colors"
-            >
-              Scan different barcode
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={tryAgain}
+                className="flex-1 py-2.5 text-gray-500 text-sm hover:text-gray-300 transition-colors"
+              >
+                Scan different barcode
+              </button>
+              <button
+                onClick={openChat}
+                className="flex-1 py-2.5 text-indigo-500 text-sm hover:text-indigo-400 transition-colors flex items-center justify-center gap-1"
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                Search in chat
+              </button>
+            </div>
           </div>
         )}
       </div>
