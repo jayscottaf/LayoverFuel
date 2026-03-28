@@ -5,13 +5,8 @@
 @layer base {
   html,
   body {
-    background-color: #000; /* Ensures no white overscroll flash */
+    background-color: #09090b; /* Matches dark app theme, fills safe areas */
     @apply font-sans antialiased text-white h-screen overflow-hidden;
-
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
   }
 
   * {
