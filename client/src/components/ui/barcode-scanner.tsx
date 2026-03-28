@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "wouter";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { X, Check, ScanBarcode, Loader2 } from "lucide-react";
+import { X, Check, ScanBarcode, Loader2, MessageCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +15,10 @@ interface ProductInfo {
   carbs: number;
   fat: number;
 }
+
+type BarcodeApiResponse =
+  | { notFound: true }
+  | { notFound?: false; name: string; brand: string; servingSize: string; calories: number; protein: number; carbs: number; fat: number };
 
 interface BarcodeScannerProps {
   onClose: () => void;
@@ -31,10 +36,14 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
   const [isLogging, setIsLogging] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   useEffect(() => {
     if (!scanning) return;
-    let mounted = true;
+    // `cancelled` is ONLY set true on effect cleanup (unmount / scanKey change).
+    // It is NOT set in the decode callback, so async lookup handlers can still run
+    // after a barcode is detected.
+    let cancelled = false;
     let localControls: { stop: () => void } | null = null;
     const codeReader = new BrowserMultiFormatReader();
 
@@ -43,8 +52,8 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
       setLookingUp(true);
       apiRequest("GET", `/api/barcode/${encodeURIComponent(code)}`)
         .then(res => res.json())
-        .then((data: any) => {
-          if (!mounted) return;
+        .then((data: BarcodeApiResponse) => {
+          if (cancelled) return;
           if (data.notFound) {
             setNotFound(true);
           } else {
@@ -52,8 +61,8 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
             setServings(1);
           }
         })
-        .catch(() => { if (mounted) setNotFound(true); })
-        .finally(() => { if (mounted) setLookingUp(false); });
+        .catch(() => { if (!cancelled) setNotFound(true); })
+        .finally(() => { if (!cancelled) setLookingUp(false); });
     };
 
     (async () => {
@@ -63,14 +72,14 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
           undefined,
           videoRef.current,
           (result, _error, controls) => {
-            if (!mounted || !result) return;
-            mounted = false;
+            if (cancelled || !result) return;
+            // Stop the camera but do NOT set cancelled — the lookup must still complete
             controls.stop();
             lookupBarcode(result.getText());
           }
         );
       } catch {
-        if (mounted) {
+        if (!cancelled) {
           setScanning(false);
           setNotFound(true);
         }
@@ -78,7 +87,7 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
     })();
 
     return () => {
-      mounted = false;
+      cancelled = true;
       localControls?.stop();
     };
   }, [scanning, scanKey]);
@@ -111,6 +120,11 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
     setProduct(null);
     setScanning(true);
     setScanKey(k => k + 1);
+  };
+
+  const openChat = () => {
+    onClose();
+    navigate("/chat");
   };
 
   return (
@@ -193,21 +207,22 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
             <div>
               <p className="text-white font-semibold text-lg">Product not found</p>
               <p className="text-gray-400 text-sm mt-1">
-                This barcode isn't in the database. Try the AI chat to describe your meal instead.
+                This barcode isn't in the database. Try describing it in the AI chat instead.
               </p>
             </div>
             <div className="flex gap-3 w-full">
               <button
-                onClick={onClose}
+                onClick={tryAgain}
                 className="flex-1 py-3 rounded-xl bg-gray-800 text-gray-300 text-sm font-medium hover:bg-gray-700 transition-colors"
               >
-                Close
+                Try again
               </button>
               <button
-                onClick={tryAgain}
-                className="flex-1 py-3 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors"
+                onClick={openChat}
+                className="flex-1 py-3 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors flex items-center justify-center gap-1.5"
               >
-                Try again
+                <MessageCircle className="h-4 w-4" />
+                Search in chat
               </button>
             </div>
           </div>
