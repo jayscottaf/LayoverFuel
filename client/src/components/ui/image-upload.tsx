@@ -5,9 +5,10 @@ import { useToast } from "@/hooks/use-toast";
 interface ImageUploadProps {
   onImageSelect: (file: File, preview: string) => void;
   className?: string;
+  disabled?: boolean;
 }
 
-export function ImageUpload({ onImageSelect, className = "" }: ImageUploadProps) {
+export function ImageUpload({ onImageSelect, className = "", disabled = false }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -145,7 +146,8 @@ export function ImageUpload({ onImageSelect, className = "" }: ImageUploadProps)
       <button
         type="button"
         className={className}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => !disabled && fileInputRef.current?.click()}
+        disabled={disabled}
         title="Upload food photo"
       >
         <Camera className="h-5 w-5" />
