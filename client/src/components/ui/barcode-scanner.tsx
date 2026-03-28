@@ -38,19 +38,12 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
-  // Effect only depends on scanKey — NOT on `scanning`.
-  // This is intentional: setScanning(false) is called inside the decode
-  // callback, but that state change must NOT trigger effect cleanup, because
-  // the async barcode lookup is still in flight at that moment. If cleanup ran,
-  // it would set `cancelled = true` and kill the lookup before it resolves.
-  // scanKey is incremented by tryAgain(), which is the only signal to restart.
   useEffect(() => {
     let cancelled = false;
     let localControls: { stop: () => void } | null = null;
     const codeReader = new BrowserMultiFormatReader();
 
     const lookupBarcode = (code: string) => {
-      // Camera has already been stopped; just run the network lookup
       apiRequest("GET", `/api/barcode/${encodeURIComponent(code)}`)
         .then(res => res.json())
         .then((data: BarcodeApiResponse) => {
@@ -75,9 +68,6 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
           (result, _error, controls) => {
             if (cancelled || !result) return;
             controls.stop();
-            // Flip UI to loading state synchronously, then start async lookup.
-            // setScanning(false) does NOT trigger this effect's cleanup because
-            // `scanning` is not in the dependency array.
             setScanning(false);
             setLookingUp(true);
             lookupBarcode(result.getText());
@@ -92,10 +82,11 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
     })();
 
     return () => {
-      // Only place `cancelled` is set — on effect cleanup (unmount or tryAgain)
       cancelled = true;
       localControls?.stop();
     };
+  // scanKey is the only restart signal; scanning is intentionally excluded
+  // so state changes inside the decode callback don't trigger cleanup
   }, [scanKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLog = async () => {
@@ -103,6 +94,7 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
     setIsLogging(true);
     try {
       await apiRequest("POST", "/api/logs/nutrition", {
+        date: new Date().toISOString().slice(0, 10),
         calories: Math.round(product.calories * servings),
         protein: Math.round(product.protein * servings * 10) / 10,
         carbs: Math.round(product.carbs * servings * 10) / 10,
