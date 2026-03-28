@@ -270,6 +270,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auth check endpoint
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const user = await storage.getUser(req.session.userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      const { password, ...userWithoutPassword } = user;
+      res.status(200).json(userWithoutPassword);
+    } catch {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // User Routes
   app.get("/api/user/profile", async (req: Request, res: Response) => {
     if (!req.session.userId) {
@@ -561,6 +576,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/assistant/message", async (req: Request, res: Response) => {
     try {
       const { threadId, message, imageData, imageDataArray } = req.body;
+
+      // Build user profile context if logged in
+      let profileContext = "";
+      if (req.session.userId) {
+        try {
+          const user = await storage.getUser(req.session.userId);
+          if (user) {
+            const GOAL_LABELS: Record<string, string> = {
+              lose_weight: "Lose Weight", maintain: "Maintain Weight",
+              gain_muscle: "Build Muscle", endurance: "Improve Endurance",
+            };
+            const ACTIVITY_LABELS: Record<string, string> = {
+              sedentary: "Sedentary", lightly_active: "Lightly Active",
+              moderately_active: "Moderately Active", very_active: "Very Active",
+              extra_active: "Extra Active",
+            };
+            profileContext = [
+              `[User Profile]`,
+              `Name: ${user.name}`,
+              user.age ? `Age: ${user.age}` : null,
+              user.gender ? `Gender: ${user.gender}` : null,
+              user.weight ? `Weight: ${user.weight} lbs` : null,
+              user.height ? `Height: ${user.height} cm` : null,
+              user.fitnessGoal ? `Goal: ${GOAL_LABELS[user.fitnessGoal] ?? user.fitnessGoal}` : null,
+              user.activityLevel ? `Activity: ${ACTIVITY_LABELS[user.activityLevel] ?? user.activityLevel}` : null,
+              user.dietaryRestrictions?.length ? `Dietary: ${user.dietaryRestrictions.join(", ")}` : null,
+              user.gymMemberships?.length ? `Gym memberships: ${user.gymMemberships.join(", ")}` : null,
+              `[End Profile]`,
+            ].filter(Boolean).join("\n");
+          }
+        } catch { /* continue without profile context */ }
+      }
       
       if (!threadId) {
         return res.status(400).json({ message: "Thread ID is required" });
@@ -606,8 +653,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Images will be uploaded to Cloudinary and then sent to OpenAI`);
         }
         
-        // When sending just images, don't add default text - the assistant should know what to do
-        await addMessageToThread(threadId, message || "", validatedImages);
+        // Prepend user profile context (invisible to UI, helpful to AI)
+        const fullMessage = profileContext
+          ? `${profileContext}\n\n${message || ""}`
+          : (message || "");
+        await addMessageToThread(threadId, fullMessage, validatedImages);
         console.log("Message and images added successfully");
       } catch (messageError) {
         console.error("Error adding message to thread:", messageError);

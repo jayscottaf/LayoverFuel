@@ -1,10 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  isOnboarding: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -13,7 +11,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
-  isOnboarding: false,
   isLoading: true,
   login: async () => false,
   logout: async () => {},
@@ -22,59 +19,49 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-// For MVP: Simplified AuthProvider that assumes logged in state without making API calls
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // For demo MVP: Always authenticated, no onboarding needed, no loading state
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [isOnboarding, setIsOnboarding] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // MVP version that doesn't make API calls
   const checkAuth = useCallback(async () => {
-    // For the MVP demo, we're always authenticated
-    setIsLoading(false);
-    setIsAuthenticated(true);
-    setIsOnboarding(false);
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/auth/me", { credentials: "include" });
+      setIsAuthenticated(res.ok);
+    } catch {
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  // Only run once on mount
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
-  // Mock login function for demo
-  const login = async (_email: string, _password: string): Promise<boolean> => {
-    // Simulating successful login for MVP
-    setIsAuthenticated(true);
-    setIsOnboarding(false);
-    toast({
-      title: "Demo mode",
-      description: "You're using the demo version with a pre-authenticated user.",
-    });
-    return true;
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const res = await apiRequest("POST", "/api/auth/login", { email, password });
+      if (res.ok) {
+        setIsAuthenticated(true);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   };
 
-  // Mock logout function for demo
   const logout = async () => {
-    // In the MVP, we stay logged in
-    toast({
-      title: "Demo mode",
-      description: "Logout is disabled in the demo version.",
-    });
+    try {
+      await apiRequest("POST", "/api/auth/logout", {});
+    } finally {
+      setIsAuthenticated(false);
+    }
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        isAuthenticated,
-        isOnboarding,
-        isLoading,
-        login,
-        logout,
-        checkAuth,
-      }}
-    >
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );
