@@ -17,6 +17,7 @@ export const users = pgTable("users", {
   maxCommuteMinutes: integer("max_commute_minutes"),
   tdee: integer("tdee"),
   dietaryRestrictions: text("dietary_restrictions").array(),
+  assistantThreadId: text("assistant_thread_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -89,6 +90,7 @@ export const insertDailyPlanSchema = createInsertSchema(dailyPlans)
 export const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
+  name: z.string().optional(),
 });
 
 export const loginSchema = registerSchema;

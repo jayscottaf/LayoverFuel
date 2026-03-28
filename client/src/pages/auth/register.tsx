@@ -1,72 +1,57 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
-import { AuthLayout } from "@/components/layouts/AuthLayout";
+import { useLocation, Link } from "wouter";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/context/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 const registerSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
+  name: z.string().min(1, { message: "Name is required" }),
+  email: z.string().email({ message: "Enter a valid email" }),
+  password: z.string().min(6, { message: "At least 6 characters" }),
+  confirmPassword: z.string().min(6, { message: "At least 6 characters" }),
+}).refine(d => d.password === d.confirmPassword, {
+  message: "Passwords don't match",
   path: ["confirmPassword"],
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function Register() {
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [, navigate] = useLocation();
   const { login } = useAuth();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<RegisterFormValues>({
+  const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
+    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
     setIsSubmitting(true);
     try {
-      const response = await apiRequest("POST", "/api/auth/register", {
+      const res = await apiRequest("POST", "/api/auth/register", {
+        name: data.name,
         email: data.email,
         password: data.password,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Registration failed");
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Registration failed");
       }
-
-      const responseData = await response.json();
-      
-      // Log the user in after successful registration
       await login(data.email, data.password);
-
-      toast({
-        title: "Registration successful",
-        description: "Your account has been created. Let's complete your profile.",
-      });
-      
-      // Navigate to onboarding (which will be handled in App.tsx)
+      toast({ title: "Welcome to Layover Fuel!", description: "Your account is ready." });
       navigate("/");
     } catch (error) {
-      console.error("Registration error:", error);
       toast({
         title: "Registration failed",
-        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+        description: error instanceof Error ? error.message : "Something went wrong.",
         variant: "destructive",
       });
     } finally {
@@ -75,76 +60,110 @@ export default function Register() {
   };
 
   return (
-    <AuthLayout 
-      title="Create your account" 
-      subtitle="Get started with Layover Fuel today"
-      type="register"
-    >
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email address</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="email" 
-                    placeholder="you@example.com" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <div className="min-h-screen bg-black flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-sm space-y-8">
 
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {/* Logo */}
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-white tracking-tight">Layover Fuel</h1>
+          <p className="text-gray-400 mt-1 text-sm">Your travel fitness companion</p>
+        </div>
 
-          <FormField
-            control={form.control}
-            name="confirmPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Confirm Password</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {/* Card */}
+        <div className="bg-gray-900 rounded-3xl p-6 space-y-5 border border-gray-800">
+          <div>
+            <h2 className="text-xl font-semibold text-white">Create account</h2>
+            <p className="text-sm text-gray-400 mt-0.5">Get started for free</p>
+          </div>
 
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Creating account..." : "Create account"}
-          </Button>
-        </form>
-      </Form>
-    </AuthLayout>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Name */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-300">Name</label>
+              <input
+                type="text"
+                autoComplete="name"
+                placeholder="Jason"
+                className="w-full bg-gray-800 text-white text-sm rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-500 transition-colors"
+                {...register("name")}
+              />
+              {errors.name && <p className="text-xs text-red-400">{errors.name.message}</p>}
+            </div>
+
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-300">Email</label>
+              <input
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                className="w-full bg-gray-800 text-white text-sm rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-500 transition-colors"
+                {...register("email")}
+              />
+              {errors.email && <p className="text-xs text-red-400">{errors.email.message}</p>}
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-300">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  className="w-full bg-gray-800 text-white text-sm rounded-xl px-4 py-3 pr-11 border border-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-500 transition-colors"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(p => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-xs text-red-400">{errors.password.message}</p>}
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-300">Confirm password</label>
+              <div className="relative">
+                <input
+                  type={showConfirm ? "text" : "password"}
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  className="w-full bg-gray-800 text-white text-sm rounded-xl px-4 py-3 pr-11 border border-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-500 transition-colors"
+                  {...register("confirmPassword")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(p => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.confirmPassword && <p className="text-xs text-red-400">{errors.confirmPassword.message}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 mt-2"
+            >
+              {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Creating account...</> : "Create account"}
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-gray-500">
+          Already have an account?{" "}
+          <Link href="/auth/login">
+            <a className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">Sign in</a>
+          </Link>
+        </p>
+      </div>
+    </div>
   );
 }

@@ -1,132 +1,115 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
-import { AuthLayout } from "@/components/layouts/AuthLayout";
+import { useLocation, Link } from "wouter";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
+  email: z.string().email({ message: "Enter a valid email" }),
   password: z.string().min(1, { message: "Password is required" }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function Login() {
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [, navigate] = useLocation();
   const { login } = useAuth();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<LoginFormValues>({
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
       const success = await login(data.email, data.password);
-      
       if (success) {
-        toast({
-          title: "Login successful",
-          description: "Welcome back to Layover Fuel!",
-        });
-
-        // Navigate to dashboard or onboarding (determined by auth context)
         navigate("/");
+      } else {
+        toast({ title: "Login failed", description: "Invalid email or password.", variant: "destructive" });
       }
-    } catch (error) {
-      console.error("Login error:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <AuthLayout 
-      title="Welcome back" 
-      subtitle="Sign in to your Layover Fuel account"
-      type="login"
-    >
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email address</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="email" 
-                    placeholder="you@example.com" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <div className="min-h-screen bg-black flex items-center justify-center px-4">
+      <div className="w-full max-w-sm space-y-8">
 
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {/* Logo */}
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-white tracking-tight">Layover Fuel</h1>
+          <p className="text-gray-400 mt-1 text-sm">Your travel fitness companion</p>
+        </div>
 
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Signing in..." : "Sign in"}
-          </Button>
-          
-          <div className="mt-6 border-t pt-4">
-            <p className="text-sm text-gray-600 text-center mb-3">
-              Want to try our features without signing in?
-            </p>
-            <div className="flex flex-col space-y-2">
-              <Button
-                variant="ghost"
-                className="text-sm text-primary-600 hover:text-primary-800 font-medium"
-                onClick={() => navigate("/tour")}
-              >
-                Take an interactive tour of Layover Fuel
-              </Button>
-              <Button
-                variant="ghost"
-                className="text-sm text-primary-600 hover:text-primary-800 font-medium"
-                onClick={() => navigate("/demo")}
-              >
-                Try our meal photo analysis demo
-              </Button>
-            </div>
+        {/* Card */}
+        <div className="bg-gray-900 rounded-3xl p-6 space-y-5 border border-gray-800">
+          <div>
+            <h2 className="text-xl font-semibold text-white">Welcome back</h2>
+            <p className="text-sm text-gray-400 mt-0.5">Sign in to your account</p>
           </div>
-        </form>
-      </Form>
-    </AuthLayout>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-300">Email</label>
+              <input
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                className="w-full bg-gray-800 text-white text-sm rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-500 transition-colors"
+                {...register("email")}
+              />
+              {errors.email && <p className="text-xs text-red-400">{errors.email.message}</p>}
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-300">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  className="w-full bg-gray-800 text-white text-sm rounded-xl px-4 py-3 pr-11 border border-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-500 transition-colors"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(p => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-xs text-red-400">{errors.password.message}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Signing in...</> : "Sign in"}
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-gray-500">
+          Don't have an account?{" "}
+          <Link href="/auth/register">
+            <a className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">Create one</a>
+          </Link>
+        </p>
+      </div>
+    </div>
   );
 }

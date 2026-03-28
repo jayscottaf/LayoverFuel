@@ -71,7 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.createUser({
         email: data.email,
         password: hashedPassword,
-        name: "",
+        name: data.name || "",
       });
       
       // Start onboarding
@@ -560,11 +560,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Assistant Chat API Routes
   
-  // Initialize or retrieve a thread
+  // Initialize or retrieve a thread — persists to user account when logged in
   app.post("/api/assistant/thread", async (req: Request, res: Response) => {
     try {
-      const { threadId } = req.body;
-      const newThreadId = await getOrCreateThread(threadId);
+      // If user is logged in, prefer their saved thread ID over the client-provided one
+      let clientThreadId = req.body.threadId as string | undefined;
+      
+      if (req.session.userId) {
+        const user = await storage.getUser(req.session.userId);
+        if (user?.assistantThreadId) {
+          // Verify OpenAI still knows about this thread (getOrCreateThread handles invalid IDs)
+          const resolvedId = await getOrCreateThread(user.assistantThreadId);
+          if (resolvedId !== user.assistantThreadId) {
+            // Thread was re-created; save new ID
+            await storage.updateUser(req.session.userId, { assistantThreadId: resolvedId });
+          }
+          return res.status(200).json({ threadId: resolvedId });
+        }
+        // No saved thread — create one from client hint or fresh
+        const newThreadId = await getOrCreateThread(clientThreadId);
+        await storage.updateUser(req.session.userId, { assistantThreadId: newThreadId });
+        return res.status(200).json({ threadId: newThreadId });
+      }
+
+      // Guest (not logged in) — just create/return thread without saving
+      const newThreadId = await getOrCreateThread(clientThreadId);
       res.status(200).json({ threadId: newThreadId });
     } catch (error) {
       console.error("Error creating thread:", error);
