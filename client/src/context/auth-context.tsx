@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkAuth = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/auth/me", { credentials: "include" });
+      const res = await apiRequest("GET", "/api/auth/me");
       setIsAuthenticated(res.ok);
     } catch {
       setIsAuthenticated(false);
