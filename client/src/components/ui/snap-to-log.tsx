@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Check, Camera, Loader2, ChevronRight, Pencil, Undo } from "lucide-react";
+import { X, Check, Camera, Loader2, ChevronRight, Pencil, Undo, WifiOff } from "lucide-react";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { queueItem } from "@/lib/offline-queue";
+import { useOffline } from "@/hooks/use-offline";
 
 interface MealEstimate {
   calories: number;
@@ -50,6 +52,8 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
 
   const { data: dashboard } = useQuery<DashboardStats>({ queryKey: ["/api/dashboard"] });
   const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/user/profile"] });
+  const { isOffline, refreshPendingCount } = useOffline();
+
   const targetCal = dashboard?.stats?.macros?.targetCalories ?? 0;
   const targetPro = dashboard?.stats?.macros?.protein ?? 0;
   const remainingCal = Math.max(targetCal - (dashboard?.stats?.currentCalories ?? 0), 0);
@@ -85,27 +89,45 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
   };
 
   const logMealInstantly = async (desc: string, estimate: MealEstimate) => {
-    try {
-      await apiRequest("POST", "/api/logs/nutrition", {
-        date: new Date().toISOString().slice(0, 10),
-        calories: estimate.calories,
-        protein: estimate.protein,
-        carbs: estimate.carbs,
-        fat: estimate.fat,
-        mealStyle: desc,
-        notes: "Snap to Log · Photo analysis",
-      });
-      await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+    const logData = {
+      date: new Date().toISOString().slice(0, 10),
+      calories: estimate.calories,
+      protein: estimate.protein,
+      carbs: estimate.carbs,
+      fat: estimate.fat,
+      mealStyle: desc,
+      notes: "Snap to Log · Photo analysis",
+    };
 
-      // Show undo toast for 5 seconds
-      setShowUndo(true);
-      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
-      undoTimeoutRef.current = setTimeout(() => {
-        setShowUndo(false);
+    try {
+      if (isOffline) {
+        // Queue for later sync
+        await queueItem('nutrition', logData);
+        await refreshPendingCount();
+
+        toast({
+          title: "Queued Offline",
+          description: `${desc} saved. Will sync when online.`,
+        });
+
+        // Close immediately when offline
         onLogSuccess?.();
         onClose();
-      }, 5000);
-    } catch {
+      } else {
+        // Normal online logging
+        await apiRequest("POST", "/api/logs/nutrition", logData);
+        await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+
+        // Show undo toast for 5 seconds
+        setShowUndo(true);
+        if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+        undoTimeoutRef.current = setTimeout(() => {
+          setShowUndo(false);
+          onLogSuccess?.();
+          onClose();
+        }, 5000);
+      }
+    } catch (error) {
       toast({ title: "Error", description: "Failed to log. Please try again.", variant: "destructive" });
     }
   };
@@ -131,21 +153,37 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
   const handleLog = async () => {
     if (!result) return;
     setIsLogging(true);
+
+    const logData = {
+      date: new Date().toISOString().slice(0, 10),
+      calories: macros.calories,
+      protein: macros.protein,
+      carbs: macros.carbs,
+      fat: macros.fat,
+      mealStyle: description,
+      notes: "Snap to Log · Photo analysis",
+    };
+
     try {
-      await apiRequest("POST", "/api/logs/nutrition", {
-        date: new Date().toISOString().slice(0, 10),
-        calories: macros.calories,
-        protein: macros.protein,
-        carbs: macros.carbs,
-        fat: macros.fat,
-        mealStyle: description,
-        notes: "Snap to Log · Photo analysis",
-      });
-      await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      toast({ title: "Logged!", description: `${description} added to today's log.` });
+      if (isOffline) {
+        // Queue for later sync
+        await queueItem('nutrition', logData);
+        await refreshPendingCount();
+
+        toast({
+          title: "Queued Offline",
+          description: `${description} saved. Will sync when online.`,
+        });
+      } else {
+        // Normal online logging
+        await apiRequest("POST", "/api/logs/nutrition", logData);
+        await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+        toast({ title: "Logged!", description: `${description} added to today's log.` });
+      }
+
       onLogSuccess?.();
       onClose();
-    } catch {
+    } catch (error) {
       toast({ title: "Error", description: "Failed to log. Please try again.", variant: "destructive" });
     } finally {
       setIsLogging(false);
@@ -168,6 +206,12 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
         <div className="flex items-center gap-2">
           <Camera className="h-5 w-5 text-indigo-400" />
           <h2 className="text-white font-semibold">Snap to Log</h2>
+          {isOffline && (
+            <div className="flex items-center gap-1 bg-orange-500/20 rounded-full px-2 py-0.5 border border-orange-500/40">
+              <WifiOff className="h-3 w-3 text-orange-400" />
+              <span className="text-xs font-medium text-orange-400">Offline</span>
+            </div>
+          )}
         </div>
         <button
           onClick={onClose}
