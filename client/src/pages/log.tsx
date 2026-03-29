@@ -3,14 +3,23 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Plus, Flame, Beef, Wheat, Droplets, ChevronRight, Utensils, MessageCircle } from "lucide-react";
 
-interface NutritionLog {
+interface MealLog {
   id: number;
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
-  meals: any;
+  mealStyle: string;
+  notes: string;
   date: string;
+}
+
+interface NutritionLog {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  meals: MealLog[];
 }
 
 interface DashboardData {
@@ -51,8 +60,8 @@ export default function LogPage() {
   const stats = data?.stats;
   const log = data?.nutritionLog;
 
-  const meals = log?.meals ?? {};
-  const mealEntries = Object.entries(meals).filter(([, v]) => v);
+  const meals = log?.meals ?? [];
+  const mealEntries = meals;
 
   return (
     <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
@@ -116,17 +125,18 @@ export default function LogPage() {
 
           {mealEntries.length > 0 ? (
             <div className="space-y-2">
-              {mealEntries.map(([name, meal]: [string, any]) => (
-                <div key={name} className="flex items-center gap-3 py-2 border-b border-gray-800 last:border-0">
+              {mealEntries.map((meal: MealLog) => (
+                <div key={meal.id} className="flex items-center gap-3 py-2 border-b border-gray-800 last:border-0">
                   <div className="bg-gray-800 rounded-xl p-2">
                     <Utensils className="h-4 w-4 text-gray-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white font-medium capitalize truncate">{meal?.name ?? name}</p>
-                    {meal?.macros && (
-                      <p className="text-xs text-gray-500">
-                        {meal.macros.calories ?? "—"} kcal · {meal.macros.protein ?? "—"}g P · {meal.macros.carbs ?? "—"}g C · {meal.macros.fat ?? "—"}g F
-                      </p>
+                    <p className="text-sm text-white font-medium truncate">{meal.mealStyle || "Meal"}</p>
+                    <p className="text-xs text-gray-500">
+                      {Math.round(meal.calories) || 0} kcal · {Math.round(meal.protein) || 0}g P · {Math.round(meal.carbs) || 0}g C · {Math.round(meal.fat) || 0}g F
+                    </p>
+                    {meal.notes && meal.notes !== "Snap to Log · Photo analysis" && (
+                      <p className="text-xs text-gray-600 mt-0.5 truncate">{meal.notes}</p>
                     )}
                   </div>
                 </div>

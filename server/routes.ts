@@ -442,15 +442,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get today's health log if it exists
       const healthLog = await storage.getHealthLogByDate(user.id, today);
       
-      // Get today's nutrition log if it exists
-      const nutritionLog = await storage.getNutritionLogByDate(user.id, today);
-      
+      // Get ALL nutrition logs for today (supports multiple meals per day)
+      const nutritionLogs = await storage.getNutritionLogsByDate(user.id, today);
+
+      // Aggregate nutrition totals from all logs
+      const nutritionTotals = nutritionLogs.reduce((acc, log) => ({
+        calories: acc.calories + (log.calories || 0),
+        protein: acc.protein + (log.protein || 0),
+        carbs: acc.carbs + (log.carbs || 0),
+        fat: acc.fat + (log.fat || 0),
+      }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
       // Get today's workout log if it exists
       const workoutLog = await storage.getWorkoutLogByDate(user.id, today);
-      
+
       // Get today's plan or generate a new one
       let dailyPlan = await storage.getDailyPlanByDate(user.id, today);
-      
+
       if (!dailyPlan) {
         // Generate a new plan
         const mealPlan = await generateMealPlan(
@@ -460,11 +468,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           macros.fat,
           macros.targetCalories
         );
-        
+
         const workoutPlan = await generateWorkoutPlan(user);
-        
+
         const motivation = await generateDailyMotivation(user);
-        
+
         // Create a new daily plan
         dailyPlan = await storage.createDailyPlan({
           date: today.toISOString().split('T')[0], // Convert Date to string format
@@ -475,14 +483,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           motivation,
         });
       }
-      
+
       // Calculate progress percentages for stats
-      const proteinProgress = nutritionLog?.protein 
-        ? Math.round((nutritionLog.protein / macros.protein) * 100) 
+      const proteinProgress = nutritionTotals.protein
+        ? Math.round((nutritionTotals.protein / macros.protein) * 100)
         : 0;
-      
-      const calorieProgress = nutritionLog?.calories 
-        ? Math.round((nutritionLog.calories / macros.targetCalories) * 100) 
+
+      const calorieProgress = nutritionTotals.calories
+        ? Math.round((nutritionTotals.calories / macros.targetCalories) * 100)
         : 0;
       
       // Response with dashboard data
@@ -494,9 +502,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stats: {
           tdee,
           macros,
-          currentCalories: nutritionLog?.calories || 0,
+          currentCalories: nutritionTotals.calories,
           calorieProgress,
-          currentProtein: nutritionLog?.protein || 0,
+          currentProtein: nutritionTotals.protein,
           proteinProgress,
           currentSteps: healthLog?.steps || 0,
           stepsProgress: healthLog?.steps ? Math.round((healthLog.steps / 10000) * 100) : 0,
@@ -505,7 +513,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         dailyPlan,
         healthLog,
-        nutritionLog,
+        nutritionLog: {
+          ...nutritionTotals,
+          meals: nutritionLogs, // Array of all individual meal logs
+        },
         workoutLog,
       });
     } catch (error) {

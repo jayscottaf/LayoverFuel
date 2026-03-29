@@ -21,6 +21,7 @@ export interface IStorage {
   // Nutrition log methods
   getNutritionLogs(userId: number): Promise<NutritionLog[]>;
   getNutritionLogByDate(userId: number, date: Date): Promise<NutritionLog | undefined>;
+  getNutritionLogsByDate(userId: number, date: Date): Promise<NutritionLog[]>;
   createNutritionLog(log: InsertNutritionLog): Promise<NutritionLog>;
   updateNutritionLog(id: number, logData: Partial<NutritionLog>): Promise<NutritionLog | undefined>;
   
@@ -105,6 +106,20 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return log;
+  }
+
+  async getNutritionLogsByDate(userId: number, date: Date): Promise<NutritionLog[]> {
+    const dateString = date.toISOString().split('T')[0];
+    const logs = await db
+      .select()
+      .from(nutritionLogs)
+      .where(
+        and(
+          eq(nutritionLogs.userId, userId),
+          sql`${nutritionLogs.date}::date = ${dateString}::date`
+        )
+      );
+    return logs;
   }
 
   async createNutritionLog(insertLog: InsertNutritionLog): Promise<NutritionLog> {
