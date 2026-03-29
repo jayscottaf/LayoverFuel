@@ -1,8 +1,26 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// CORS configuration for production deployment
+const corsOptions = {
+  origin: [
+    'http://localhost:5173',  // Vite dev server
+    'https://layoverfuel.com',  // Production frontend
+    'https://www.layoverfuel.com',  // Production frontend (www)
+    'https://layoverfuel.vercel.app',  // Vercel preview deployments
+    /https:\/\/.*-layoverfuel\.vercel\.app$/,  // All Vercel preview URLs
+  ],
+  credentials: true,  // Allow cookies for session management
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+
 // Trust Replit's reverse proxy so secure session cookies work in production
 app.set("trust proxy", 1);
 // Increase JSON payload size limit for image uploads

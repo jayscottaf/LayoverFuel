@@ -1,0 +1,19 @@
+# Exclude backend server files from Vercel deployment
+server/
+shared/
+
+# Exclude config files
+.replit
+drizzle.config.ts
+
+# Exclude development files
+*.md
+!README.md
+
+# Node modules and build artifacts
+node_modules/
+dist/
+
+# Environment files
+.env
+.env.*
