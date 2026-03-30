@@ -423,6 +423,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to calculate logging streak
+  async function calculateStreak(userId: number): Promise<number> {
+    const allLogs = await storage.getNutritionLogs(userId);
+    if (allLogs.length === 0) return 0;
+
+    // Sort logs by date descending
+    const sortedLogs = allLogs.sort((a, b) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    // Get unique dates (in case of multiple logs per day)
+    const uniqueDates = Array.from(
+      new Set(sortedLogs.map(log => new Date(log.date).toISOString().split('T')[0]))
+    ).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+
+    // Check if user logged today
+    if (uniqueDates[0] !== todayStr) {
+      return 0; // No log today = no streak
+    }
+
+    // Count consecutive days
+    let streak = 1;
+    for (let i = 1; i < uniqueDates.length; i++) {
+      const currentDate = new Date(uniqueDates[i-1]);
+      const prevDate = new Date(uniqueDates[i]);
+
+      // Calculate day difference
+      const diffTime = currentDate.getTime() - prevDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        streak++;
+      } else {
+        break; // Gap in logging, streak ends
+      }
+    }
+
+    return streak;
+  }
+
   // Dashboard Routes
   app.get("/api/dashboard", async (req: Request, res: Response) => {
     if (!req.session.userId) {
@@ -496,7 +540,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const calorieProgress = nutritionTotals.calories
         ? Math.round((nutritionTotals.calories / macros.targetCalories) * 100)
         : 0;
-      
+
+      // Calculate streak
+      const streak = await calculateStreak(user.id);
+
       // Response with dashboard data
       res.status(200).json({
         user: {
@@ -514,6 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           stepsProgress: healthLog?.steps ? Math.round((healthLog.steps / 10000) * 100) : 0,
           water: healthLog?.water || 0,
           waterProgress: healthLog?.water ? Math.round((healthLog.water / 8) * 100) : 0,
+          streak,
         },
         dailyPlan,
         healthLog,
@@ -525,6 +573,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Dashboard error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Stats endpoint for stats page
+  app.get("/api/stats", async (req: Request, res: Response) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const allNutritionLogs = await storage.getNutritionLogs(req.session.userId);
+
+      // Calculate streak
+      const streak = await calculateStreak(req.session.userId);
+
+      // Calculate total days logged (unique dates)
+      const uniqueDates = Array.from(
+        new Set(allNutritionLogs.map(log => new Date(log.date).toISOString().split('T')[0]))
+      );
+      const totalDaysLogged = uniqueDates.length;
+
+      // Calculate average calories
+      const totalCalories = allNutritionLogs.reduce((sum, log) => sum + (log.calories || 0), 0);
+      const avgCalories = allNutritionLogs.length > 0 ? Math.round(totalCalories / allNutritionLogs.length) : 0;
+
+      // Calculate consistency (% of last 30 days with logs)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const recentLogs = allNutritionLogs.filter(log =>
+        new Date(log.date) >= thirtyDaysAgo
+      );
+      const recentUniqueDates = Array.from(
+        new Set(recentLogs.map(log => new Date(log.date).toISOString().split('T')[0]))
+      );
+      const consistency = Math.round((recentUniqueDates.length / 30) * 100);
+
+      res.status(200).json({
+        streak,
+        totalDaysLogged,
+        avgCalories,
+        consistency,
+      });
+    } catch (error) {
+      console.error("Stats error:", error);
       res.status(500).json({ message: "Server error" });
     }
   });

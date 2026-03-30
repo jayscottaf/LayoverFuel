@@ -58,9 +58,9 @@ export default function StatsPage() {
       const response = await apiRequest("GET", `/api/logs/health?start=${startDate.toISOString().split('T')[0]}&end=${endDate.toISOString().split('T')[0]}`);
       const data = await response.json();
 
-      // Transform data for chart
+      // Transform data for chart - keep raw date for chart component to format
       return data.map((log: any) => ({
-        date: new Date(log.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        date: log.date, // Keep ISO date string for proper parsing
         weight: log.weight * 2.20462, // Convert kg to lbs for display
       }));
     },
@@ -77,6 +77,16 @@ export default function StatsPage() {
         return null;
       }
     },
+  });
+
+  // Fetch stats
+  const { data: statsData } = useQuery<{
+    streak: number;
+    totalDaysLogged: number;
+    avgCalories: number;
+    consistency: number;
+  }>({
+    queryKey: ["/api/stats"],
   });
 
   // Calculate current stats from weight history
@@ -223,7 +233,7 @@ export default function StatsPage() {
               <Calendar className="h-4 w-4 text-green-400" />
               <span className="text-xs text-gray-400">Days Logged</span>
             </div>
-            <p className="text-2xl font-bold text-white">12</p>
+            <p className="text-2xl font-bold text-white">{statsData?.totalDaysLogged || 0}</p>
           </div>
 
           <div className="bg-gray-900 rounded-2xl p-4">
@@ -231,7 +241,7 @@ export default function StatsPage() {
               <Award className="h-4 w-4 text-orange-400" />
               <span className="text-xs text-gray-400">Current Streak</span>
             </div>
-            <p className="text-2xl font-bold text-white">3 <span className="text-sm text-gray-500">days</span></p>
+            <p className="text-2xl font-bold text-white">{statsData?.streak || 0} <span className="text-sm text-gray-500">days</span></p>
           </div>
 
           <div className="bg-gray-900 rounded-2xl p-4">
@@ -239,7 +249,7 @@ export default function StatsPage() {
               <Target className="h-4 w-4 text-blue-400" />
               <span className="text-xs text-gray-400">Avg Calories</span>
             </div>
-            <p className="text-2xl font-bold text-white">2,150</p>
+            <p className="text-2xl font-bold text-white">{statsData?.avgCalories?.toLocaleString() || 0}</p>
           </div>
 
           <div className="bg-gray-900 rounded-2xl p-4">
@@ -247,7 +257,7 @@ export default function StatsPage() {
               <TrendingUp className="h-4 w-4 text-purple-400" />
               <span className="text-xs text-gray-400">Consistency</span>
             </div>
-            <p className="text-2xl font-bold text-white">86<span className="text-sm text-gray-500">%</span></p>
+            <p className="text-2xl font-bold text-white">{statsData?.consistency || 0}<span className="text-sm text-gray-500">%</span></p>
           </div>
         </div>
 

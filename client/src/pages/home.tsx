@@ -22,6 +22,7 @@ interface DashboardData {
     stepsProgress: number;
     water: number;
     waterProgress: number;
+    streak: number;
   };
   dailyPlan: any;
   nutritionLog: any;
@@ -255,7 +256,9 @@ export default function HomePage() {
               {/* Streak Badge */}
               <div className="flex items-center gap-1.5 bg-orange-500/20 rounded-full px-3 py-1.5">
                 <Flame className="h-4 w-4 text-orange-400" />
-                <span className="text-sm font-semibold text-orange-400">Day 1</span>
+                <span className="text-sm font-semibold text-orange-400">
+                  {data?.stats.streak ? `${data.stats.streak} day${data.stats.streak !== 1 ? 's' : ''}` : 'Start'}
+                </span>
               </div>
             </div>
           </div>
