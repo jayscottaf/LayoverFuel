@@ -50,8 +50,17 @@ export function WeightProgressChart({
   // Calculate Y-axis domain with padding (use rounded weights)
   const weights = formattedData.map(d => d.weight);
   const allWeights = goalWeight ? [...weights, goalWeight] : weights;
-  const minWeight = weights.length > 0 ? Math.min(...allWeights) - 3 : 150;
-  const maxWeight = weights.length > 0 ? Math.max(...allWeights) + 3 : 200;
+
+  // Only calculate range if we have valid weight data
+  let minWeight = 150;
+  let maxWeight = 200;
+  if (weights.length > 0 && weights.every(w => w > 0)) {
+    const min = Math.min(...allWeights);
+    const max = Math.max(...allWeights);
+    // Add 5 lbs padding above and below, but keep it reasonable
+    minWeight = Math.max(min - 5, 50);  // Never go below 50 lbs
+    maxWeight = max + 5;
+  }
 
   return (
     <div className={`${className}`}>

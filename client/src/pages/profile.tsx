@@ -11,6 +11,7 @@ interface UserProfile {
   email: string;
   age: number | null;
   weight: number | null;
+  goalWeight: number | null;
   height: number | null;
   gender: string | null;
   fitnessGoal: string | null;
@@ -166,7 +167,7 @@ export default function ProfilePage() {
 
   const openNum = (field: string, current: number | null | undefined) => {
     // Convert weight from kg to lbs for display
-    if (field === "weight" && current != null) {
+    if ((field === "weight" || field === "goalWeight") && current != null) {
       setTempNum(String((current * 2.20462).toFixed(1)));
     } else {
       setTempNum(current != null ? String(current) : "");
@@ -183,7 +184,7 @@ export default function ProfilePage() {
   const saveNum = (field: string, float = false) => {
     let value = float ? parseFloat(tempNum) : parseInt(tempNum);
     // Convert weight from lbs to kg for storage
-    if (field === "weight" && float) {
+    if ((field === "weight" || field === "goalWeight") && float) {
       value = value / 2.20462;
     }
     mutation.mutate({ [field]: value });
@@ -292,9 +293,14 @@ export default function ProfilePage() {
           {/* Body */}
           <SectionCard title="Body">
             <SettingsRow
-              label="Weight"
+              label="Starting Weight"
               value={profile?.weight ? `${Math.round(profile.weight * 2.20462 * 2) / 2} lbs` : "—"}
               onTap={() => openNum("weight", profile?.weight)}
+            />
+            <SettingsRow
+              label="Goal Weight"
+              value={profile?.goalWeight ? `${Math.round(profile.goalWeight * 2.20462 * 2) / 2} lbs` : "—"}
+              onTap={() => openNum("goalWeight", profile?.goalWeight)}
             />
             <SettingsRow label="Height" value={fmtHeight(profile?.height)} onTap={() => openHeight(profile?.height)} last />
           </SectionCard>
@@ -407,12 +413,16 @@ export default function ProfilePage() {
         </EditorSheet>
       )}
 
-      {/* Number editors (age, weight) */}
-      {(editing === "age" || editing === "weight") && (
+      {/* Number editors (age, weight, goalWeight) */}
+      {(editing === "age" || editing === "weight" || editing === "goalWeight") && (
         <EditorSheet
-          title={editing === "age" ? "Age" : "Weight (lbs)"}
+          title={
+            editing === "age" ? "Age" :
+            editing === "goalWeight" ? "Goal Weight (lbs)" :
+            "Starting Weight (lbs)"
+          }
           onClose={() => setEditing(null)}
-          onSave={() => saveNum(editing, editing === "weight")}
+          onSave={() => saveNum(editing, editing === "weight" || editing === "goalWeight")}
         >
           <div className="space-y-2">
             <input

@@ -10,6 +10,7 @@ export const users = pgTable("users", {
   age: integer("age"),
   height: integer("height_cm"),
   weight: real("weight_kg"),
+  goalWeight: real("goal_weight_kg"),
   gender: text("gender"),
   fitnessGoal: text("fitness_goal"),
   activityLevel: text("activity_level"),

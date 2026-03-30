@@ -28,11 +28,8 @@ function LoadingScreen() {
 
 function AuthedApp() {
   return (
-    <>
-      {/* Fixed background that extends into safe areas */}
-      <div className="fixed inset-0 bg-black" style={{ zIndex: -1 }} />
-
-      <div className="flex flex-col relative" style={{ height: "100dvh", paddingTop: "max(env(safe-area-inset-top), 50px)" }}>
+    <div className="fixed inset-0 bg-black">
+      <div className="flex flex-col h-full" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <Switch>
           <Route path="/" component={HomePage} />
           <Route path="/chat" component={ChatPage} />
@@ -43,7 +40,7 @@ function AuthedApp() {
         </Switch>
         <MobileNavigation />
       </div>
-    </>
+    </div>
   );
 }
 
