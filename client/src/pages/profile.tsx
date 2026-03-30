@@ -165,7 +165,12 @@ export default function ProfilePage() {
   };
 
   const openNum = (field: string, current: number | null | undefined) => {
-    setTempNum(current != null ? String(current) : "");
+    // Convert weight from kg to lbs for display
+    if (field === "weight" && current != null) {
+      setTempNum(String((current * 2.20462).toFixed(1)));
+    } else {
+      setTempNum(current != null ? String(current) : "");
+    }
     setEditing(field);
   };
 
@@ -175,7 +180,14 @@ export default function ProfilePage() {
   };
 
   const saveStr = (field: string) => mutation.mutate({ [field]: tempStr });
-  const saveNum = (field: string, float = false) => mutation.mutate({ [field]: float ? parseFloat(tempNum) : parseInt(tempNum) });
+  const saveNum = (field: string, float = false) => {
+    let value = float ? parseFloat(tempNum) : parseInt(tempNum);
+    // Convert weight from lbs to kg for storage
+    if (field === "weight" && float) {
+      value = value / 2.20462;
+    }
+    mutation.mutate({ [field]: value });
+  };
   const saveArr = (field: string) => mutation.mutate({ [field]: tempArr });
 
   const openHeight = (currentCm: number | null | undefined) => {
@@ -279,7 +291,11 @@ export default function ProfilePage() {
 
           {/* Body */}
           <SectionCard title="Body">
-            <SettingsRow label="Weight" value={fmt(profile?.weight, " lbs")} onTap={() => openNum("weight", profile?.weight)} />
+            <SettingsRow
+              label="Weight"
+              value={profile?.weight ? `${(profile.weight * 2.20462).toFixed(1)} lbs` : "—"}
+              onTap={() => openNum("weight", profile?.weight)}
+            />
             <SettingsRow label="Height" value={fmtHeight(profile?.height)} onTap={() => openHeight(profile?.height)} last />
           </SectionCard>
 
