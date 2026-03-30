@@ -68,20 +68,20 @@ export function WeightLogDialog({ open, onOpenChange, currentWeight }: WeightLog
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-white dark:bg-gray-900">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
-            <Scale className="h-5 w-5 text-primary" />
+      <DialogContent className="sm:max-w-md bg-gray-900 border-gray-800 max-h-[85vh] overflow-y-auto">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="flex items-center gap-2 text-white text-lg">
+            <Scale className="h-5 w-5 text-blue-400" />
             Log Today's Weight
           </DialogTitle>
-          <DialogDescription className="text-gray-600 dark:text-gray-400">
+          <DialogDescription className="text-gray-400 text-sm">
             Track your weight to calculate your actual calorie burn
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="weight">Weight</Label>
+            <Label htmlFor="weight" className="text-gray-300 text-sm">Weight</Label>
             <div className="flex gap-2">
               <Input
                 id="weight"
@@ -90,17 +90,17 @@ export function WeightLogDialog({ open, onOpenChange, currentWeight }: WeightLog
                 placeholder="Enter weight"
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
-                className="flex-1"
+                className="flex-1 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
                 autoFocus
               />
-              <div className="flex rounded-md border">
+              <div className="flex rounded-md border border-gray-700 overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setUnit("lbs")}
                   className={`px-3 py-2 text-sm font-medium transition-colors ${
                     unit === "lbs"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-background text-muted-foreground hover:text-foreground"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-800 text-gray-400 hover:text-white"
                   }`}
                 >
                   lbs
@@ -110,8 +110,8 @@ export function WeightLogDialog({ open, onOpenChange, currentWeight }: WeightLog
                   onClick={() => setUnit("kg")}
                   className={`px-3 py-2 text-sm font-medium transition-colors ${
                     unit === "kg"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-background text-muted-foreground hover:text-foreground"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-800 text-gray-400 hover:text-white"
                   }`}
                 >
                   kg
@@ -121,25 +121,25 @@ export function WeightLogDialog({ open, onOpenChange, currentWeight }: WeightLog
           </div>
 
           {currentWeight && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-400">
               Last recorded: {currentWeight.toFixed(1)} kg ({(currentWeight * 2.20462).toFixed(1)} lbs)
             </p>
           )}
 
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end pt-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={logWeightMutation.isPending}
-              className="text-gray-900 dark:text-white border-gray-300 dark:border-gray-700"
+              className="text-white border-gray-700 bg-gray-800 hover:bg-gray-700"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={logWeightMutation.isPending || !weight}
-              className="bg-primary text-white hover:bg-primary/90"
+              className="bg-blue-600 text-white hover:bg-blue-700"
             >
               {logWeightMutation.isPending ? "Logging..." : "Log Weight"}
             </Button>
