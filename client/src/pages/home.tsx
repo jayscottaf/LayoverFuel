@@ -2,10 +2,11 @@ import type { ReactNode } from "react";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Dumbbell, Droplets, Flame, ChevronRight, Zap, Plus, X, Pencil, Check, GripVertical, ScanBarcode, Camera, WifiOff, Loader2, RefreshCw } from "lucide-react";
+import { Dumbbell, Droplets, Flame, ChevronRight, Zap, Plus, X, Pencil, Check, GripVertical, ScanBarcode, Camera, WifiOff, Loader2, RefreshCw, Scale } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { BarcodeScanner } from "@/components/ui/barcode-scanner";
 import { SnapToLog } from "@/components/ui/snap-to-log";
+import { WeightLogDialog } from "@/components/ui/weight-log-dialog";
 import { useOffline } from "@/hooks/use-offline";
 
 interface DashboardData {
@@ -162,6 +163,7 @@ export default function HomePage() {
   const [shortcuts, setShortcuts] = useState<Shortcut[]>(loadShortcuts);
   const [showScanner, setShowScanner] = useState(false);
   const [showSnapToLog, setShowSnapToLog] = useState(false);
+  const [showWeightDialog, setShowWeightDialog] = useState(false);
 
   const { data, isLoading } = useQuery<DashboardData>({ queryKey: ["/api/dashboard"] });
   const { isOffline, pendingCount, syncStatus, manualSync } = useOffline();
@@ -349,6 +351,13 @@ export default function HomePage() {
               </p>
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => setShowWeightDialog(true)}
+                  className="text-xs text-gray-400 hover:text-indigo-400 flex items-center gap-1"
+                >
+                  <Scale className="h-3.5 w-3.5" />
+                  Weight
+                </button>
+                <button
                   onClick={() => setShowScanner(true)}
                   className="text-xs text-gray-400 hover:text-indigo-400 flex items-center gap-1"
                 >
@@ -476,6 +485,12 @@ export default function HomePage() {
           onLogSuccess={() => queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] })}
         />
       )}
+
+      {/* Weight Log Dialog */}
+      <WeightLogDialog
+        open={showWeightDialog}
+        onOpenChange={setShowWeightDialog}
+      />
     </>
   );
 }

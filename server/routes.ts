@@ -27,6 +27,7 @@ import { generateMealPlan } from "./services/meal-service";
 import { generateWorkoutPlan } from "./services/workout-service";
 import { analyzeMealImage } from "./services/image-analysis-service";
 import nutritionRoutes from "./routes/api/logs/nutrition";
+import healthRoutes from "./routes/api/logs/health";
 declare module "express-session" {
   interface SessionData {
     userId: number;
@@ -52,6 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
   app.use("/api/logs/nutrition", nutritionRoutes);
+  app.use("/api/logs/health", healthRoutes);
   // Auth Routes
   // Dev-only instant login — only works in development
   app.post("/api/auth/dev-login", async (req: Request, res: Response) => {
