@@ -68,13 +68,13 @@ export function WeightLogDialog({ open, onOpenChange, currentWeight }: WeightLog
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-white dark:bg-gray-900">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
             <Scale className="h-5 w-5 text-primary" />
             Log Today's Weight
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-gray-600 dark:text-gray-400">
             Track your weight to calculate your actual calorie burn
           </DialogDescription>
         </DialogHeader>
@@ -132,12 +132,14 @@ export function WeightLogDialog({ open, onOpenChange, currentWeight }: WeightLog
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={logWeightMutation.isPending}
+              className="text-gray-900 dark:text-white border-gray-300 dark:border-gray-700"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={logWeightMutation.isPending || !weight}
+              className="bg-primary text-white hover:bg-primary/90"
             >
               {logWeightMutation.isPending ? "Logging..." : "Log Weight"}
             </Button>
