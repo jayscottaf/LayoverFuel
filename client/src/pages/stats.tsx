@@ -133,12 +133,10 @@ export default function StatsPage() {
             </div>
 
             {/* Weight Chart */}
-            <div className="h-48 -mx-2">
-              <WeightProgressChart
-                data={weightHistory}
-                className="!bg-transparent !shadow-none !p-0"
-              />
-            </div>
+            <WeightProgressChart
+              data={weightHistory}
+              className="mt-2"
+            />
           </div>
         ) : (
           <div className="bg-gray-900 rounded-3xl p-8 text-center">
