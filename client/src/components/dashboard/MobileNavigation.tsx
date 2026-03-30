@@ -1,10 +1,11 @@
 import { Link, useLocation } from "wouter";
-import { Home, MessageCircle, BarChart2, User } from "lucide-react";
+import { Home, MessageCircle, BarChart2, User, TrendingUp } from "lucide-react";
 
 const tabs = [
   { href: "/", icon: Home, label: "Home" },
-  { href: "/chat", icon: MessageCircle, label: "Chat" },
+  { href: "/stats", icon: TrendingUp, label: "Stats" },
   { href: "/log", icon: BarChart2, label: "Log" },
+  { href: "/chat", icon: MessageCircle, label: "Chat" },
   { href: "/profile", icon: User, label: "Profile" },
 ];
 

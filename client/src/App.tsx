@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import ChatPage from "@/pages/chat-page";
 import HomePage from "@/pages/home";
 import LogPage from "@/pages/log";
+import StatsPage from "@/pages/stats";
 import ProfilePage from "@/pages/profile";
 import LoginPage from "@/pages/auth/login";
 import RegisterPage from "@/pages/auth/register";
@@ -36,6 +37,7 @@ function AuthedApp() {
           <Route path="/" component={HomePage} />
           <Route path="/chat" component={ChatPage} />
           <Route path="/log" component={LogPage} />
+          <Route path="/stats" component={StatsPage} />
           <Route path="/profile" component={ProfilePage} />
           <Route component={NotFound} />
         </Switch>
