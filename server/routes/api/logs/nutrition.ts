@@ -76,9 +76,50 @@ export async function handleNutritionLogPost(req: Request, res: Response) {
     });
   }
 }
+
+export async function handleNutritionLogGet(req: Request, res: Response) {
+  const userId = req.session?.userId || 1;
+
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const { date, start, end } = req.query;
+
+    // If specific date requested
+    if (date && typeof date === 'string') {
+      const logDate = new Date(date);
+      const logs = await storage.getNutritionLogsByDate(userId, logDate);
+      return res.status(200).json(logs);
+    }
+
+    // If date range requested
+    if (start && end && typeof start === 'string' && typeof end === 'string') {
+      const allLogs = await storage.getNutritionLogs(userId);
+      const filtered = allLogs.filter(log => {
+        const logDate = new Date(log.date);
+        return logDate >= new Date(start) && logDate <= new Date(end);
+      });
+      return res.status(200).json(filtered);
+    }
+
+    // Default: return all logs
+    const logs = await storage.getNutritionLogs(userId);
+    res.status(200).json(logs);
+  } catch (error) {
+    console.error("💥 Error fetching nutrition logs:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 import { Router } from "express";
 const router = Router();
 router.post("/", handleNutritionLogPost);
+router.get("/", handleNutritionLogGet);
 
 export default router;
 
