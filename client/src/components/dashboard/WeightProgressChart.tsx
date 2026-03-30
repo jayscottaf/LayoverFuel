@@ -15,12 +15,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const date = new Date(label);
     const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const roundedWeight = Math.round(payload[0].value * 2) / 2;
 
     return (
       <div className="bg-gray-950 border border-blue-500/20 rounded-lg p-3 shadow-2xl backdrop-blur">
         <p className="text-xs text-gray-400 mb-1">{formattedDate}</p>
         <div className="flex items-baseline gap-1">
-          <p className="text-lg font-bold text-white">{payload[0].value.toFixed(1)}</p>
+          <p className="text-lg font-bold text-white">{roundedWeight}</p>
           <p className="text-xs text-gray-400">lbs</p>
         </div>
       </div>
@@ -36,17 +37,18 @@ export function WeightProgressChart({
 }: WeightProgressChartProps) {
   const chartData = data.length > 0 ? data : [];
 
-  // Format dates for better display
+  // Format dates for better display and round weights to nearest 0.5 lbs
   const formattedData = chartData.map(entry => ({
     ...entry,
+    weight: Math.round(entry.weight * 2) / 2,
     displayDate: new Date(entry.date).toLocaleDateString('en-US', {
       month: 'numeric',
       day: 'numeric'
     })
   }));
 
-  // Calculate Y-axis domain with padding
-  const weights = chartData.map(d => d.weight);
+  // Calculate Y-axis domain with padding (use rounded weights)
+  const weights = formattedData.map(d => d.weight);
   const allWeights = goalWeight ? [...weights, goalWeight] : weights;
   const minWeight = weights.length > 0 ? Math.min(...allWeights) - 3 : 150;
   const maxWeight = weights.length > 0 ? Math.max(...allWeights) + 3 : 200;

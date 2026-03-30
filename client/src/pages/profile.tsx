@@ -293,7 +293,7 @@ export default function ProfilePage() {
           <SectionCard title="Body">
             <SettingsRow
               label="Weight"
-              value={profile?.weight ? `${(profile.weight * 2.20462).toFixed(1)} lbs` : "—"}
+              value={profile?.weight ? `${Math.round(profile.weight * 2.20462 * 2) / 2} lbs` : "—"}
               onTap={() => openNum("weight", profile?.weight)}
             />
             <SettingsRow label="Height" value={fmtHeight(profile?.height)} onTap={() => openHeight(profile?.height)} last />

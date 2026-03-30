@@ -131,12 +131,12 @@ export default function StatsPage() {
                   <span className="text-sm text-gray-400">Current Weight</span>
                 </div>
                 <p className="text-3xl font-bold text-white">
-                  {currentWeight?.toFixed(1)} <span className="text-lg text-gray-500">lbs</span>
+                  {currentWeight ? Math.round(currentWeight * 2) / 2 : 0} <span className="text-lg text-gray-500">lbs</span>
                 </p>
                 {weightChange !== 0 && (
                   <div className={`flex items-center gap-1 mt-1 ${weightChange > 0 ? 'text-red-400' : 'text-green-400'}`}>
                     {weightChange > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                    <span className="text-sm">{Math.abs(weightChange).toFixed(1)} lbs this {timeRange}</span>
+                    <span className="text-sm">{Math.round(Math.abs(weightChange) * 2) / 2} lbs this {timeRange}</span>
                   </div>
                 )}
               </div>

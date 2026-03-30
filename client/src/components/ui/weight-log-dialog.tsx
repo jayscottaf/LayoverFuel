@@ -122,7 +122,7 @@ export function WeightLogDialog({ open, onOpenChange, currentWeight }: WeightLog
 
           {currentWeight && (
             <p className="text-sm text-gray-400">
-              Last recorded: {(currentWeight * 2.20462).toFixed(1)} lbs
+              Last recorded: {Math.round(currentWeight * 2.20462 * 2) / 2} lbs
             </p>
           )}
 
