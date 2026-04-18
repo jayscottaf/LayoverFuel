@@ -1,7 +1,37 @@
 import type { ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, Flame, Beef, Wheat, Droplets, ChevronRight, Utensils, MessageCircle } from "lucide-react";
+import {
+  Plus,
+  Flame,
+  Beef,
+  Wheat,
+  Droplets,
+  ChevronRight,
+  Utensils,
+  MessageCircle,
+  Trash2,
+  RotateCcw,
+  Loader2,
+  RefreshCw,
+  CloudUpload,
+} from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useOffline } from "@/hooks/use-offline";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ToastAction } from "@/components/ui/toast";
 
 interface MealLog {
   id: number;
@@ -47,6 +77,9 @@ function StatPill({ icon, label, value, unit, color }: {
 
 export default function LogPage() {
   const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { pendingCount, syncStatus, manualSync, isOffline } = useOffline();
 
   const { data, isLoading } = useQuery<DashboardData>({ queryKey: ["/api/dashboard"] });
 
@@ -61,7 +94,97 @@ export default function LogPage() {
   const log = data?.nutritionLog;
 
   const meals = log?.meals ?? [];
-  const mealEntries = meals;
+
+  // Optimistic hide on delete — populated by meal id, cleared on undo or commit
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<number>>(new Set());
+  const deleteTimeoutsRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+  const [confirmDeleteMeal, setConfirmDeleteMeal] = useState<MealLog | null>(null);
+
+  useEffect(() => {
+    return () => {
+      deleteTimeoutsRef.current.forEach(t => clearTimeout(t));
+      deleteTimeoutsRef.current.clear();
+    };
+  }, []);
+
+  const mealEntries = meals.filter(m => !pendingDeleteIds.has(m.id));
+
+  const commitDelete = async (id: number) => {
+    deleteTimeoutsRef.current.delete(id);
+    try {
+      await apiRequest("DELETE", `/api/logs/nutrition/${id}`);
+      await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+    } catch {
+      toast({
+        title: "Couldn't delete meal",
+        description: "We'll show it again. Try once more in a moment.",
+        variant: "destructive",
+      });
+      // Restore from pending set so it reappears
+      setPendingDeleteIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  const undoDelete = (id: number) => {
+    const t = deleteTimeoutsRef.current.get(id);
+    if (t) {
+      clearTimeout(t);
+      deleteTimeoutsRef.current.delete(id);
+    }
+    setPendingDeleteIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  const requestDelete = (meal: MealLog) => {
+    setConfirmDeleteMeal(null);
+    setPendingDeleteIds(prev => new Set(prev).add(meal.id));
+    const t = setTimeout(() => commitDelete(meal.id), 5000);
+    deleteTimeoutsRef.current.set(meal.id, t);
+
+    toast({
+      title: "Meal deleted",
+      description: meal.mealStyle || "Meal removed from today's log.",
+      action: (
+        <ToastAction altText="Undo" onClick={() => undoDelete(meal.id)}>
+          Undo
+        </ToastAction>
+      ),
+    });
+  };
+
+  const importYesterday = () => {
+    openChat(
+      "I'd like to log the same meals I had yesterday. Can you remind me what I logged and re-log them for today?"
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-40 bg-gray-800" />
+            <Skeleton className="h-7 w-32 bg-gray-800" />
+          </div>
+          <div className="flex gap-2">
+            {[0, 1, 2, 3].map(i => (
+              <Skeleton key={i} className="flex-1 h-20 rounded-2xl bg-gray-900" />
+            ))}
+          </div>
+          <Skeleton className="h-28 rounded-2xl bg-gray-900" />
+          <Skeleton className="h-48 rounded-2xl bg-gray-900" />
+          <Skeleton className="h-16 rounded-2xl bg-gray-900" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
@@ -72,6 +195,39 @@ export default function LogPage() {
           <p className="text-gray-400 text-sm">{today}</p>
           <h1 className="text-2xl font-bold text-white mt-0.5">Daily Log</h1>
         </div>
+
+        {/* Pending sync banner */}
+        {pendingCount > 0 && (
+          <div className="bg-orange-500/10 border border-orange-500/30 rounded-2xl p-4 flex items-center gap-3">
+            <div className="bg-orange-500/20 rounded-xl p-2 shrink-0">
+              <CloudUpload className="h-4 w-4 text-orange-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-orange-200">
+                {pendingCount} item{pendingCount === 1 ? "" : "s"} waiting to sync
+              </p>
+              <p className="text-xs text-orange-300/80">
+                {isOffline
+                  ? "Will upload automatically when you're back online."
+                  : "Ready to send to the server."}
+              </p>
+            </div>
+            {!isOffline && (
+              <button
+                onClick={manualSync}
+                disabled={syncStatus === "syncing"}
+                className="shrink-0 flex items-center gap-1.5 bg-orange-500/20 hover:bg-orange-500/30 disabled:opacity-60 rounded-xl px-3 py-1.5 text-xs font-semibold text-orange-200 transition-colors"
+              >
+                {syncStatus === "syncing" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                {syncStatus === "syncing" ? "Syncing" : "Sync now"}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Stats row */}
         <div className="flex gap-2">
@@ -139,6 +295,13 @@ export default function LogPage() {
                       <p className="text-xs text-gray-600 mt-0.5 truncate">{meal.notes}</p>
                     )}
                   </div>
+                  <button
+                    onClick={() => setConfirmDeleteMeal(meal)}
+                    className="shrink-0 p-2 rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    aria-label={`Delete ${meal.mealStyle || "meal"}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -146,12 +309,20 @@ export default function LogPage() {
             <div className="text-center py-8">
               <Utensils className="h-8 w-8 text-gray-700 mx-auto mb-2" />
               <p className="text-sm text-gray-500">No meals logged yet today</p>
-              <button
-                onClick={() => openChat("I'd like to log my first meal of the day. Here's what I ate: ")}
-                className="mt-3 text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 mx-auto"
-              >
-                <MessageCircle className="h-3.5 w-3.5" /> Log with AI chat
-              </button>
+              <div className="flex flex-col items-center gap-2 mt-3">
+                <button
+                  onClick={() => openChat("I'd like to log my first meal of the day. Here's what I ate: ")}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" /> Log with AI chat
+                </button>
+                <button
+                  onClick={importYesterday}
+                  className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" /> Import from yesterday
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -171,6 +342,32 @@ export default function LogPage() {
           <ChevronRight className="h-5 w-5 text-gray-600" />
         </button>
       </div>
+
+      <AlertDialog
+        open={!!confirmDeleteMeal}
+        onOpenChange={open => !open && setConfirmDeleteMeal(null)}
+      >
+        <AlertDialogContent className="bg-gray-900 border-gray-800 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this meal?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              {confirmDeleteMeal?.mealStyle || "This meal"} will be removed from today's log.
+              You'll have 5 seconds to undo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:text-white">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmDeleteMeal && requestDelete(confirmDeleteMeal)}
+              className="bg-red-600 text-white hover:bg-red-500"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

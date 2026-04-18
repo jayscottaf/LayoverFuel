@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Check, Camera, Loader2, ChevronRight, Pencil, Undo, WifiOff } from "lucide-react";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { AIProgress, type AIProgressStep } from "@/components/ui/ai-progress";
 import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { errorToast } from "@/lib/toast-helpers";
 import { queueItem } from "@/lib/offline-queue";
 import { useOffline } from "@/hooks/use-offline";
 
@@ -40,6 +42,7 @@ interface SnapToLogProps {
 export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
   const [image, setImage] = useState<string | null>(null);
   const [analysing, setAnalysing] = useState(false);
+  const [progressStep, setProgressStep] = useState<AIProgressStep>("upload");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [description, setDescription] = useState("");
   const [macros, setMacros] = useState<MealEstimate>({ calories: 0, protein: 0, carbs: 0, fat: 0 });
@@ -61,16 +64,20 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
 
   const quickLogMode = profile?.quickLogMode ?? false;
 
-  const handleImageSelect = async (_file: File, preview: string) => {
+  const analysePreview = async (preview: string) => {
     setImage(preview);
     setResult(null);
     setIsEditing(false);
     setAnalysing(true);
+    setProgressStep("upload");
     try {
+      // Brief upload step so the stepper animation is perceptible
+      setProgressStep("analyze");
       const res = await apiRequest("POST", "/api/meal-analysis", { imageData: preview });
       const data = await res.json();
       if (!data.result) throw new Error("No result");
       const r: AnalysisResult = data.result;
+      setProgressStep("ready");
       setResult(r);
       const desc = r.foodItems?.length ? r.foodItems.join(", ") : "Detected meal";
       setDescription(desc);
@@ -81,11 +88,18 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
         await logMealInstantly(desc, r.estimate);
       }
     } catch {
-      toast({ title: "Analysis failed", description: "Couldn't identify this meal. Try a clearer photo.", variant: "destructive" });
-      setImage(null);
+      errorToast({
+        title: "Analysis failed",
+        description: "Couldn't identify this meal. Try again or use a clearer photo.",
+        onRetry: () => analysePreview(preview),
+      });
     } finally {
       setAnalysing(false);
     }
+  };
+
+  const handleImageSelect = async (_file: File, preview: string) => {
+    await analysePreview(preview);
   };
 
   const logMealInstantly = async (desc: string, estimate: MealEstimate) => {
@@ -184,7 +198,11 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
       onLogSuccess?.();
       onClose();
     } catch (error) {
-      toast({ title: "Error", description: "Failed to log. Please try again.", variant: "destructive" });
+      errorToast({
+        title: "Couldn't log meal",
+        description: "Check your connection and try again.",
+        onRetry: handleLog,
+      });
     } finally {
       setIsLogging(false);
     }
@@ -247,11 +265,11 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
 
         {/* Analysing */}
         {analysing && (
-          <div className="text-center space-y-3">
+          <div className="text-center space-y-4">
             {image && (
               <img src={image} alt="Meal" className="w-40 h-40 rounded-2xl object-cover mx-auto opacity-60" />
             )}
-            <Loader2 className="h-10 w-10 text-indigo-400 animate-spin mx-auto" />
+            <AIProgress step={progressStep} className="justify-center" />
             <p className="text-white font-medium">Analysing your meal...</p>
             <p className="text-gray-500 text-sm">Estimating calories and macros</p>
           </div>

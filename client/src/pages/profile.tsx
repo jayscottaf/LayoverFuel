@@ -4,6 +4,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { User, ChevronRight, Check, LogOut, RefreshCw } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface UserProfile {
   id: number;
@@ -104,6 +115,7 @@ function EditorSheet({ title, onClose, onSave, children }: EditorSheetProps) {
 function SettingsRow({ label, value, onTap, last = false }: {
   label: string; value: string; onTap: () => void; last?: boolean;
 }) {
+  const isPlaceholder = value === "Tap to add" || value === "—";
   return (
     <button
       onClick={onTap}
@@ -111,7 +123,7 @@ function SettingsRow({ label, value, onTap, last = false }: {
     >
       <span className="text-sm text-gray-300">{label}</span>
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-500 max-w-[180px] truncate text-right">{value}</span>
+        <span className={`text-sm max-w-[180px] truncate text-right ${isPlaceholder ? "text-indigo-400" : "text-gray-500"}`}>{value}</span>
         <ChevronRight className="h-4 w-4 text-gray-600 shrink-0" />
       </div>
     </button>
@@ -224,6 +236,37 @@ export default function ProfilePage() {
     ? profile.dietaryRestrictions.join(", ")
     : "None";
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div className="max-w-lg mx-auto px-4 pt-4 space-y-5">
+          <div className="bg-gray-900 rounded-3xl p-5 space-y-5">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-14 h-14 rounded-2xl bg-gray-800" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-32 bg-gray-800" />
+                <Skeleton className="h-3 w-44 bg-gray-800" />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[0, 1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-16 rounded-xl bg-gray-800" />
+              ))}
+            </div>
+          </div>
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="space-y-1">
+              <Skeleton className="h-3 w-20 bg-gray-800" />
+              <Skeleton className="h-20 rounded-2xl bg-gray-900" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
@@ -293,10 +336,15 @@ export default function ProfilePage() {
           <SectionCard title="Body">
             <SettingsRow
               label="Weight"
-              value={profile?.weight ? `${Math.round(profile.weight * 2.20462 * 2) / 2} lbs` : "—"}
+              value={profile?.weight ? `${Math.round(profile.weight * 2.20462 * 2) / 2} lbs` : "Tap to add"}
               onTap={() => openNum("weight", profile?.weight)}
             />
-            <SettingsRow label="Height" value={fmtHeight(profile?.height)} onTap={() => openHeight(profile?.height)} last />
+            <SettingsRow
+              label="Height"
+              value={profile?.height ? fmtHeight(profile.height) : "Tap to add"}
+              onTap={() => openHeight(profile?.height)}
+              last
+            />
           </SectionCard>
 
           {/* Activity */}
@@ -361,7 +409,7 @@ export default function ProfilePage() {
               <RefreshCw className="h-4 w-4 text-gray-500" />
             </button>
             <button
-              onClick={handleLogout}
+              onClick={() => setShowLogoutConfirm(true)}
               className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-800/60 transition-colors"
             >
               <span className="text-sm text-red-400">Sign out</span>
@@ -371,6 +419,28 @@ export default function ProfilePage() {
 
         </div>
       </div>
+
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent className="bg-gray-900 border-gray-800 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out of LayoverFuel?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Your logged meals, workouts, and profile are saved. You can sign back in any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:text-white">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              className="bg-red-600 text-white hover:bg-red-500"
+            >
+              Sign out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── Editors ── */}
 

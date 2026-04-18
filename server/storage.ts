@@ -22,8 +22,10 @@ export interface IStorage {
   getNutritionLogs(userId: number): Promise<NutritionLog[]>;
   getNutritionLogByDate(userId: number, date: Date): Promise<NutritionLog | undefined>;
   getNutritionLogsByDate(userId: number, date: Date): Promise<NutritionLog[]>;
+  getNutritionLogById(id: number): Promise<NutritionLog | undefined>;
   createNutritionLog(log: InsertNutritionLog): Promise<NutritionLog>;
   updateNutritionLog(id: number, logData: Partial<NutritionLog>): Promise<NutritionLog | undefined>;
+  deleteNutritionLog(id: number): Promise<boolean>;
   
   // Workout log methods
   getWorkoutLogs(userId: number): Promise<WorkoutLog[]>;
@@ -137,6 +139,22 @@ export class DatabaseStorage implements IStorage {
       .where(eq(nutritionLogs.id, id))
       .returning();
     return updatedLog;
+  }
+
+  async getNutritionLogById(id: number): Promise<NutritionLog | undefined> {
+    const [log] = await db
+      .select()
+      .from(nutritionLogs)
+      .where(eq(nutritionLogs.id, id));
+    return log;
+  }
+
+  async deleteNutritionLog(id: number): Promise<boolean> {
+    const result = await db
+      .delete(nutritionLogs)
+      .where(eq(nutritionLogs.id, id))
+      .returning({ id: nutritionLogs.id });
+    return result.length > 0;
   }
 
   // Workout log methods

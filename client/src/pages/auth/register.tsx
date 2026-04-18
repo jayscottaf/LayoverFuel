@@ -31,6 +31,7 @@ export default function Register() {
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+    mode: "onBlur",
   });
 
   const onSubmit = async (data: RegisterFormValues) => {

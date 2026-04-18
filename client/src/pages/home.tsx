@@ -7,6 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { BarcodeScanner } from "@/components/ui/barcode-scanner";
 import { SnapToLog } from "@/components/ui/snap-to-log";
 import { WeightLogDialog } from "@/components/ui/weight-log-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useOffline } from "@/hooks/use-offline";
 
 interface DashboardData {
@@ -197,10 +198,51 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-black">
-        <div className="text-center">
-          <div className="w-16 h-16 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400 text-sm">Loading your dashboard...</p>
+      <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+          {/* Header skeleton */}
+          <div className="flex items-start justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32 bg-gray-800" />
+              <Skeleton className="h-7 w-48 bg-gray-800" />
+            </div>
+            <Skeleton className="h-8 w-20 rounded-full bg-gray-800" />
+          </div>
+
+          {/* Hero Snap-to-Log skeleton */}
+          <Skeleton className="w-full rounded-3xl bg-gray-900" style={{ height: 200 }} />
+
+          {/* Calorie summary skeleton */}
+          <div className="bg-gray-900 rounded-3xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-28 bg-gray-800" />
+                <Skeleton className="h-8 w-40 bg-gray-800" />
+                <Skeleton className="h-3 w-20 bg-gray-800" />
+              </div>
+              <Skeleton className="h-20 w-20 rounded-full bg-gray-800" />
+            </div>
+            <div className="flex gap-3">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-full bg-gray-800" />
+                  <Skeleton className="h-1.5 w-full bg-gray-800" />
+                  <Skeleton className="h-3 w-12 bg-gray-800" />
+                </div>
+              ))}
+            </div>
+            <div className="pt-4 border-t border-gray-800 space-y-2">
+              <Skeleton className="h-4 w-24 bg-gray-800" />
+              <Skeleton className="h-7 w-full rounded-lg bg-gray-800" />
+            </div>
+          </div>
+
+          {/* Quick actions skeleton */}
+          <div className="flex gap-2 overflow-hidden">
+            {[0, 1, 2].map(i => (
+              <Skeleton key={i} className="shrink-0 h-14 rounded-2xl bg-gray-900" style={{ width: 160 }} />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -336,8 +378,13 @@ export default function HomePage() {
                 {Array.from({ length: 8 }, (_, i) => (
                   <button
                     key={i}
-                    onClick={i < currentWater ? handleRemoveWater : handleAddWater}
-                    className={`flex-1 h-7 rounded-lg transition-all ${
+                    onClick={() => {
+                      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+                        try { navigator.vibrate?.(10); } catch {}
+                      }
+                      if (i < currentWater) handleRemoveWater(); else handleAddWater();
+                    }}
+                    className={`flex-1 h-7 rounded-lg transition-all active:scale-90 ${
                       i < currentWater ? "bg-cyan-500/80 hover:bg-cyan-400" : "bg-gray-800 hover:bg-gray-700 border border-gray-700"
                     }`}
                   />

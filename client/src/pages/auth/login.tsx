@@ -25,6 +25,7 @@ export default function Login() {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
+    mode: "onBlur",
   });
 
   const devLogin = async () => {
