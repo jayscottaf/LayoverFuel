@@ -99,9 +99,10 @@ export async function processOnboardingMessage(
         `;
 
         const chatResponse = await openai.chat.completions.create({
-          model: "gpt-4o",
+          model: "gpt-4o-mini",
           messages: [{role: "user", content: promptText}],
           response_format: { type: "json_object" },
+          max_tokens: 150,
         });
 
         const extractedData = JSON.parse(chatResponse.choices[0].message.content ?? '{}');
@@ -149,8 +150,9 @@ export async function processOnboardingMessage(
           `;
 
           const chatResponse = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model: "gpt-4o-mini",
             messages: [{role: "user", content: promptText}],
+            max_tokens: 10,
           });
 
           const result = (chatResponse.choices[0].message.content ?? '').trim().toLowerCase();
@@ -184,8 +186,9 @@ export async function processOnboardingMessage(
           `;
 
           const chatResponse = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model: "gpt-4o-mini",
             messages: [{role: "user", content: promptText}],
+            max_tokens: 10,
           });
 
           const result = (chatResponse.choices[0].message.content ?? '').trim().toLowerCase();
@@ -211,9 +214,10 @@ export async function processOnboardingMessage(
         `;
 
         const chatResponse = await openai.chat.completions.create({
-          model: "gpt-4o",
+          model: "gpt-4o-mini",
           messages: [{role: "user", content: promptText}],
           response_format: { type: "json_object" },
+          max_tokens: 150,
         });
 
         const parsed = JSON.parse(chatResponse.choices[0].message.content ?? '[]');
@@ -222,7 +226,7 @@ export async function processOnboardingMessage(
         response.value = [];
       }
       break;
-      
+
     case "gymMemberships":
       try {
         const promptText = `
@@ -234,9 +238,10 @@ export async function processOnboardingMessage(
         `;
 
         const chatResponse = await openai.chat.completions.create({
-          model: "gpt-4o",
+          model: "gpt-4o-mini",
           messages: [{role: "user", content: promptText}],
           response_format: { type: "json_object" },
+          max_tokens: 150,
         });
 
         const parsed = JSON.parse(chatResponse.choices[0].message.content ?? '[]');
@@ -324,6 +329,7 @@ async function generateOnboardingCompletionMessage(userData: User): Promise<stri
     const chatResponse = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [{role: "user", content: promptText}],
+      max_tokens: 300,
     });
 
     return chatResponse.choices[0].message.content ?? "Thanks for completing your profile! Your dashboard is now ready with personalized recommendations tailored to your needs. Check it out to see your daily plan.";
@@ -347,8 +353,9 @@ export async function generateDailyMotivation(user: User): Promise<string> {
     `;
 
     const chatResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: [{role: "user", content: promptText}],
+      max_tokens: 120,
     });
 
     return chatResponse.choices[0].message.content ?? "Stay consistent with your routine even when traveling - every small workout counts toward your goals!";
@@ -374,8 +381,9 @@ export async function processFeedback(feedback: string, user: User): Promise<str
     `;
 
     const chatResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: [{role: "user", content: promptText}],
+      max_tokens: 200,
     });
 
     return chatResponse.choices[0].message.content ?? "Thanks for sharing! We'll take your feedback into account to adjust your plan. Keep up the good work!";
