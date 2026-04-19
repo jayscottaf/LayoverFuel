@@ -193,10 +193,13 @@ export async function addMessageToThread(
   }
 }
 
+const DEFAULT_ASSISTANT_ID =
+  process.env.OPENAI_ASSISTANT_ID || 'asst_PZYE18wO7th5Fm9JoOkLEfDJ';
+
 // Run the assistant on a thread
 export async function runAssistantOnThread(
-  threadId: string, 
-  assistantId: string = 'asst_PZYE18wO7th5Fm9JoOkLEfDJ'
+  threadId: string,
+  assistantId: string = DEFAULT_ASSISTANT_ID
 ) {
   const response = await proxyRequestToOpenAI(
     'POST',
