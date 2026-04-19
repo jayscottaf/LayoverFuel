@@ -94,6 +94,7 @@ export async function generateMealPlan(
       model: "gpt-4o",
       messages: [{role: "user", content: promptText}],
       response_format: { type: "json_object" },
+      max_tokens: 1200,
     });
 
     const mealPlan = JSON.parse(chatResponse.choices[0].message.content ?? '{}');
