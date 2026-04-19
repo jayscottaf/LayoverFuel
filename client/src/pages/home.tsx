@@ -395,11 +395,11 @@ export default function HomePage() {
 
           {/* Quick Actions - Simplified */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-col gap-2 mb-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Quick Actions
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={() => setShowWeightDialog(true)}
                   className="text-xs text-gray-400 hover:text-indigo-400 flex items-center gap-1"
