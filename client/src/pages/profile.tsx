@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, ChevronRight, Check, LogOut, RefreshCw } from "lucide-react";
+import { User, ChevronRight, Check, LogOut, RefreshCw, CalendarCheck, CalendarX, Plane } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +29,7 @@ interface UserProfile {
   activityLevel: string | null;
   dietaryRestrictions: string[] | null;
   quickLogMode: boolean | null;
+  googleCalendarConnected?: boolean;
 }
 
 interface DashboardData {
@@ -146,9 +148,40 @@ function SectionCard({ title, children }: { title: string; children: React.React
 export default function ProfilePage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const { data: profile, isLoading } = useQuery<UserProfile>({ queryKey: ["/api/user/profile"] });
   const { data: dashData } = useQuery<DashboardData>({ queryKey: ["/api/dashboard"] });
+
+  // Surface Google Calendar connect status after returning from OAuth.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("calendar");
+    if (status === "connected") {
+      toast({ title: "Google Calendar connected" });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/profile"] });
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (status === "error") {
+      toast({
+        title: "Couldn't connect Google Calendar",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [toast, queryClient]);
+
+  const disconnectCalendar = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/integrations/google-calendar/disconnect", {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/itinerary/upcoming"] });
+      toast({ title: "Google Calendar disconnected" });
+    },
+    onError: () =>
+      toast({ title: "Error", description: "Failed to disconnect.", variant: "destructive" }),
+  });
 
   const [editing, setEditing] = useState<string | null>(null);
 
@@ -377,6 +410,57 @@ export default function ProfilePage() {
           {/* Dietary */}
           <SectionCard title="Dietary">
             <SettingsRow label="Restrictions" value={dietLabel} onTap={() => openArr("dietaryRestrictions", profile?.dietaryRestrictions)} last />
+          </SectionCard>
+
+          {/* Integrations */}
+          <SectionCard title="Integrations">
+            <div className="px-4 py-3.5 border-b border-gray-800/60">
+              <div className="flex items-start gap-3">
+                <div className={`shrink-0 rounded-xl p-2.5 ${profile?.googleCalendarConnected ? "bg-emerald-500/20" : "bg-gray-800"}`}>
+                  {profile?.googleCalendarConnected ? (
+                    <CalendarCheck className="h-5 w-5 text-emerald-400" />
+                  ) : (
+                    <CalendarX className="h-5 w-5 text-gray-500" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white font-medium">Google Calendar</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {profile?.googleCalendarConnected
+                      ? "Connected — we read your upcoming events to surface flights and layovers."
+                      : "Connect to see upcoming flights and layovers from your calendar."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                {profile?.googleCalendarConnected ? (
+                  <>
+                    <button
+                      onClick={() => navigate("/itinerary")}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
+                    >
+                      <Plane className="h-4 w-4" />
+                      View itinerary
+                    </button>
+                    <button
+                      onClick={() => disconnectCalendar.mutate()}
+                      disabled={disconnectCalendar.isPending}
+                      className="flex-1 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 text-sm font-medium py-2.5 rounded-xl transition-colors"
+                    >
+                      Disconnect
+                    </button>
+                  </>
+                ) : (
+                  <a
+                    href="/api/auth/google/connect-calendar"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
+                  >
+                    <CalendarCheck className="h-4 w-4" />
+                    Connect Google Calendar
+                  </a>
+                )}
+              </div>
+            </div>
           </SectionCard>
 
           {/* App */}

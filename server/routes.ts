@@ -30,6 +30,7 @@ import { analyzeMealImage } from "./services/image-analysis-service";
 import nutritionRoutes from "./routes/api/logs/nutrition";
 import healthRoutes from "./routes/api/logs/health";
 import adaptiveTDEERoutes from "./routes/api/tdee/adaptive";
+import itineraryRoutes from "./routes/api/itinerary";
 import googleAuthRoutes from "./auth/google-routes";
 import { registerGoogleStrategies } from "./auth/google-strategies";
 import { env } from "./config/env";
@@ -60,6 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/logs/nutrition", nutritionRoutes);
   app.use("/api/logs/health", healthRoutes);
   app.use("/api/tdee/adaptive", adaptiveTDEERoutes);
+  app.use("/api/itinerary", itineraryRoutes);
 
   // Google OAuth (login + connect calendar). No passport sessions — we keep
   // our own session.userId pattern.

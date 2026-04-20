@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Dumbbell, Droplets, Flame, ChevronRight, Zap, Plus, X, Pencil, Check, GripVertical, ScanBarcode, Camera, WifiOff, Loader2, RefreshCw, Scale } from "lucide-react";
+import { Dumbbell, Droplets, Flame, ChevronRight, Zap, Plus, X, Pencil, Check, GripVertical, ScanBarcode, Camera, WifiOff, Loader2, RefreshCw, Scale, Plane } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { BarcodeScanner } from "@/components/ui/barcode-scanner";
 import { SnapToLog } from "@/components/ui/snap-to-log";
@@ -413,6 +413,13 @@ export default function HomePage() {
                 >
                   <ScanBarcode className="h-3.5 w-3.5" />
                   Barcode
+                </button>
+                <button
+                  onClick={() => navigate("/itinerary")}
+                  className="text-xs text-gray-400 hover:text-indigo-400 flex items-center gap-1"
+                >
+                  <Plane className="h-3.5 w-3.5" />
+                  Itinerary
                 </button>
                 <button
                   onClick={() => navigate("/profile")}

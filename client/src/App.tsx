@@ -11,6 +11,7 @@ import HomePage from "@/pages/home";
 import LogPage from "@/pages/log";
 import StatsPage from "@/pages/stats";
 import ProfilePage from "@/pages/profile";
+import ItineraryPage from "@/pages/itinerary";
 import LoginPage from "@/pages/auth/login";
 import RegisterPage from "@/pages/auth/register";
 import { MobileNavigation } from "@/components/dashboard/MobileNavigation";
@@ -36,6 +37,7 @@ function AuthedApp() {
           <Route path="/log" component={LogPage} />
           <Route path="/stats" component={StatsPage} />
           <Route path="/profile" component={ProfilePage} />
+          <Route path="/itinerary" component={ItineraryPage} />
           <Route component={NotFound} />
         </Switch>
         <MobileNavigation />
