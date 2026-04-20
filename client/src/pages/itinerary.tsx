@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plane, Clock, MapPin, RefreshCw, CalendarCheck, CalendarX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { apiUrl } from "@/lib/queryClient";
 
 interface Flight {
   id: string;
@@ -99,7 +100,7 @@ export default function ItineraryPage() {
     queryFn: fetchItinerary,
   });
 
-  const connectHref = "/api/auth/google/connect-calendar";
+  const connectHref = apiUrl("/api/auth/google/connect-calendar");
 
   if (isLoading) {
     return (

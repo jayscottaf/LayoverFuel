@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Loader2, FlaskConical } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, apiUrl } from "@/lib/queryClient";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Enter a valid email" }),
@@ -84,7 +84,7 @@ export default function Login() {
           </div>
 
           <a
-            href="/api/auth/google"
+            href={apiUrl("/api/auth/google")}
             className="w-full flex items-center justify-center gap-2.5 bg-white hover:bg-gray-100 text-gray-900 font-medium py-3 rounded-xl transition-colors"
           >
             <GoogleLogo />
