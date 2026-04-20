@@ -14,6 +14,7 @@ import ProfilePage from "@/pages/profile";
 import ItineraryPage from "@/pages/itinerary";
 import LoginPage from "@/pages/auth/login";
 import RegisterPage from "@/pages/auth/register";
+import { OnboardingView } from "@/components/onboarding/OnboardingView";
 import { MobileNavigation } from "@/components/dashboard/MobileNavigation";
 
 function LoadingScreen() {
@@ -47,7 +48,7 @@ function AuthedApp() {
 }
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isOnboardingComplete } = useAuth();
   const [location] = useLocation();
 
   if (isLoading) return <LoadingScreen />;
@@ -66,6 +67,10 @@ function Router() {
   if (isAuthRoute) {
     window.location.href = "/";
     return <LoadingScreen />;
+  }
+
+  if (!isOnboardingComplete) {
+    return <OnboardingView />;
   }
 
   return <AuthedApp />;

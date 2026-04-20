@@ -58,6 +58,18 @@ router.get(
       return res.redirect("/auth/login?error=google");
     }
     req.session.userId = user.id;
+    const isOnboardingComplete = Boolean(
+      user.name && user.age && user.height && user.weight,
+    );
+    if (!isOnboardingComplete) {
+      req.session.onboarding = {
+        currentQuestion: {
+          text: "Hi there! I'm your Layover Fuel fitness coach. I'll help you stay fit while traveling. Let's get to know each other better. What's your name?",
+          field: "name",
+        },
+        userData: {},
+      };
+    }
     req.session.save(err => {
       if (err) {
         console.error("[auth] Failed to save session after Google login:", err);
