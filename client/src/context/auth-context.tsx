@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await apiRequest("POST", "/api/auth/login", { email, password });
       if (res.ok) {
-        setIsAuthenticated(true);
+        await checkAuth();
         return true;
       }
       return false;
