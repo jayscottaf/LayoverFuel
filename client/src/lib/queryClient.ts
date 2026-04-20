@@ -3,6 +3,10 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 // API URL for production deployment (empty string for local dev)
 const API_URL = import.meta.env.VITE_API_URL || '';
 
+export function apiUrl(path: string) {
+  return `${API_URL}${path}`;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;

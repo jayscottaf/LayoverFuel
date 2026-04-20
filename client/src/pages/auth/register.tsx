@@ -4,7 +4,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, apiUrl } from "@/lib/queryClient";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
@@ -89,7 +89,7 @@ export default function Register() {
           </div>
 
           <a
-            href="/api/auth/google"
+            href={apiUrl("/api/auth/google")}
             className="w-full flex items-center justify-center gap-2.5 bg-white hover:bg-gray-100 text-gray-900 font-medium py-3 rounded-xl transition-colors"
           >
             <GoogleLogo />

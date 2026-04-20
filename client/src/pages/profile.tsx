@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { User, ChevronRight, Check, LogOut, RefreshCw, CalendarCheck, CalendarX, Plane } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, apiUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -452,7 +452,7 @@ export default function ProfilePage() {
                   </>
                 ) : (
                   <a
-                    href="/api/auth/google/connect-calendar"
+                    href={apiUrl("/api/auth/google/connect-calendar")}
                     className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
                   >
                     <CalendarCheck className="h-4 w-4" />
