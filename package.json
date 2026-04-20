@@ -11,7 +11,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push",
-    "db:push:ci": "printf '\\n\\n\\n\\n\\n' | drizzle-kit push",
+    "db:migrate:google": "node scripts/migrate-google-columns.mjs",
     "test": "node --test"
   },
   "dependencies": {
