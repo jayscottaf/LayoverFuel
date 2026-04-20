@@ -15,8 +15,16 @@ export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
+  updateGoogleTokens(id: number, tokens: {
+    accessToken: string;
+    refreshToken?: string | null;
+    expiresAt: Date;
+    connectedAt?: Date | null;
+  }): Promise<User | undefined>;
+  clearGoogleTokens(id: number): Promise<User | undefined>;
   
   // Nutrition log methods
   getNutritionLogs(userId: number): Promise<NutritionLog[]>;
@@ -73,6 +81,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+    return user;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
@@ -85,6 +98,36 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return updatedUser;
+  }
+
+  async updateGoogleTokens(id: number, tokens: {
+    accessToken: string;
+    refreshToken?: string | null;
+    expiresAt: Date;
+    connectedAt?: Date | null;
+  }): Promise<User | undefined> {
+    const patch: Partial<User> = {
+      googleAccessToken: tokens.accessToken,
+      googleTokenExpiresAt: tokens.expiresAt,
+    };
+    // Only overwrite refresh_token when Google actually returns a new one
+    // (it's only returned on initial consent with prompt=consent).
+    if (tokens.refreshToken !== undefined && tokens.refreshToken !== null) {
+      patch.googleRefreshToken = tokens.refreshToken;
+    }
+    if (tokens.connectedAt !== undefined) {
+      patch.googleCalendarConnectedAt = tokens.connectedAt;
+    }
+    return this.updateUser(id, patch);
+  }
+
+  async clearGoogleTokens(id: number): Promise<User | undefined> {
+    return this.updateUser(id, {
+      googleAccessToken: null,
+      googleRefreshToken: null,
+      googleTokenExpiresAt: null,
+      googleCalendarConnectedAt: null,
+    });
   }
 
   // Nutrition log methods

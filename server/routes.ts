@@ -29,6 +29,7 @@ import { analyzeMealImage } from "./services/image-analysis-service";
 import nutritionRoutes from "./routes/api/logs/nutrition";
 import healthRoutes from "./routes/api/logs/health";
 import adaptiveTDEERoutes from "./routes/api/tdee/adaptive";
+import { env } from "./config/env";
 declare module "express-session" {
   interface SessionData {
     userId: number;
@@ -44,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(
     session({
       store: storage.sessionStore,
-      secret: process.env.SESSION_SECRET || "layover-fuel-secret",
+      secret: env.SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
       cookie: {
@@ -133,10 +134,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Find user
       const user = await storage.getUserByEmail(data.email);
-      if (!user) {
+      if (!user || !user.password) {
         return res.status(400).json({ message: "Invalid email or password" });
       }
-      
+
       // Check password
       const isMatch = await bcrypt.compare(data.password, user.password);
       if (!isMatch) {
