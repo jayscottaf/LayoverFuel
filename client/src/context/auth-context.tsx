@@ -4,6 +4,8 @@ import { apiRequest } from "@/lib/queryClient";
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
+  isOnboardingComplete: boolean;
+  googleCalendarConnected: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
@@ -12,6 +14,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
+  isOnboardingComplete: false,
+  googleCalendarConnected: false,
   login: async () => false,
   logout: async () => {},
   checkAuth: async () => {},
@@ -22,14 +26,27 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOnboardingComplete, setIsOnboardingComplete] = useState(false);
+  const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false);
 
   const checkAuth = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await apiRequest("GET", "/api/auth/me");
-      setIsAuthenticated(res.ok);
+      if (res.ok) {
+        const data = await res.json();
+        setIsAuthenticated(true);
+        setIsOnboardingComplete(Boolean(data?.isOnboardingComplete));
+        setGoogleCalendarConnected(Boolean(data?.googleCalendarConnected));
+      } else {
+        setIsAuthenticated(false);
+        setIsOnboardingComplete(false);
+        setGoogleCalendarConnected(false);
+      }
     } catch {
       setIsAuthenticated(false);
+      setIsOnboardingComplete(false);
+      setGoogleCalendarConnected(false);
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +78,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout, checkAuth }}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        isLoading,
+        isOnboardingComplete,
+        googleCalendarConnected,
+        login,
+        logout,
+        checkAuth,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
