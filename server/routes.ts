@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import session from "express-session";
+import passport from "passport";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { registerSchema, loginSchema, onboardingSchema } from "@shared/schema";
@@ -29,6 +30,10 @@ import { analyzeMealImage } from "./services/image-analysis-service";
 import nutritionRoutes from "./routes/api/logs/nutrition";
 import healthRoutes from "./routes/api/logs/health";
 import adaptiveTDEERoutes from "./routes/api/tdee/adaptive";
+import itineraryRoutes from "./routes/api/itinerary";
+import googleAuthRoutes from "./auth/google-routes";
+import { registerGoogleStrategies } from "./auth/google-strategies";
+import { env } from "./config/env";
 declare module "express-session" {
   interface SessionData {
     userId: number;
@@ -44,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(
     session({
       store: storage.sessionStore,
-      secret: process.env.SESSION_SECRET || "layover-fuel-secret",
+      secret: env.SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
       cookie: {
@@ -56,6 +61,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/logs/nutrition", nutritionRoutes);
   app.use("/api/logs/health", healthRoutes);
   app.use("/api/tdee/adaptive", adaptiveTDEERoutes);
+  app.use("/api/itinerary", itineraryRoutes);
+
+  // Google OAuth (login + connect calendar). No passport sessions — we keep
+  // our own session.userId pattern.
+  registerGoogleStrategies();
+  app.use(passport.initialize());
+  app.use(googleAuthRoutes);
   // Auth Routes
   // Dev-only instant login — only works in development
   app.post("/api/auth/dev-login", async (req: Request, res: Response) => {
@@ -133,10 +145,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Find user
       const user = await storage.getUserByEmail(data.email);
-      if (!user) {
+      if (!user || !user.password) {
         return res.status(400).json({ message: "Invalid email or password" });
       }
-      
+
       // Check password
       const isMatch = await bcrypt.compare(data.password, user.password);
       if (!isMatch) {
@@ -379,8 +391,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUser(req.session.userId);
       if (!user) return res.status(404).json({ message: "User not found" });
-      const { password, ...userWithoutPassword } = user;
-      res.status(200).json(userWithoutPassword);
+      const {
+        password,
+        googleAccessToken,
+        googleRefreshToken,
+        ...rest
+      } = user;
+      const isOnboardingComplete = Boolean(user.name && user.age && user.height && user.weight);
+      const googleCalendarConnected = Boolean(user.googleRefreshToken);
+      res.status(200).json({
+        ...rest,
+        isOnboardingComplete,
+        googleCalendarConnected,
+      });
     } catch {
       res.status(500).json({ message: "Server error" });
     }
@@ -394,8 +417,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUser(req.session.userId);
       if (!user) return res.status(404).json({ message: "User not found" });
-      const { password, ...userWithoutPassword } = user;
-      res.status(200).json(userWithoutPassword);
+      const { password, googleAccessToken, googleRefreshToken, ...safe } = user;
+      res.status(200).json({
+        ...safe,
+        googleCalendarConnected: Boolean(user.googleRefreshToken),
+      });
     } catch (error) {
       res.status(500).json({ message: "Server error" });
     }
@@ -416,8 +442,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Recalculate and persist TDEE whenever any profile field changes
       const freshTDEE = calculateTDEE(user);
       const updatedUser = await storage.updateUser(req.session.userId, { tdee: freshTDEE });
-      const { password, ...userWithoutPassword } = updatedUser ?? user;
-      res.status(200).json(userWithoutPassword);
+      const final = updatedUser ?? user;
+      const { password, googleAccessToken, googleRefreshToken, ...safe } = final;
+      res.status(200).json({
+        ...safe,
+        googleCalendarConnected: Boolean(final.googleRefreshToken),
+      });
     } catch (error) {
       res.status(500).json({ message: "Server error" });
     }

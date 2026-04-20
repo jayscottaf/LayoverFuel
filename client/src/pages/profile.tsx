@@ -1,9 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, ChevronRight, Check, LogOut, RefreshCw } from "lucide-react";
+import { User, ChevronRight, Check, LogOut, RefreshCw, CalendarCheck, CalendarX, Plane } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface UserProfile {
   id: number;
@@ -17,6 +29,7 @@ interface UserProfile {
   activityLevel: string | null;
   dietaryRestrictions: string[] | null;
   quickLogMode: boolean | null;
+  googleCalendarConnected?: boolean;
 }
 
 interface DashboardData {
@@ -104,6 +117,7 @@ function EditorSheet({ title, onClose, onSave, children }: EditorSheetProps) {
 function SettingsRow({ label, value, onTap, last = false }: {
   label: string; value: string; onTap: () => void; last?: boolean;
 }) {
+  const isPlaceholder = value === "Tap to add" || value === "—";
   return (
     <button
       onClick={onTap}
@@ -111,7 +125,7 @@ function SettingsRow({ label, value, onTap, last = false }: {
     >
       <span className="text-sm text-gray-300">{label}</span>
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-500 max-w-[180px] truncate text-right">{value}</span>
+        <span className={`text-sm max-w-[180px] truncate text-right ${isPlaceholder ? "text-indigo-400" : "text-gray-500"}`}>{value}</span>
         <ChevronRight className="h-4 w-4 text-gray-600 shrink-0" />
       </div>
     </button>
@@ -134,9 +148,40 @@ function SectionCard({ title, children }: { title: string; children: React.React
 export default function ProfilePage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const { data: profile, isLoading } = useQuery<UserProfile>({ queryKey: ["/api/user/profile"] });
   const { data: dashData } = useQuery<DashboardData>({ queryKey: ["/api/dashboard"] });
+
+  // Surface Google Calendar connect status after returning from OAuth.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("calendar");
+    if (status === "connected") {
+      toast({ title: "Google Calendar connected" });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/profile"] });
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (status === "error") {
+      toast({
+        title: "Couldn't connect Google Calendar",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [toast, queryClient]);
+
+  const disconnectCalendar = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/integrations/google-calendar/disconnect", {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/itinerary/upcoming"] });
+      toast({ title: "Google Calendar disconnected" });
+    },
+    onError: () =>
+      toast({ title: "Error", description: "Failed to disconnect.", variant: "destructive" }),
+  });
 
   const [editing, setEditing] = useState<string | null>(null);
 
@@ -224,6 +269,37 @@ export default function ProfilePage() {
     ? profile.dietaryRestrictions.join(", ")
     : "None";
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div className="max-w-lg mx-auto px-4 pt-4 space-y-5">
+          <div className="bg-gray-900 rounded-3xl p-5 space-y-5">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-14 h-14 rounded-2xl bg-gray-800" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-32 bg-gray-800" />
+                <Skeleton className="h-3 w-44 bg-gray-800" />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[0, 1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-16 rounded-xl bg-gray-800" />
+              ))}
+            </div>
+          </div>
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="space-y-1">
+              <Skeleton className="h-3 w-20 bg-gray-800" />
+              <Skeleton className="h-20 rounded-2xl bg-gray-900" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
@@ -293,10 +369,15 @@ export default function ProfilePage() {
           <SectionCard title="Body">
             <SettingsRow
               label="Weight"
-              value={profile?.weight ? `${Math.round(profile.weight * 2.20462 * 2) / 2} lbs` : "—"}
+              value={profile?.weight ? `${Math.round(profile.weight * 2.20462 * 2) / 2} lbs` : "Tap to add"}
               onTap={() => openNum("weight", profile?.weight)}
             />
-            <SettingsRow label="Height" value={fmtHeight(profile?.height)} onTap={() => openHeight(profile?.height)} last />
+            <SettingsRow
+              label="Height"
+              value={profile?.height ? fmtHeight(profile.height) : "Tap to add"}
+              onTap={() => openHeight(profile?.height)}
+              last
+            />
           </SectionCard>
 
           {/* Activity */}
@@ -331,6 +412,57 @@ export default function ProfilePage() {
             <SettingsRow label="Restrictions" value={dietLabel} onTap={() => openArr("dietaryRestrictions", profile?.dietaryRestrictions)} last />
           </SectionCard>
 
+          {/* Integrations */}
+          <SectionCard title="Integrations">
+            <div className="px-4 py-3.5 border-b border-gray-800/60">
+              <div className="flex items-start gap-3">
+                <div className={`shrink-0 rounded-xl p-2.5 ${profile?.googleCalendarConnected ? "bg-emerald-500/20" : "bg-gray-800"}`}>
+                  {profile?.googleCalendarConnected ? (
+                    <CalendarCheck className="h-5 w-5 text-emerald-400" />
+                  ) : (
+                    <CalendarX className="h-5 w-5 text-gray-500" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white font-medium">Google Calendar</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {profile?.googleCalendarConnected
+                      ? "Connected — we read your upcoming events to surface flights and layovers."
+                      : "Connect to see upcoming flights and layovers from your calendar."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                {profile?.googleCalendarConnected ? (
+                  <>
+                    <button
+                      onClick={() => navigate("/itinerary")}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
+                    >
+                      <Plane className="h-4 w-4" />
+                      View itinerary
+                    </button>
+                    <button
+                      onClick={() => disconnectCalendar.mutate()}
+                      disabled={disconnectCalendar.isPending}
+                      className="flex-1 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 text-sm font-medium py-2.5 rounded-xl transition-colors"
+                    >
+                      Disconnect
+                    </button>
+                  </>
+                ) : (
+                  <a
+                    href="/api/auth/google/connect-calendar"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
+                  >
+                    <CalendarCheck className="h-4 w-4" />
+                    Connect Google Calendar
+                  </a>
+                )}
+              </div>
+            </div>
+          </SectionCard>
+
           {/* App */}
           <SectionCard title="App">
             <div className="px-4 py-3.5 border-b border-gray-800/60">
@@ -361,7 +493,7 @@ export default function ProfilePage() {
               <RefreshCw className="h-4 w-4 text-gray-500" />
             </button>
             <button
-              onClick={handleLogout}
+              onClick={() => setShowLogoutConfirm(true)}
               className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-800/60 transition-colors"
             >
               <span className="text-sm text-red-400">Sign out</span>
@@ -371,6 +503,28 @@ export default function ProfilePage() {
 
         </div>
       </div>
+
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent className="bg-gray-900 border-gray-800 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out of LayoverFuel?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Your logged meals, workouts, and profile are saved. You can sign back in any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:text-white">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              className="bg-red-600 text-white hover:bg-red-500"
+            >
+              Sign out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── Editors ── */}
 

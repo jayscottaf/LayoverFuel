@@ -13,8 +13,7 @@ const ClientHealthLogSchema = insertHealthLogSchema
 export async function handleHealthLogPost(req: Request, res: Response) {
   console.log("📊 Health log POST received");
 
-  const userId = req.session?.userId || 1; // TEMP fallback for testing
-
+  const userId = req.session?.userId;
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -88,8 +87,7 @@ export async function handleHealthLogPost(req: Request, res: Response) {
 }
 
 export async function handleHealthLogGet(req: Request, res: Response) {
-  const userId = req.session?.userId || 1;
-
+  const userId = req.session?.userId;
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }

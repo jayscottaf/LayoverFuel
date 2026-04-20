@@ -14,9 +14,8 @@ const ClientNutritionLogSchema = insertNutritionLogSchema
 
 export async function handleNutritionLogPost(req: Request, res: Response) {
   console.log("📝 Nutrition log POST received");
-  
-  const userId = req.session?.userId || 1; // TEMP fallback for testing
 
+  const userId = req.session?.userId;
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -78,8 +77,7 @@ export async function handleNutritionLogPost(req: Request, res: Response) {
 }
 
 export async function handleNutritionLogGet(req: Request, res: Response) {
-  const userId = req.session?.userId || 1;
-
+  const userId = req.session?.userId;
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -116,10 +114,47 @@ export async function handleNutritionLogGet(req: Request, res: Response) {
   }
 }
 
+export async function handleNutritionLogDelete(req: Request, res: Response) {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ message: "Invalid log id" });
+  }
+
+  try {
+    const existing = await storage.getNutritionLogById(id);
+    if (!existing) {
+      return res.status(404).json({ message: "Log not found" });
+    }
+    if (existing.userId !== userId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const removed = await storage.deleteNutritionLog(id);
+    if (!removed) {
+      return res.status(404).json({ message: "Log not found" });
+    }
+
+    console.log(`🗑️  Nutrition log deleted - ID: ${id} for user ${userId}`);
+    return res.status(204).send();
+  } catch (error) {
+    console.error("💥 Error deleting nutrition log:", error);
+    return res.status(500).json({
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 import { Router } from "express";
 const router = Router();
 router.post("/", handleNutritionLogPost);
 router.get("/", handleNutritionLogGet);
+router.delete("/:id", handleNutritionLogDelete);
 
 export default router;
 

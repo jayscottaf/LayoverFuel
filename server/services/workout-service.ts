@@ -86,6 +86,7 @@ export async function generateWorkoutPlan(user: User): Promise<WorkoutPlan> {
       model: "gpt-4o",
       messages: [{role: "user", content: promptText}],
       response_format: { type: "json_object" },
+      max_tokens: 1000,
     });
 
     const workoutPlan = JSON.parse(chatResponse.choices[0].message.content ?? '{}');

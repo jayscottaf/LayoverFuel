@@ -5,8 +5,8 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  name: text("name").notNull(),
+  password: text("password"),
+  name: text("name"),
   age: integer("age"),
   height: integer("height_cm"),
   weight: real("weight_kg"),
@@ -19,6 +19,12 @@ export const users = pgTable("users", {
   dietaryRestrictions: text("dietary_restrictions").array(),
   assistantThreadId: text("assistant_thread_id"),
   quickLogMode: boolean("quick_log_mode").default(false),
+  googleId: text("google_id").unique(),
+  avatarUrl: text("avatar_url"),
+  googleAccessToken: text("google_access_token"),
+  googleRefreshToken: text("google_refresh_token"),
+  googleTokenExpiresAt: timestamp("google_token_expires_at"),
+  googleCalendarConnectedAt: timestamp("google_calendar_connected_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

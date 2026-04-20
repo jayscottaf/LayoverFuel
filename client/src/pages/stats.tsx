@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { ArrowUp, ArrowDown, TrendingUp, Calendar, Scale, Flame, Target, Award } from "lucide-react";
 import { WeightProgressChart } from "@/components/dashboard/WeightProgressChart";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface WeightData {
   date: string;
@@ -34,7 +35,7 @@ export default function StatsPage() {
   const [timeRange, setTimeRange] = useState<"week" | "month" | "3month" | "year">("month");
 
   // Fetch weight history
-  const { data: weightHistory } = useQuery<WeightData[]>({
+  const { data: weightHistory, isLoading: weightLoading } = useQuery<WeightData[]>({
     queryKey: [`/api/logs/health?range=${timeRange}`],
     queryFn: async () => {
       const endDate = new Date();
@@ -122,7 +123,16 @@ export default function StatsPage() {
         </div>
 
         {/* Weight Section */}
-        {weightHistory && weightHistory.length > 0 ? (
+        {weightLoading ? (
+          <div className="bg-gray-900 rounded-3xl p-5 space-y-4">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-28 bg-gray-800" />
+              <Skeleton className="h-9 w-32 bg-gray-800" />
+              <Skeleton className="h-4 w-36 bg-gray-800" />
+            </div>
+            <Skeleton className="h-40 w-full rounded-xl bg-gray-800" />
+          </div>
+        ) : weightHistory && weightHistory.length > 0 ? (
           <div className="bg-gray-900 rounded-3xl p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div>

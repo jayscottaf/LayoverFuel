@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { errorToast } from "@/lib/toast-helpers";
+import { AIProgress, type AIProgressStep } from "@/components/ui/ai-progress";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { BarcodeScanner } from "@/components/ui/barcode-scanner";
 import { Send, X, RotateCcw, Zap, ScanBarcode, Camera } from "lucide-react";
@@ -63,6 +65,7 @@ export default function ChatPage() {
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [imageAnalysisStep, setImageAnalysisStep] = useState<AIProgressStep | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
@@ -109,7 +112,11 @@ export default function ChatPage() {
       localStorage.setItem("assistantThreadId", data.threadId);
       setMessages([]);
     } catch {
-      toast({ title: "Error", description: "Failed to initialize chat.", variant: "destructive" });
+      errorToast({
+        title: "Couldn't start chat",
+        description: "Failed to initialize your coach.",
+        onRetry: createThread,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -141,7 +148,11 @@ export default function ChatPage() {
       }));
       setMessages(formatted);
     } catch {
-      toast({ title: "Error", description: "Failed to load chat history.", variant: "destructive" });
+      errorToast({
+        title: "Couldn't load history",
+        description: "Failed to fetch previous messages.",
+        onRetry: () => fetchMessages(tid),
+      });
     } finally {
       setIsLoading(false);
     }
@@ -166,11 +177,20 @@ export default function ChatPage() {
         createdAt: msg.created_at,
       }));
       setMessages(newMessages);
+      setImageAnalysisStep(null);
     },
-    onError: (error) => {
+    onError: (error, variables) => {
       console.error("Send error:", error);
-      toast({ title: "Error", description: "Failed to send message. Please try again.", variant: "destructive" });
       setMessages(prev => prev.filter(m => m.id !== "processing"));
+      setImageAnalysisStep(null);
+      errorToast({
+        title: "Message not sent",
+        description: "Couldn't reach your coach. Check your connection.",
+        onRetry: () => {
+          if (variables.imageDataArray?.length) setImageAnalysisStep("analyze");
+          sendMessageMutation.mutate(variables);
+        },
+      });
     },
   });
 
@@ -198,6 +218,8 @@ export default function ChatPage() {
       },
       { id: "processing", role: "assistant", content: ["Thinking..."] },
     ]);
+
+    if (currentImages.length > 0) setImageAnalysisStep("analyze");
 
     // Send to assistant (with or without images)
     sendMessageMutation.mutate({ message: messageText, imageDataArray: currentImages.length > 0 ? currentImages : undefined });
@@ -329,11 +351,17 @@ export default function ChatPage() {
                       </div>
                     ))}
                     {message.id === "processing" && (
-                      <div className="flex gap-1 mt-1">
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                      </div>
+                      imageAnalysisStep ? (
+                        <div className="mt-2">
+                          <AIProgress step={imageAnalysisStep} />
+                        </div>
+                      ) : (
+                        <div className="flex gap-1 mt-1">
+                          <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                          <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                          <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                        </div>
+                      )
                     )}
                   </div>
                 ) : null}

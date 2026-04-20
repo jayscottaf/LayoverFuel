@@ -55,13 +55,15 @@ export async function analyzeMealImage(imageBase64: string): Promise<{
             {
               type: "image_url",
               image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`
+                url: `data:image/jpeg;base64,${base64Image}`,
+                detail: "low",
               }
             }
           ],
         },
       ],
       response_format: { type: "json_object" },
+      max_tokens: 500,
     });
 
     const content = response.choices[0].message.content || "{}";
