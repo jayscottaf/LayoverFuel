@@ -852,13 +852,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
             const userTDEE = calculateTDEE(user);
             const userMacros = calculateMacros(user, userTDEE);
+            const weightLbs = user.weight ? Math.round(user.weight * 2.20462 * 2) / 2 : null;
+            let heightStr: string | null = null;
+            if (user.height) {
+              const totalInches = user.height / 2.54;
+              const feet = Math.floor(totalInches / 12);
+              const inches = Math.round(totalInches - feet * 12);
+              heightStr = `${feet}'${inches}"`;
+            }
             profileContext = [
               `[User Profile]`,
               `Name: ${user.name}`,
               user.age ? `Age: ${user.age}` : null,
               user.gender ? `Gender: ${user.gender}` : null,
-              user.weight ? `Weight: ${user.weight} lbs` : null,
-              user.height ? `Height: ${user.height} cm` : null,
+              weightLbs ? `Weight: ${weightLbs} lbs` : null,
+              heightStr ? `Height: ${heightStr}` : null,
               user.fitnessGoal ? `Goal: ${GOAL_LABELS[user.fitnessGoal] ?? user.fitnessGoal}` : null,
               user.activityLevel ? `Activity: ${ACTIVITY_LABELS[user.activityLevel] ?? user.activityLevel}` : null,
               user.dietaryRestrictions?.length ? `Dietary: ${user.dietaryRestrictions.join(", ")}` : null,
@@ -914,11 +922,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Images will be uploaded to Cloudinary and then sent to OpenAI`);
         }
         
-        // Prepend user profile context (invisible to UI, helpful to AI)
-        const fullMessage = profileContext
-          ? `${profileContext}\n\n${message || ""}`
-          : (message || "");
-        await addMessageToThread(threadId, fullMessage, validatedImages);
+        await addMessageToThread(threadId, message || "", validatedImages);
         console.log("Message and images added successfully");
       } catch (messageError) {
         console.error("Error adding message to thread:", messageError);
@@ -956,7 +960,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Running assistant on thread ${threadId}`);
       let run;
       try {
-        run = await runAssistantOnThread(threadId);
+        run = await runAssistantOnThread(threadId, profileContext);
         console.log(`Run created with ID: ${run.id}`);
       } catch (runError) {
         console.error("Error running assistant:", runError);

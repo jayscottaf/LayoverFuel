@@ -199,20 +199,23 @@ const DEFAULT_ASSISTANT_ID =
 // Run the assistant on a thread
 export async function runAssistantOnThread(
   threadId: string,
+  additionalInstructions?: string,
   assistantId: string = DEFAULT_ASSISTANT_ID
 ) {
+  const body: Record<string, unknown> = { assistant_id: assistantId };
+  if (additionalInstructions && additionalInstructions.trim().length > 0) {
+    body.additional_instructions = additionalInstructions;
+  }
   const response = await proxyRequestToOpenAI(
     'POST',
     `/v1/threads/${threadId}/runs`,
-    {
-      assistant_id: assistantId
-    }
+    body,
   );
-  
+
   if (response.status !== 200) {
     throw new Error(`Failed to run assistant: ${JSON.stringify(response.data)}`);
   }
-  
+
   return response.data;
 }
 
@@ -244,10 +247,25 @@ export async function getMessagesFromThread(threadId: string) {
     throw new Error(`Failed to get messages: ${JSON.stringify(response.data)}`);
   }
 
-  // Filter out only the JSON logging instructions from assistant messages
+  // Filter out only the JSON logging instructions from assistant messages,
+  // and strip legacy [User Profile]...[End Profile] prefixes from user messages
+  // (left over from before profile context was moved to run-level instructions).
   const filteredData = {
     ...response.data,
     data: response.data.data.map((message: any) => {
+      if (message.role === 'user') {
+        const filteredContent = message.content.map((part: any) => {
+          if (part.type === 'text' && part.text?.value) {
+            const stripped = part.text.value.replace(
+              /^\[User Profile\][\s\S]*?\[End Profile\]\s*\n+/,
+              '',
+            );
+            return { ...part, text: { ...part.text, value: stripped } };
+          }
+          return part;
+        });
+        return { ...message, content: filteredContent };
+      }
       if (message.role === 'assistant') {
         // Process each content part to remove only JSON logging instructions
         const filteredContent = message.content.map((part: any) => {
