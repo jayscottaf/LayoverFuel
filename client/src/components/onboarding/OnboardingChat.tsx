@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "wouter";
 import { ChatBubble } from "./ChatBubble";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/auth-context";
 
 interface OnboardingChatProps {
   initialQuestion: string;
@@ -16,7 +16,7 @@ export function OnboardingChat({ initialQuestion }: OnboardingChatProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [, navigate] = useLocation();
+  const { checkAuth } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -54,12 +54,12 @@ export function OnboardingChat({ initialQuestion }: OnboardingChatProps) {
         setMessages(prev => [...prev, { text: data.nextQuestion.text, isUser: false }]);
       }
       
-      // If onboarding is complete, show a success message
+      // If onboarding is complete, refresh auth so App swaps to AuthedApp
       if (data.isComplete) {
         setIsComplete(true);
         setTimeout(() => {
-          navigate("/dashboard");
-        }, 2000);
+          checkAuth();
+        }, 1500);
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -74,11 +74,11 @@ export function OnboardingChat({ initialQuestion }: OnboardingChatProps) {
   };
 
   const handleSkip = () => {
-    navigate("/dashboard");
+    checkAuth();
   };
 
   return (
-    <div className="w-2/3 p-8 overflow-y-auto flex flex-col">
+    <div className="w-full md:w-2/3 min-h-screen p-4 md:p-8 flex flex-col">
       <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
         <div 
           className="flex-1 overflow-y-auto" 
@@ -108,7 +108,7 @@ export function OnboardingChat({ initialQuestion }: OnboardingChatProps) {
           <form id="chat-form" className="flex items-center" onSubmit={handleSubmit}>
             <input
               type="text"
-              className="flex-1 border border-gray-300 rounded-l-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="flex-1 min-w-0 border border-gray-300 rounded-l-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="Type your response..."
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -116,7 +116,7 @@ export function OnboardingChat({ initialQuestion }: OnboardingChatProps) {
             />
             <button 
               type="submit" 
-              className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-r-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-r-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading || isComplete || !inputValue.trim()}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

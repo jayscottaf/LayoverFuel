@@ -2,11 +2,11 @@ import { Link } from "wouter";
 
 export function OnboardingSidebar() {
   return (
-    <div className="w-1/3 bg-primary-600 text-white p-8 flex flex-col justify-between">
+    <div className="hidden md:flex w-1/3 bg-indigo-600 text-white p-8 flex-col justify-between">
       <div>
         <div className="mb-12">
           <h1 className="font-heading text-3xl font-bold mb-2">Layover Fuel</h1>
-          <p className="text-primary-100 text-lg">Your travel fitness companion</p>
+          <p className="text-indigo-100 text-lg">Your travel fitness companion</p>
         </div>
         
         <div className="space-y-8">
@@ -18,7 +18,7 @@ export function OnboardingSidebar() {
             </div>
             <div>
               <h3 className="font-heading font-semibold text-xl">Personalized Plans</h3>
-              <p className="text-primary-100 mt-1">Custom workouts and nutrition tailored to your travel schedule</p>
+              <p className="text-indigo-100 mt-1">Custom workouts and nutrition tailored to your travel schedule</p>
             </div>
           </div>
           
@@ -30,7 +30,7 @@ export function OnboardingSidebar() {
             </div>
             <div>
               <h3 className="font-heading font-semibold text-xl">Track Progress</h3>
-              <p className="text-primary-100 mt-1">Monitor your fitness journey with intuitive dashboards</p>
+              <p className="text-indigo-100 mt-1">Monitor your fitness journey with intuitive dashboards</p>
             </div>
           </div>
           
@@ -42,14 +42,14 @@ export function OnboardingSidebar() {
             </div>
             <div>
               <h3 className="font-heading font-semibold text-xl">AI Coach</h3>
-              <p className="text-primary-100 mt-1">Get guidance and motivation from your personal AI fitness coach</p>
+              <p className="text-indigo-100 mt-1">Get guidance and motivation from your personal AI fitness coach</p>
             </div>
           </div>
         </div>
       </div>
       
       <div className="mt-16">
-        <p className="text-primary-100 text-sm">
+        <p className="text-indigo-100 text-sm">
           Already have an account? <Link href="/auth/login" className="text-white font-medium underline">Sign in</Link>
         </p>
       </div>
