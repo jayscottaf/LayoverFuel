@@ -2,8 +2,8 @@ import { User } from "@shared/schema";
 
 // Mifflin-St Jeor Equation for BMR — requires kg and cm
 function calculateBMR(user: User): number {
-  const weightKg = (user.weight ?? 154) / 2.205; // stored in lbs → convert to kg
-  const heightCm = user.height ?? 170;            // stored in cm (correct)
+  const weightKg = user.weight ?? 70;
+  const heightCm = user.height ?? 170;
   const age = user.age ?? 30;
   const gender = user.gender ?? "male";
 
@@ -41,7 +41,7 @@ export function calculateMacros(user: User, tdee: number): {
   caloriesFromFat: number;
 } {
   const { fitnessGoal } = user;
-  const weightKg = (user.weight ?? 154) / 2.205;
+  const weightKg = user.weight ?? 70;
 
   let targetCalories: number;
   let proteinPerKg: number;
