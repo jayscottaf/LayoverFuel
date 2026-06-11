@@ -74,10 +74,17 @@ export default function ChatPage() {
 
   useEffect(() => {
     const prefill = sessionStorage.getItem("chatPrefill");
+    const auto = sessionStorage.getItem("chatAutoSubmit");
     if (prefill) {
       setInput(prefill);
       sessionStorage.removeItem("chatPrefill");
+      if (auto) {
+        sessionStorage.removeItem("chatAutoSubmit");
+        // Defer one tick so threadId and state are ready before sending.
+        setTimeout(() => sendMessage(prefill), 600);
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

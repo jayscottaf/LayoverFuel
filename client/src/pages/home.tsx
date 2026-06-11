@@ -10,6 +10,19 @@ import { WeightLogDialog } from "@/components/ui/weight-log-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOffline } from "@/hooks/use-offline";
 
+interface UpcomingItinerary {
+  connected: boolean;
+  flights: Array<{ id: string; start: string; end: string; location?: string | null; title?: string }>;
+  layovers: Array<{
+    arriveAt: string;
+    departAt: string;
+    durationMinutes: number;
+    airportGuess: string | null;
+    fromFlightId: string;
+    toFlightId: string;
+  }>;
+}
+
 interface DashboardData {
   user: { name: string; goal: string };
   stats: {
@@ -168,7 +181,16 @@ export default function HomePage() {
   const [showWeightDialog, setShowWeightDialog] = useState(false);
 
   const { data, isLoading } = useQuery<DashboardData>({ queryKey: ["/api/dashboard"] });
+  const { data: itinerary } = useQuery<UpcomingItinerary>({
+    queryKey: ["/api/itinerary/upcoming"],
+    staleTime: 60_000,
+    retry: false,
+  });
   const { isOffline, pendingCount, syncStatus, manualSync } = useOffline();
+  const [quickLogText, setQuickLogText] = useState("");
+
+  // Surface the next layover ≥2h (computeLayovers already filters), if any.
+  const nextLayover = itinerary?.layovers?.find(l => new Date(l.departAt).getTime() > Date.now());
 
   const waterMutation = useMutation({
     mutationFn: (glasses: number) => apiRequest("POST", "/api/logs/water", { glasses }),
@@ -183,6 +205,29 @@ export default function HomePage() {
   const openChatWith = (message: string) => {
     sessionStorage.setItem("chatPrefill", message);
     navigate("/chat");
+  };
+
+  const handleQuickLog = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = quickLogText.trim();
+    if (!text) return;
+    sessionStorage.setItem("chatPrefill", `I just ate: ${text}. Log it for me.`);
+    sessionStorage.setItem("chatAutoSubmit", "1");
+    setQuickLogText("");
+    navigate("/chat");
+  };
+
+  const fmtLayoverDuration = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m === 0 ? `${h}h` : `${h}h${m}m`;
+  };
+
+  const openLayoverChat = (airport: string | null, mins: number) => {
+    const where = airport ? ` in ${airport}` : "";
+    openChatWith(
+      `I have a ${fmtLayoverDuration(mins)} layover${where}. Suggest a quick hotel-room or terminal workout and one healthy meal option that fits my goals.`
+    );
   };
 
   const greeting = () => {
@@ -305,6 +350,26 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Layover action card — only when an upcoming layover is detected */}
+          {nextLayover && (
+            <button
+              onClick={() => openLayoverChat(nextLayover.airportGuess, nextLayover.durationMinutes)}
+              className="w-full bg-gradient-to-r from-emerald-600/20 to-teal-600/20 border border-emerald-500/30 rounded-2xl p-4 flex items-center gap-4 hover:from-emerald-600/30 hover:to-teal-600/30 active:scale-98 transition-all text-left"
+            >
+              <div className="bg-emerald-500/20 rounded-xl p-3 shrink-0">
+                <Plane className="h-5 w-5 text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-emerald-300">Upcoming layover</p>
+                <p className="text-white font-semibold mt-0.5">
+                  {fmtLayoverDuration(nextLayover.durationMinutes)}{nextLayover.airportGuess ? ` in ${nextLayover.airportGuess}` : ""}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">Tap for a workout + meal plan that fits</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-gray-500 shrink-0" />
+            </button>
+          )}
+
           {/* HERO: Quick Log */}
           <button
             onClick={() => setShowSnapToLog(true)}
@@ -319,6 +384,24 @@ export default function HomePage() {
               <p className="text-indigo-200 text-sm mt-1">Take a photo to instantly log your meal</p>
             </div>
           </button>
+
+          {/* One-tap text quick log */}
+          <form onSubmit={handleQuickLog} className="flex gap-2">
+            <input
+              type="text"
+              value={quickLogText}
+              onChange={e => setQuickLogText(e.target.value)}
+              placeholder="Type a meal — e.g. two protein bars"
+              className="flex-1 min-w-0 bg-gray-900 text-white text-sm rounded-2xl px-4 py-3 border border-gray-800 focus:outline-none focus:border-indigo-500 placeholder-gray-500"
+            />
+            <button
+              type="submit"
+              disabled={!quickLogText.trim()}
+              className="shrink-0 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-2xl px-4 py-3 text-sm transition-colors"
+            >
+              Log
+            </button>
+          </form>
 
           {/* Compact Calorie Summary */}
           <div className="bg-gray-900 rounded-3xl p-5">
