@@ -5,6 +5,7 @@ import { X, Check, ScanBarcode, Loader2, MessageCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { currentTimezone } from "@/lib/utils/timezone";
 
 interface ProductInfo {
   name: string;
@@ -102,6 +103,7 @@ export function BarcodeScanner({ onClose, onLogSuccess }: BarcodeScannerProps) {
         fat: Math.round(product.fat * servings * 10) / 10,
         mealStyle: `${product.name}${product.brand ? ` (${product.brand})` : ""}`,
         notes: `Barcode scan · ${servings} serving${servings !== 1 ? "s" : ""} · ${product.servingSize}`,
+        timezone: currentTimezone(),
       });
       await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       toast({ title: "Logged!", description: `${product.name} added to today's log.` });

@@ -39,6 +39,9 @@ export const nutritionLogs = pgTable("nutrition_logs", {
   fat: real("fat"),
   fiber: real("fiber"),
   notes: text("notes"),
+  timezone: text("timezone"),                  // IANA tz at time of logging
+  context: text("context"),                    // 'home' | 'airport' | 'inflight' | 'hotel' | 'other'
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const workoutLogs = pgTable("workout_logs", {
@@ -50,6 +53,8 @@ export const workoutLogs = pgTable("workout_logs", {
   intensity: text("intensity"),
   equipment: text("equipment").array(),
   notes: text("notes"),
+  timezone: text("timezone"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const healthLogs = pgTable("health_logs", {
@@ -65,6 +70,8 @@ export const healthLogs = pgTable("health_logs", {
   activeEnergy: integer("active_energy"),
   water: integer("water"),
   notes: text("notes"),
+  timezone: text("timezone"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const dailyPlans = pgTable("daily_plans", {

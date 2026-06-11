@@ -7,6 +7,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { errorToast } from "@/lib/toast-helpers";
 import { queueItem } from "@/lib/offline-queue";
+import { currentTimezone } from "@/lib/utils/timezone";
 import { useOffline } from "@/hooks/use-offline";
 
 interface MealEstimate {
@@ -111,6 +112,7 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
       fat: estimate.fat,
       mealStyle: desc,
       notes: "Snap to Log · Photo analysis",
+      timezone: currentTimezone(),
     };
 
     try {
@@ -176,6 +178,7 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
       fat: macros.fat,
       mealStyle: description,
       notes: "Snap to Log · Photo analysis",
+      timezone: currentTimezone(),
     };
 
     try {
