@@ -12,15 +12,28 @@ export async function analyzeMealImage(imageBase64: string): Promise<{
     carbs: number;
     fat: number;
   };
+  range: {
+    caloriesLow: number;
+    caloriesHigh: number;
+  };
+  confidence: "low" | "medium" | "high";
   foodItems: string[];
   analysis: string;
   suggestions: string;
 }> {
   try {
-    // Remove data URI prefix if present
-    const base64Image = imageBase64.includes('data:image')
-      ? imageBase64.split(',')[1]
-      : imageBase64;
+    // Detect MIME type from data URI; default to jpeg if raw base64 provided.
+    let mimeType = "image/jpeg";
+    let base64Image = imageBase64;
+    if (imageBase64.includes('data:image')) {
+      const match = imageBase64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/);
+      if (match) {
+        mimeType = match[1];
+        base64Image = match[2];
+      } else {
+        base64Image = imageBase64.split(',')[1] ?? imageBase64;
+      }
+    }
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -30,10 +43,13 @@ export async function analyzeMealImage(imageBase64: string): Promise<{
           content: `You are a nutritional analysis AI that specializes in analyzing meal photos.
           Analyze the meal and return EXACTLY this JSON structure (no nesting, values at root level):
           {
-            "calories": <number>,
+            "calories": <best-estimate number>,
+            "calories_low": <lower bound, ~80% of best estimate>,
+            "calories_high": <upper bound, ~120% of best estimate>,
             "protein": <number in grams>,
             "carbs": <number in grams>,
             "fat": <number in grams>,
+            "confidence": <"low" | "medium" | "high">,
             "food_items": ["item1", "item2", "item3"],
             "analysis": "Brief 1-2 sentence nutritional summary",
             "suggestions": "Brief improvement tips (optional)"
@@ -41,7 +57,8 @@ export async function analyzeMealImage(imageBase64: string): Promise<{
 
           Important:
           - Return macros directly at root level, NOT nested under "estimate" or "macros"
-          - Be reasonably accurate with portion sizes based on visual cues
+          - Be honest about uncertainty: if portion size is hard to gauge from the photo, set confidence: "low" and widen the calories_low/calories_high band.
+          - confidence: "high" only when the items, brand, and portion are all unambiguous.
           - Include all visible food items in the food_items array
           - Calories should be total for the entire meal shown`
         },
@@ -55,7 +72,7 @@ export async function analyzeMealImage(imageBase64: string): Promise<{
             {
               type: "image_url",
               image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
+                url: `data:${mimeType};base64,${base64Image}`,
                 detail: "low",
               }
             }
@@ -63,7 +80,7 @@ export async function analyzeMealImage(imageBase64: string): Promise<{
         },
       ],
       response_format: { type: "json_object" },
-      max_tokens: 500,
+      max_tokens: 600,
     });
 
     const content = response.choices[0].message.content || "{}";
@@ -101,7 +118,14 @@ export async function analyzeMealImage(imageBase64: string): Promise<{
 
     console.log("[MEAL ANALYSIS] Extracted values:", { calories, protein, carbs, fat });
 
-    // Return structured data
+    // Calorie range: prefer model-emitted bounds, fall back to ±20% if missing.
+    const caloriesLow = Number(result.calories_low ?? result.caloriesLow) || Math.round(calories * 0.8);
+    const caloriesHigh = Number(result.calories_high ?? result.caloriesHigh) || Math.round(calories * 1.2);
+
+    const rawConfidence = String(result.confidence ?? "medium").toLowerCase();
+    const confidence: "low" | "medium" | "high" =
+      rawConfidence === "high" || rawConfidence === "low" ? rawConfidence : "medium";
+
     return {
       estimate: {
         calories,
@@ -109,6 +133,11 @@ export async function analyzeMealImage(imageBase64: string): Promise<{
         carbs,
         fat,
       },
+      range: {
+        caloriesLow,
+        caloriesHigh,
+      },
+      confidence,
       foodItems: result.food_items || result.foodItems || [],
       analysis: result.analysis || "Unable to analyze the meal.",
       suggestions: result.suggestions || "",

@@ -12,6 +12,7 @@
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "db:migrate:google": "node scripts/migrate-google-columns.mjs",
+    "db:migrate:enums": "node scripts/migrate-goal-activity-enums.mjs",
     "test": "node --test"
   },
   "dependencies": {

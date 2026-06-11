@@ -39,7 +39,7 @@ export async function generateWorkoutPlan(user: User): Promise<WorkoutPlan> {
     const promptText = `
       Generate a travel-friendly workout plan for someone staying at a hotel with the following details:
       
-      Fitness Goal: ${user.fitnessGoal} (${user.fitnessGoal === 'shred' ? 'fat loss' : 'maintenance/muscle retention'})
+      Fitness Goal: ${user.fitnessGoal}
       Activity Level: ${user.activityLevel}
       Gym Memberships: ${(user.gymMemberships?.length ?? 0) > 0 ? user.gymMemberships!.join(', ') : 'None'}
       Max Travel Time: ${user.maxCommuteMinutes} minutes

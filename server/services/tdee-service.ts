@@ -23,6 +23,16 @@ const activityMultipliers: Record<string, number> = {
   extra_active: 1.9,        // Very hard exercise + physical job
 };
 
+// Safety floors — never recommend below these regardless of formula output.
+// 1200 kcal for women / 1500 for men is the widely-cited clinical minimum
+// for sustained, unmonitored dieting.
+const MIN_CALORIES_BY_GENDER: Record<string, number> = {
+  male: 1500,
+  female: 1200,
+  other: 1200,
+};
+const MAX_DEFICIT_FRACTION = 0.25; // never undercut TDEE by more than 25%
+
 // Calculate Total Daily Energy Expenditure (TDEE)
 export function calculateTDEE(user: User): number {
   const bmr = calculateBMR(user);
@@ -70,6 +80,12 @@ export function calculateMacros(user: User, tdee: number): {
       fatPerKg = 0.9;
       break;
   }
+
+  // Safety floor: clamp targetCalories so we never recommend a target below
+  // (a) the gender-based clinical minimum and (b) 75% of TDEE.
+  const genderFloor = MIN_CALORIES_BY_GENDER[user.gender ?? "other"] ?? 1200;
+  const deficitFloor = Math.round(tdee * (1 - MAX_DEFICIT_FRACTION));
+  targetCalories = Math.max(targetCalories, genderFloor, deficitFloor);
 
   const protein = Math.max(0, Math.round(weightKg * proteinPerKg));
   const fat = Math.max(0, Math.round(weightKg * fatPerKg));

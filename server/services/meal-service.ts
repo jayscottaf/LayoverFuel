@@ -37,7 +37,7 @@ export async function generateMealPlan(
     const promptText = `
       Generate a travel-friendly meal plan for someone staying at a hotel with the following details:
       
-      Fitness Goal: ${user.fitnessGoal} (${user.fitnessGoal === 'shred' ? 'fat loss' : 'maintenance/muscle retention'})
+      Fitness Goal: ${user.fitnessGoal}
       Dietary Restrictions: ${(user.dietaryRestrictions?.length ?? 0) > 0 ? user.dietaryRestrictions!.join(', ') : 'None'}
       
       Daily Targets:

@@ -860,6 +860,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const inches = Math.round(totalInches - feet * 12);
               heightStr = `${feet}'${inches}"`;
             }
+            // Recent activity summary — last 7 days. Gives the assistant just
+            // enough memory to say things like "you've been under on protein"
+            // without bloating every run with raw logs.
+            let recentSummary: string | null = null;
+            try {
+              const allLogs = await storage.getNutritionLogs(user.id);
+              const today = new Date();
+              const sevenDaysAgo = new Date();
+              sevenDaysAgo.setDate(today.getDate() - 7);
+              const recent = allLogs.filter(l => {
+                const d = new Date(l.date as unknown as string);
+                return d >= sevenDaysAgo && d <= today;
+              });
+              if (recent.length > 0) {
+                const byDay = new Map<string, { cal: number; pro: number }>();
+                for (const l of recent) {
+                  const key = String(l.date);
+                  const acc = byDay.get(key) ?? { cal: 0, pro: 0 };
+                  acc.cal += Number(l.calories ?? 0);
+                  acc.pro += Number(l.protein ?? 0);
+                  byDay.set(key, acc);
+                }
+                const days = byDay.size;
+                const avgCal = Math.round(Array.from(byDay.values()).reduce((s, v) => s + v.cal, 0) / days);
+                const avgPro = Math.round(Array.from(byDay.values()).reduce((s, v) => s + v.pro, 0) / days);
+                const calDelta = avgCal - userMacros.targetCalories;
+                const proDelta = avgPro - userMacros.protein;
+                recentSummary = [
+                  `[Recent Activity — last 7 days]`,
+                  `Days logged: ${days}/7`,
+                  `Avg calories: ${avgCal} kcal (${calDelta >= 0 ? "+" : ""}${calDelta} vs target)`,
+                  `Avg protein: ${avgPro}g (${proDelta >= 0 ? "+" : ""}${proDelta}g vs target)`,
+                  `[End Recent Activity]`,
+                ].join("\n");
+              }
+            } catch { /* skip recent activity on error */ }
+
             profileContext = [
               `[User Profile]`,
               `Name: ${user.name}`,
@@ -873,6 +910,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               user.gymMemberships?.length ? `Gym memberships: ${user.gymMemberships.join(", ")}` : null,
               `Daily targets: ${userMacros.targetCalories} kcal | Protein: ${userMacros.protein}g | Carbs: ${userMacros.carbs}g | Fat: ${userMacros.fat}g`,
               `[End Profile]`,
+              recentSummary,
             ].filter(Boolean).join("\n");
           }
         } catch { /* continue without profile context */ }

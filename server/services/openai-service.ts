@@ -36,11 +36,11 @@ const onboardingQuestions: OnboardingQuestion[] = [
     field: "gender",
   },
   {
-    text: "What's your primary fitness goal while traveling? Are you looking to shred (fat loss) or sustain (maintenance/muscle retention)?",
+    text: "What's your primary fitness goal? Pick one: lose weight, maintain weight, build muscle, or improve endurance.",
     field: "fitnessGoal",
   },
   {
-    text: "How would you describe your activity level? (lightly active, moderate, very active)",
+    text: "How would you describe your activity level — sedentary, lightly active, moderately active, very active, or extra active?",
     field: "activityLevel",
   },
   {
@@ -134,74 +134,71 @@ export async function processOnboardingMessage(
       }
       break;
       
-    case "fitnessGoal":
-      if (message.toLowerCase().includes("shred")) {
-        response.value = "shred";
-      } else if (message.toLowerCase().includes("sustain") || message.toLowerCase().includes("maintain")) {
-        response.value = "sustain";
+    case "fitnessGoal": {
+      const validGoals = ["lose_weight", "maintain", "gain_muscle", "endurance"];
+      const lowered = message.toLowerCase();
+      if (lowered.includes("lose") || lowered.includes("shred") || lowered.includes("fat loss") || lowered.includes("cut")) {
+        response.value = "lose_weight";
+      } else if (lowered.includes("muscle") || lowered.includes("bulk") || lowered.includes("strength")) {
+        response.value = "gain_muscle";
+      } else if (lowered.includes("endurance") || lowered.includes("cardio") || lowered.includes("stamina")) {
+        response.value = "endurance";
+      } else if (lowered.includes("maintain") || lowered.includes("sustain")) {
+        response.value = "maintain";
       } else {
-        // Use AI to determine the intent
         try {
           const promptText = `
-            Based on this response: "${message}", determine if the user wants to:
-            1. Shred (fat loss)
-            2. Sustain (maintenance/muscle retention)
-            Return ONLY "shred" or "sustain" as a plain text response.
+            Classify this fitness goal response as exactly one of: lose_weight, maintain, gain_muscle, endurance.
+            Response: "${message}"
+            Return ONLY one of those four tokens, lowercase, no other text.
           `;
-
           const chatResponse = await openai.chat.completions.create({
             model: "gpt-4o-mini",
-            messages: [{role: "user", content: promptText}],
+            messages: [{ role: "user", content: promptText }],
             max_tokens: 10,
           });
-
           const result = (chatResponse.choices[0].message.content ?? '').trim().toLowerCase();
-          if (result === "shred" || result === "sustain") {
-            response.value = result;
-          } else {
-            response.value = "sustain"; // Default to sustain if unclear
-          }
-        } catch (error) {
-          response.value = "sustain"; // Default to sustain on error
+          response.value = validGoals.includes(result) ? result : "maintain";
+        } catch {
+          response.value = "maintain";
         }
       }
       break;
-      
-    case "activityLevel":
-      if (message.toLowerCase().includes("light")) {
-        response.value = "lightly_active";
-      } else if (message.toLowerCase().includes("moderate")) {
-        response.value = "moderate";
-      } else if (message.toLowerCase().includes("very") || message.toLowerCase().includes("high")) {
+    }
+
+    case "activityLevel": {
+      const validLevels = ["sedentary", "lightly_active", "moderately_active", "very_active", "extra_active"];
+      const lowered = message.toLowerCase();
+      if (lowered.includes("sedentary") || lowered.includes("none")) {
+        response.value = "sedentary";
+      } else if (lowered.includes("extra") || lowered.includes("twice")) {
+        response.value = "extra_active";
+      } else if (lowered.includes("very") || lowered.includes("hard")) {
         response.value = "very_active";
+      } else if (lowered.includes("moderate")) {
+        response.value = "moderately_active";
+      } else if (lowered.includes("light")) {
+        response.value = "lightly_active";
       } else {
-        // Use AI to determine the intent
         try {
           const promptText = `
-            Based on this response: "${message}", determine the user's activity level as one of:
-            1. lightly_active
-            2. moderate
-            3. very_active
-            Return ONLY one of these three options as a plain text response.
+            Classify this activity-level response as exactly one of: sedentary, lightly_active, moderately_active, very_active, extra_active.
+            Response: "${message}"
+            Return ONLY one of those five tokens, lowercase, no other text.
           `;
-
           const chatResponse = await openai.chat.completions.create({
             model: "gpt-4o-mini",
-            messages: [{role: "user", content: promptText}],
+            messages: [{ role: "user", content: promptText }],
             max_tokens: 10,
           });
-
           const result = (chatResponse.choices[0].message.content ?? '').trim().toLowerCase();
-          if (["lightly_active", "moderate", "very_active"].includes(result)) {
-            response.value = result;
-          } else {
-            response.value = "moderate"; // Default to moderate if unclear
-          }
-        } catch (error) {
-          response.value = "moderate"; // Default to moderate on error
+          response.value = validLevels.includes(result) ? result : "moderately_active";
+        } catch {
+          response.value = "moderately_active";
         }
       }
       break;
+    }
       
     case "dietaryRestrictions":
       try {
@@ -344,9 +341,9 @@ export async function generateDailyMotivation(user: User): Promise<string> {
     const promptText = `
       Generate a short, motivational fitness tip for a traveler with the following profile:
       
-      Fitness Goal: ${user.fitnessGoal} (${user.fitnessGoal === 'shred' ? 'fat loss' : 'maintenance/muscle retention'})
+      Fitness Goal: ${user.fitnessGoal}
       Activity Level: ${user.activityLevel}
-      
+
       The tip should be specific to someone who is traveling and trying to maintain their fitness routine.
       Keep it concise (1-2 sentences), actionable, and uplifting.
       Do not add any prefixes like "Tip:" or similar.
