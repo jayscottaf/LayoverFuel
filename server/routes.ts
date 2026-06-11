@@ -34,6 +34,8 @@ import adaptiveTDEERoutes from "./routes/api/tdee/adaptive";
 import itineraryRoutes from "./routes/api/itinerary";
 import googleAuthRoutes from "./auth/google-routes";
 import { registerGoogleStrategies } from "./auth/google-strategies";
+import { getValidAccessToken } from "./services/google-oauth";
+import { detectFlights, fetchUpcomingEvents } from "./services/google-calendar";
 import { env } from "./config/env";
 declare module "express-session" {
   interface SessionData {
@@ -585,6 +587,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate streak
       const streak = await calculateStreak(user.id);
 
+      // Hydration: bump target by ~1.5 glasses (12oz) per hour of flight today.
+      // Best-effort — silently falls back to 8 if calendar isn't connected.
+      let waterTarget = 8;
+      let waterTargetReason: string | null = null;
+      try {
+        if (user.googleRefreshToken) {
+          const dayStart = new Date(today);
+          const dayEnd = new Date(today);
+          dayEnd.setHours(23, 59, 59, 999);
+          const accessToken = await getValidAccessToken(user.id);
+          const events = await fetchUpcomingEvents(accessToken, dayStart, dayEnd);
+          const flights = detectFlights(events);
+          const totalFlightHours = flights.reduce(
+            (sum, f) => sum + (new Date(f.end).getTime() - new Date(f.start).getTime()) / 3_600_000,
+            0
+          );
+          if (totalFlightHours > 0) {
+            const boost = Math.ceil(totalFlightHours * 1.5);
+            waterTarget = 8 + boost;
+            waterTargetReason = `+${boost} for ${totalFlightHours.toFixed(1)}h flying today`;
+          }
+        }
+      } catch { /* leave waterTarget at 8 */ }
+
       // Response with dashboard data
       res.status(200).json({
         user: {
@@ -601,7 +627,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentSteps: healthLog?.steps || 0,
           stepsProgress: healthLog?.steps ? Math.round((healthLog.steps / 10000) * 100) : 0,
           water: healthLog?.water || 0,
-          waterProgress: healthLog?.water ? Math.round((healthLog.water / 8) * 100) : 0,
+          waterTarget,
+          waterTargetReason,
+          waterProgress: healthLog?.water ? Math.round((healthLog.water / waterTarget) * 100) : 0,
           streak,
         },
         dailyPlan,

@@ -73,17 +73,32 @@ export async function fetchUpcomingEvents(
   return json.items ?? [];
 }
 
-// Matches airline+flight-number strings like "UA 123", "DL1234", "BA 2490", plus common
-// flight-ish keywords and directional arrows. Intentionally liberal — false positives
-// are easy to filter client-side, false negatives hide trips entirely.
-const FLIGHT_TITLE_REGEX = /(\bflight\b|\bfly\b|✈|→|->|(?:^|\W)[A-Z]{2,3}\s?\d{2,4}(?:\W|$))/i;
+// Multi-pattern flight detection. Crew calendars (CrewLounge, AIMS, CrewTrac,
+// PBS, FltDeck Calendar, etc.) use a variety of title formats — we accept all
+// of these and intentionally err toward false positives, which are easy to
+// filter visually but false negatives hide whole trips.
+//
+// Recognized:
+//   - English keywords: flight, fly, depart, arrive, dep, arr
+//   - Arrows / plane glyphs: ✈, →, ->, –, —
+//   - Airline + flight number: "DL1234", "UA 456", "AA  2490"
+//   - IATA airport pair: "ATL-LAX", "ATL → LAX", "ATL/LAX", "DEN-MIA"
+//   - Crew shorthand: "RPT 0530" (report), "STDBY", "DH" (deadhead),
+//     "TURN" (turn), "OVNT" (overnight)
+const FLIGHT_PATTERNS: RegExp[] = [
+  /\bflight\b|\bfly\b|\bdepart\b|\barrive\b|\bdep\b|\barr\b/i,
+  /✈|→|->|–|—/,
+  /(?:^|\W)[A-Z]{2,3}\s?\d{2,4}(?:\W|$)/, // carrier + flight number
+  /\b[A-Z]{3}\s*[-→/]\s*[A-Z]{3}\b/,      // IATA airport pair
+  /\b(?:RPT|STDBY|DH|TURN|OVNT|RON|DUTY)\b/i,
+];
 
 function looksLikeFlight(event: GoogleCalendarEvent): boolean {
   const summary = event.summary ?? "";
   const location = event.location ?? "";
-  if (FLIGHT_TITLE_REGEX.test(summary)) return true;
-  if (/\bairport\b/i.test(location)) return true;
-  if (/\bairport\b/i.test(summary)) return true;
+  const haystack = `${summary} ${location}`;
+  if (FLIGHT_PATTERNS.some(re => re.test(haystack))) return true;
+  if (/\bairport\b/i.test(haystack)) return true;
   // Bare IATA code in location like "SFO" or "JFK Airport"
   if (/^\s*[A-Z]{3}\b/.test(location.trim())) return true;
   return false;

@@ -35,6 +35,8 @@ interface DashboardData {
     currentSteps: number;
     stepsProgress: number;
     water: number;
+    waterTarget?: number;
+    waterTargetReason?: string | null;
     waterProgress: number;
     streak: number;
   };
@@ -147,18 +149,25 @@ function MacroBar({ label, current, target, color }: { label: string; current: n
   );
 }
 
-function WaterTracker({ glasses, onAdd, onRemove }: { glasses: number; onAdd: () => void; onRemove: () => void }) {
+function WaterTracker({ glasses, target, reason, onAdd, onRemove }: { glasses: number; target: number; reason?: string | null; onAdd: () => void; onRemove: () => void }) {
+  // Cap rendered glass icons at 16 to keep the row reasonable on tiny screens.
+  const cells = Math.min(target, 16);
   return (
     <div className="bg-gray-900 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Droplets className="h-4 w-4 text-cyan-400" />
           <span className="text-sm font-medium text-white">Water</span>
+          {reason && (
+            <span className="text-[10px] uppercase tracking-wider bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full">
+              flight boost
+            </span>
+          )}
         </div>
-        <span className="text-xs text-gray-400">{glasses} / 8 glasses</span>
+        <span className="text-xs text-gray-400">{glasses} / {target} glasses</span>
       </div>
       <div className="flex gap-1.5">
-        {Array.from({ length: 8 }, (_, i) => (
+        {Array.from({ length: cells }, (_, i) => (
           <button
             key={i}
             onClick={i < glasses ? onRemove : onAdd}
@@ -168,6 +177,9 @@ function WaterTracker({ glasses, onAdd, onRemove }: { glasses: number; onAdd: ()
           />
         ))}
       </div>
+      {reason && (
+        <p className="text-xs text-cyan-300/80 mt-2">{reason} — cabin air is dry, drink up.</p>
+      )}
     </div>
   );
 }
@@ -198,8 +210,10 @@ export default function HomePage() {
   });
 
   const currentWater = data?.stats?.water ?? 0;
+  const waterTarget = data?.stats?.waterTarget ?? 8;
+  const waterTargetReason = data?.stats?.waterTargetReason ?? null;
 
-  const handleAddWater = () => waterMutation.mutate(Math.min(currentWater + 1, 8));
+  const handleAddWater = () => waterMutation.mutate(Math.min(currentWater + 1, waterTarget));
   const handleRemoveWater = () => waterMutation.mutate(Math.max(currentWater - 1, 0));
 
   const openChatWith = (message: string) => {
@@ -454,11 +468,16 @@ export default function HomePage() {
                 <div className="flex items-center gap-2">
                   <Droplets className="h-4 w-4 text-cyan-400" />
                   <span className="text-sm font-medium text-white">Water</span>
+                  {waterTargetReason && (
+                    <span className="text-[10px] uppercase tracking-wider bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full">
+                      flight boost
+                    </span>
+                  )}
                 </div>
-                <span className="text-xs text-gray-400">{currentWater} / 8 glasses</span>
+                <span className="text-xs text-gray-400">{currentWater} / {waterTarget} glasses</span>
               </div>
               <div className="flex gap-1">
-                {Array.from({ length: 8 }, (_, i) => (
+                {Array.from({ length: Math.min(waterTarget, 16) }, (_, i) => (
                   <button
                     key={i}
                     onClick={() => {
@@ -473,6 +492,9 @@ export default function HomePage() {
                   />
                 ))}
               </div>
+              {waterTargetReason && (
+                <p className="text-[11px] text-cyan-300/80 mt-1.5">{waterTargetReason} — cabin air is dry.</p>
+              )}
             </div>
           </div>
 
