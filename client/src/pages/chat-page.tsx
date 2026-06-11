@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { currentTimezone } from "@/lib/utils/timezone";
 import { useToast } from "@/hooks/use-toast";
 import { errorToast } from "@/lib/toast-helpers";
 import { AIProgress, type AIProgressStep } from "@/components/ui/ai-progress";
@@ -56,12 +57,51 @@ function getDateLabel(ts: number): string {
   return d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 }
 
+interface PendingLog {
+  mealStyle: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber?: number;
+  notes?: string;
+  date?: string;
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [tempImages, setTempImages] = useState<string[]>([]);
+  const [pendingLog, setPendingLog] = useState<PendingLog | null>(null);
+  const [savingPending, setSavingPending] = useState(false);
+
+  const confirmPendingLog = async (overrides?: Partial<PendingLog>) => {
+    if (!pendingLog) return;
+    setSavingPending(true);
+    const payload = { ...pendingLog, ...overrides };
+    try {
+      await apiRequest("POST", "/api/logs/nutrition", {
+        date: payload.date || new Date().toISOString().slice(0, 10),
+        mealStyle: payload.mealStyle,
+        calories: payload.calories,
+        protein: payload.protein,
+        carbs: payload.carbs,
+        fat: payload.fat,
+        fiber: payload.fiber,
+        notes: payload.notes,
+        timezone: currentTimezone(),
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      toast({ title: "Logged", description: `${payload.mealStyle} added to today's log.` });
+      setPendingLog(null);
+    } catch {
+      toast({ title: "Couldn't save", description: "Try again in a moment.", variant: "destructive" });
+    } finally {
+      setSavingPending(false);
+    }
+  };
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -185,6 +225,9 @@ export default function ChatPage() {
       }));
       setMessages(newMessages);
       setImageAnalysisStep(null);
+      if (data.pendingLog) {
+        setPendingLog(data.pendingLog as PendingLog);
+      }
     },
     onError: (error, variables) => {
       console.error("Send error:", error);
@@ -379,6 +422,58 @@ export default function ChatPage() {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Pending log confirm card — surfaces a proposed nutrition log so the
+          user can confirm/edit before it writes. */}
+      {pendingLog && (
+        <div className="mx-4 mb-2 shrink-0 bg-gradient-to-br from-indigo-600/20 to-blue-600/20 border border-indigo-500/40 rounded-2xl p-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-indigo-300 uppercase tracking-wide">Log this meal?</p>
+            <button
+              onClick={() => setPendingLog(null)}
+              className="text-xs text-gray-400 hover:text-gray-200"
+              disabled={savingPending}
+            >
+              Skip
+            </button>
+          </div>
+          <p className="text-sm font-medium text-white mb-1">{pendingLog.mealStyle}</p>
+          <div className="grid grid-cols-4 gap-2 text-center mb-3">
+            <div>
+              <p className="text-base font-bold text-white">{Math.round(pendingLog.calories) || 0}</p>
+              <p className="text-[10px] text-gray-400 uppercase">kcal</p>
+            </div>
+            <div>
+              <p className="text-base font-bold text-blue-300">{Math.round(pendingLog.protein) || 0}</p>
+              <p className="text-[10px] text-gray-400 uppercase">protein</p>
+            </div>
+            <div>
+              <p className="text-base font-bold text-emerald-300">{Math.round(pendingLog.carbs) || 0}</p>
+              <p className="text-[10px] text-gray-400 uppercase">carbs</p>
+            </div>
+            <div>
+              <p className="text-base font-bold text-amber-300">{Math.round(pendingLog.fat) || 0}</p>
+              <p className="text-[10px] text-gray-400 uppercase">fat</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => confirmPendingLog()}
+              disabled={savingPending}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-sm font-semibold rounded-xl py-2 transition-colors"
+            >
+              {savingPending ? "Saving…" : "Log it"}
+            </button>
+            <button
+              onClick={() => setInput(`Adjust the numbers for "${pendingLog.mealStyle}" — `)}
+              disabled={savingPending}
+              className="bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-medium rounded-xl px-4 py-2 transition-colors"
+            >
+              Edit
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Image previews */}
       {tempImages.length > 0 && (

@@ -23,7 +23,7 @@ import {
   runAssistantOnThread,
   checkRunStatus,
   getMessagesFromThread,
-  processMessageForNutritionLogging
+  extractPendingNutritionLog
 } from "./services/assistant-service";
 import { generateMealPlan } from "./services/meal-service";
 import { generateWorkoutPlan } from "./services/workout-service";
@@ -1086,31 +1086,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         messages = await getMessagesFromThread(threadId);
         
-        // Only process the first message (newest) for nutrition logging
+        // Extract any proposed nutrition log from the newest assistant message.
+        // The log is NOT written here — it's returned to the client as a
+        // pending proposal that the user must explicitly confirm.
+        let pendingLog = null;
         if (messages.data && messages.data.length > 0) {
           const latestMessage = messages.data[0];
-          // Process latest message for nutrition logging only if it's from the assistant
           if (latestMessage.role === 'assistant') {
-            await processMessageForNutritionLogging(latestMessage);
+            pendingLog = await extractPendingNutritionLog(latestMessage);
           }
         }
-        
+
         // Just log that messages were retrieved, not their entire content
         console.log(`Retrieved ${messages.data?.length || 0} messages from thread ${threadId}`);
+
+        res.status(200).json({ messages: messages.data, pendingLog });
+        return;
       } catch (messagesError) {
         console.error("Error getting messages:", messagesError);
         if (messagesError instanceof Error && messagesError.message.includes("SyntaxError")) {
-          return res.status(400).json({ 
+          return res.status(400).json({
             message: "Invalid response format from assistant. Please try rephrasing your request or contact support.",
             error: messagesError.message
           });
         }
-        return res.status(500).json({ 
-          message: "Failed to get messages", 
-          error: messagesError instanceof Error ? messagesError.message : String(messagesError) 
+        return res.status(500).json({
+          message: "Failed to get messages",
+          error: messagesError instanceof Error ? messagesError.message : String(messagesError)
         });
       }
-      res.status(200).json({ messages: messages.data });
     } catch (error) {
       console.error("Error processing message:", error);
       res.status(500).json({ 

@@ -314,18 +314,28 @@ export async function getMessagesFromThread(threadId: string) {
   return filteredData;
 }
 
-// Process a message for nutrition logging - only call this once per message
-export async function processMessageForNutritionLogging(message: any): Promise<boolean> {
-  // Skip if not an assistant message or already processed
-  if (message.role !== 'assistant' || processedMessageIds.has(message.id)) {
-    return false;
-  }
+export interface PendingNutritionLog {
+  mealStyle: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber?: number;
+  notes?: string;
+  date?: string;
+}
 
-  // Mark this message as processed to prevent duplicates
+// Extract a proposed nutrition log from an assistant message WITHOUT writing it.
+// The caller surfaces the proposal to the user, who confirms (and may edit)
+// before the actual POST to /api/logs/nutrition. This is the trust gate that
+// stops silent auto-logs with hallucinated macros.
+export async function extractPendingNutritionLog(message: any): Promise<PendingNutritionLog | null> {
+  if (message.role !== 'assistant' || processedMessageIds.has(message.id)) {
+    return null;
+  }
   processedMessageIds.add(message.id);
-  console.log(`⚡ Processing message ${message.id} for nutrition logging`);
-  
-  let nutritionLogged = false;
+
+  let proposal: PendingNutritionLog | null = null;
 
   // Process the message content
   for (const part of message.content) {
@@ -401,23 +411,19 @@ export async function processMessageForNutritionLogging(message: any): Promise<b
                   continue;
                 }
 
-                console.log("✨ Found nutrition log action");
+                console.log("✨ Found nutrition log proposal — surfacing for confirmation");
 
-                // Only process once per message to prevent duplicates
-                if (!nutritionLogged) {
-                  const baseUrl = 'http://localhost:5000';
-                  const logResponse = await fetch(`${baseUrl}/api/logs/nutrition`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(parsed),
-                  });
-
-                  if (logResponse.ok) {
-                    console.log("✅ Nutrition log saved successfully");
-                    nutritionLogged = true;
-                  } else {
-                    console.error("❌ Failed to log nutrition:", await logResponse.text());
-                  }
+                if (!proposal) {
+                  proposal = {
+                    mealStyle: String(parsed.mealStyle ?? "Meal"),
+                    calories: parsed.calories,
+                    protein: parsed.protein,
+                    carbs: parsed.carbs,
+                    fat: parsed.fat,
+                    fiber: typeof parsed.fiber === "number" ? parsed.fiber : undefined,
+                    notes: typeof parsed.notes === "string" ? parsed.notes : undefined,
+                    date: parsed.date,
+                  };
                 }
               }
             } catch (jsonError) {
@@ -432,5 +438,5 @@ export async function processMessageForNutritionLogging(message: any): Promise<b
     }
   }
 
-  return nutritionLogged;
+  return proposal;
 }
