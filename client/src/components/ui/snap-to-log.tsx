@@ -19,6 +19,8 @@ interface MealEstimate {
 
 interface AnalysisResult {
   estimate: MealEstimate;
+  range?: { caloriesLow: number; caloriesHigh: number };
+  confidence?: "low" | "medium" | "high";
   foodItems: string[];
   analysis: string;
 }
@@ -314,7 +316,28 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
                 </div>
               ) : (
                 <>
-                  <p className="text-white font-semibold text-sm leading-snug">{description}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-white font-semibold text-sm leading-snug">{description}</p>
+                    {result?.confidence && (
+                      <span
+                        className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                          result.confidence === "high"
+                            ? "bg-emerald-500/20 text-emerald-300"
+                            : result.confidence === "medium"
+                            ? "bg-amber-500/20 text-amber-300"
+                            : "bg-orange-500/20 text-orange-300"
+                        }`}
+                        title="How confident the AI is in this estimate"
+                      >
+                        {result.confidence} confidence
+                      </span>
+                    )}
+                  </div>
+                  {result?.range && result.range.caloriesLow !== result.range.caloriesHigh && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Range: {result.range.caloriesLow}–{result.range.caloriesHigh} kcal — tap any value below to adjust.
+                    </p>
+                  )}
                   <div className="grid grid-cols-4 gap-2 mt-3">
                     {[
                       { label: "Cal", value: macros.calories, unit: "", color: "text-white" },
