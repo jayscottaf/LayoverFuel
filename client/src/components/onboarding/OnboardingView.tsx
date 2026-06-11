@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export function OnboardingView() {
   const [initialQuestion, setInitialQuestion] = useState<string>("");
+  const [initialStep, setInitialStep] = useState<{ index: number; total: number }>({ index: 0, total: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -13,13 +14,16 @@ export function OnboardingView() {
     const fetchInitialQuestion = async () => {
       try {
         const response = await apiRequest("GET", "/api/onboarding/current-question");
-        
+
         if (!response.ok) {
           throw new Error("Failed to fetch initial question");
         }
-        
+
         const data = await response.json();
         setInitialQuestion(data.question.text);
+        if (typeof data.stepIndex === "number" && typeof data.totalSteps === "number") {
+          setInitialStep({ index: data.stepIndex, total: data.totalSteps });
+        }
       } catch (error) {
         console.error("Error fetching initial question:", error);
         toast({
@@ -50,7 +54,11 @@ export function OnboardingView() {
   return (
     <div className="flex min-h-screen bg-white">
       <OnboardingSidebar />
-      <OnboardingChat initialQuestion={initialQuestion} />
+      <OnboardingChat
+        initialQuestion={initialQuestion}
+        initialStepIndex={initialStep.index}
+        totalSteps={initialStep.total}
+      />
     </div>
   );
 }

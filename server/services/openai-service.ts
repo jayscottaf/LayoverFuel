@@ -17,7 +17,7 @@ export interface OnboardingResponse {
   isComplete?: boolean;
 }
 
-const onboardingQuestions: OnboardingQuestion[] = [
+export const onboardingQuestions: OnboardingQuestion[] = [
   {
     text: "Hi there! I'm your Layover Fuel fitness coach. I'll help you stay fit while traveling. Let's get to know each other better. What's your name?",
     field: "name",

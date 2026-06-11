@@ -114,6 +114,47 @@ export async function handleNutritionLogGet(req: Request, res: Response) {
   }
 }
 
+// Allowed editable fields. Restricted on purpose — date/userId stay immutable.
+const NutritionLogPatchSchema = z.object({
+  mealStyle: z.string().optional(),
+  calories: z.number().optional(),
+  protein: z.number().optional(),
+  carbs: z.number().optional(),
+  fat: z.number().optional(),
+  fiber: z.number().optional(),
+  notes: z.string().nullable().optional(),
+  context: z.string().nullable().optional(),
+});
+
+export async function handleNutritionLogPatch(req: Request, res: Response) {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ message: "Invalid log id" });
+  }
+  try {
+    const existing = await storage.getNutritionLogById(id);
+    if (!existing) return res.status(404).json({ message: "Log not found" });
+    if (existing.userId !== userId) return res.status(403).json({ message: "Forbidden" });
+
+    const patch = NutritionLogPatchSchema.parse(req.body);
+    const updated = await storage.updateNutritionLog(id, patch);
+    return res.status(200).json(updated);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Validation failed", issues: error.flatten() });
+    }
+    console.error("💥 Error updating nutrition log:", error);
+    return res.status(500).json({
+      message: "Server error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 export async function handleNutritionLogDelete(req: Request, res: Response) {
   const userId = req.session?.userId;
   if (!userId) {
@@ -154,6 +195,7 @@ import { Router } from "express";
 const router = Router();
 router.post("/", handleNutritionLogPost);
 router.get("/", handleNutritionLogGet);
+router.patch("/:id", handleNutritionLogPatch);
 router.delete("/:id", handleNutritionLogDelete);
 
 export default router;

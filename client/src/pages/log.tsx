@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Utensils,
   MessageCircle,
+  Pencil,
   Trash2,
   RotateCcw,
   Loader2,
@@ -99,6 +100,45 @@ export default function LogPage() {
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<number>>(new Set());
   const deleteTimeoutsRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
   const [confirmDeleteMeal, setConfirmDeleteMeal] = useState<MealLog | null>(null);
+
+  // Edit sheet
+  const [editingMeal, setEditingMeal] = useState<MealLog | null>(null);
+  const [editForm, setEditForm] = useState<{ mealStyle: string; calories: string; protein: string; carbs: string; fat: string }>({
+    mealStyle: "", calories: "", protein: "", carbs: "", fat: "",
+  });
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const openEdit = (meal: MealLog) => {
+    setEditingMeal(meal);
+    setEditForm({
+      mealStyle: meal.mealStyle ?? "",
+      calories: String(Math.round(meal.calories ?? 0)),
+      protein: String(Math.round(meal.protein ?? 0)),
+      carbs: String(Math.round(meal.carbs ?? 0)),
+      fat: String(Math.round(meal.fat ?? 0)),
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editingMeal) return;
+    setIsSavingEdit(true);
+    try {
+      await apiRequest("PATCH", `/api/logs/nutrition/${editingMeal.id}`, {
+        mealStyle: editForm.mealStyle,
+        calories: Number(editForm.calories) || 0,
+        protein: Number(editForm.protein) || 0,
+        carbs: Number(editForm.carbs) || 0,
+        fat: Number(editForm.fat) || 0,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      setEditingMeal(null);
+      toast({ title: "Updated", description: "Meal saved." });
+    } catch {
+      toast({ title: "Couldn't save", description: "Try again in a moment.", variant: "destructive" });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -296,6 +336,13 @@ export default function LogPage() {
                     )}
                   </div>
                   <button
+                    onClick={() => openEdit(meal)}
+                    className="shrink-0 p-2 rounded-xl text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                    aria-label={`Edit ${meal.mealStyle || "meal"}`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
                     onClick={() => setConfirmDeleteMeal(meal)}
                     className="shrink-0 p-2 rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                     aria-label={`Delete ${meal.mealStyle || "meal"}`}
@@ -342,6 +389,65 @@ export default function LogPage() {
           <ChevronRight className="h-5 w-5 text-gray-600" />
         </button>
       </div>
+
+      <AlertDialog
+        open={!!editingMeal}
+        onOpenChange={open => !open && setEditingMeal(null)}
+      >
+        <AlertDialogContent className="bg-gray-900 border-gray-800 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit meal</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Fix the description or macros for this entry.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 mt-2">
+            <div>
+              <label className="text-xs text-gray-400 uppercase tracking-wide">Meal</label>
+              <input
+                type="text"
+                value={editForm.mealStyle}
+                onChange={e => setEditForm(f => ({ ...f, mealStyle: e.target.value }))}
+                className="mt-1 w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2 border border-gray-700 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { key: "calories" as const, label: "Calories", unit: "kcal" },
+                { key: "protein" as const, label: "Protein", unit: "g" },
+                { key: "carbs" as const, label: "Carbs", unit: "g" },
+                { key: "fat" as const, label: "Fat", unit: "g" },
+              ].map(({ key, label, unit }) => (
+                <div key={key}>
+                  <label className="text-xs text-gray-400 uppercase tracking-wide">{label}</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={editForm[key]}
+                      onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))}
+                      className="mt-1 w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2 pr-10 border border-gray-700 focus:outline-none focus:border-indigo-500"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-0 text-xs text-gray-500">{unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel className="bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:text-white">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={saveEdit}
+              disabled={isSavingEdit}
+              className="bg-indigo-600 text-white hover:bg-indigo-500"
+            >
+              {isSavingEdit ? "Saving…" : "Save"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={!!confirmDeleteMeal}

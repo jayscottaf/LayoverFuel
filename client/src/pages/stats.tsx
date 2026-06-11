@@ -15,11 +15,13 @@ interface StatsData {
   weightChange?: number;
   weightData: WeightData[];
   adaptiveTDEE?: {
+    source?: "adaptive" | "formula";
     value: number;
     formulaTDEE: number;
     difference: number;
     confidence: "low" | "medium" | "high";
     daysOfData: number;
+    requiredDaysForAdaptive?: number;
   };
   nutritionTrends: {
     avgCalories: number;
@@ -168,51 +170,81 @@ export default function StatsPage() {
 
         {/* Adaptive TDEE Section */}
         {tdeeData ? (
-          <div className="bg-gradient-to-br from-indigo-600/20 to-blue-600/20 border border-indigo-500/30 rounded-3xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Flame className="h-4 w-4 text-orange-400" />
-                  <span className="text-sm text-gray-300">Your Real Metabolism</span>
+          (() => {
+            const isAdaptive = (tdeeData.source ?? "adaptive") === "adaptive";
+            const required = tdeeData.requiredDaysForAdaptive ?? 7;
+            return (
+              <div className="bg-gradient-to-br from-indigo-600/20 to-blue-600/20 border border-indigo-500/30 rounded-3xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Flame className="h-4 w-4 text-orange-400" />
+                      <span className="text-sm text-gray-300">
+                        {isAdaptive ? "Your Real Metabolism" : "Estimated TDEE"}
+                      </span>
+                    </div>
+                    <p className="text-3xl font-bold text-white">
+                      {tdeeData.value} <span className="text-lg text-gray-400">cal/day</span>
+                    </p>
+                    {isAdaptive ? (
+                      <p className="text-sm mt-1">
+                        {tdeeData.difference > 0 ? (
+                          <span className="text-green-400">↑ {tdeeData.difference} higher than formula</span>
+                        ) : tdeeData.difference < 0 ? (
+                          <span className="text-red-400">↓ {Math.abs(tdeeData.difference)} lower than formula</span>
+                        ) : (
+                          <span className="text-gray-400">Matches formula estimate</span>
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-sm mt-1 text-gray-400">
+                        Formula estimate. Switches to measured once you log {required} days.
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500 mb-1">Confidence</p>
+                    <div className="flex gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-2 h-6 rounded-full ${
+                            i < (tdeeData.confidence === "high" ? 5 : tdeeData.confidence === "medium" ? 3 : 1)
+                              ? "bg-blue-500"
+                              : "bg-gray-700"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {isAdaptive
+                        ? `${tdeeData.daysOfData} days`
+                        : `${tdeeData.daysOfData}/${required} days`}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-3xl font-bold text-white">
-                  {tdeeData.value} <span className="text-lg text-gray-400">cal/day</span>
-                </p>
-                <p className="text-sm mt-1">
-                  {tdeeData.difference > 0 ? (
-                    <span className="text-green-400">↑ {tdeeData.difference} higher than formula</span>
-                  ) : tdeeData.difference < 0 ? (
-                    <span className="text-red-400">↓ {Math.abs(tdeeData.difference)} lower than formula</span>
-                  ) : (
-                    <span className="text-gray-400">Matches formula estimate</span>
-                  )}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-500 mb-1">Confidence</p>
-                <div className="flex gap-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-2 h-6 rounded-full ${
-                        i < (tdeeData.confidence === "high" ? 5 : tdeeData.confidence === "medium" ? 3 : 1)
-                          ? "bg-blue-500"
-                          : "bg-gray-700"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">{tdeeData.daysOfData} days</p>
-              </div>
-            </div>
 
-            <div className="bg-black/30 rounded-xl p-3 mt-3">
-              <p className="text-xs text-gray-400">
-                This is your actual calorie burn based on your weight changes and food intake.
-                It includes everything: exercise, daily movement, and metabolism.
-              </p>
-            </div>
-          </div>
+                {!isAdaptive && (
+                  <div className="space-y-1">
+                    <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all"
+                        style={{ width: `${Math.min((tdeeData.daysOfData / Math.max(required, 1)) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-black/30 rounded-xl p-3 mt-3">
+                  <p className="text-xs text-gray-400">
+                    {isAdaptive
+                      ? "This is your actual calorie burn based on your weight changes and food intake. It includes everything: exercise, daily movement, and metabolism."
+                      : "This is a Mifflin-St Jeor estimate from your profile. Once you've logged a week of meals and weights, this will become a real, measured value tuned to you."}
+                  </p>
+                </div>
+              </div>
+            );
+          })()
         ) : (
           <div className="bg-gray-900 rounded-3xl p-5">
             <div className="flex items-center gap-3">
@@ -220,19 +252,17 @@ export default function StatsPage() {
                 <Flame className="h-6 w-6 text-orange-400" />
               </div>
               <div className="flex-1">
-                <p className="text-white font-medium">Adaptive TDEE</p>
-                <p className="text-gray-400 text-sm">Log 7+ days to unlock</p>
+                <p className="text-white font-medium">Estimated TDEE</p>
+                <p className="text-gray-400 text-sm">Will refine as you log more days</p>
               </div>
             </div>
-            <div className="mt-3 space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Progress</span>
-                <span className="text-gray-400">3/7 days</span>
-              </div>
-              <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full" style={{ width: "43%" }} />
-              </div>
-            </div>
+            <p className="text-3xl font-bold text-white mt-3">
+              — <span className="text-lg text-gray-400">cal/day</span>
+            </p>
+            <p className="text-xs text-gray-500 mt-3">
+              No data yet. Log meals and a daily weight for at least 7 days and the
+              estimate will switch over to your real, measured burn.
+            </p>
           </div>
         )}
 

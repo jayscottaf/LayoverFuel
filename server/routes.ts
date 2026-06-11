@@ -10,11 +10,12 @@ import {
   calculateTDEE, 
   calculateMacros 
 } from "./services/tdee-service";
-import { 
-  processOnboardingMessage, 
+import {
+  processOnboardingMessage,
   generateDailyMotivation,
   processFeedback,
-  type OnboardingQuestion 
+  onboardingQuestions,
+  type OnboardingQuestion
 } from "./services/openai-service";
 import {
   getOrCreateThread,
@@ -270,8 +271,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!onboarding) {
       return res.status(400).json({ message: "No onboarding in progress" });
     }
-    
-    res.status(200).json({ question: onboarding.currentQuestion });
+
+    const currentIndex = onboardingQuestions.findIndex(q => q.field === onboarding.currentQuestion.field);
+    res.status(200).json({
+      question: onboarding.currentQuestion,
+      stepIndex: currentIndex >= 0 ? currentIndex : 0,
+      totalSteps: onboardingQuestions.length,
+    });
   });
 
   app.post("/api/onboarding/message", async (req: Request, res: Response) => {
@@ -339,11 +345,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         delete req.session.onboarding;
       }
       
+      const nextIndex = response.nextQuestion
+        ? onboardingQuestions.findIndex(q => q.field === response.nextQuestion!.field)
+        : onboardingQuestions.length;
       res.status(200).json({
         field: response.field,
         value: response.value,
         nextQuestion: response.nextQuestion,
         isComplete: response.isComplete,
+        stepIndex: nextIndex >= 0 ? nextIndex : onboardingQuestions.length,
+        totalSteps: onboardingQuestions.length,
       });
     } catch (error) {
       console.error("Onboarding error:", error);

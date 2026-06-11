@@ -6,15 +6,19 @@ import { useAuth } from "@/context/auth-context";
 
 interface OnboardingChatProps {
   initialQuestion: string;
+  initialStepIndex?: number;
+  totalSteps?: number;
 }
 
-export function OnboardingChat({ initialQuestion }: OnboardingChatProps) {
+export function OnboardingChat({ initialQuestion, initialStepIndex = 0, totalSteps = 0 }: OnboardingChatProps) {
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([
     { text: initialQuestion, isUser: false }
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [stepIndex, setStepIndex] = useState(initialStepIndex);
+  const [total, setTotal] = useState(totalSteps);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { checkAuth } = useAuth();
   const { toast } = useToast();
@@ -48,7 +52,10 @@ export function OnboardingChat({ initialQuestion }: OnboardingChatProps) {
       }
       
       const data = await response.json();
-      
+
+      if (typeof data.stepIndex === "number") setStepIndex(data.stepIndex);
+      if (typeof data.totalSteps === "number") setTotal(data.totalSteps);
+
       // If there's a next question, add it to the chat
       if (data.nextQuestion) {
         setMessages(prev => [...prev, { text: data.nextQuestion.text, isUser: false }]);
@@ -80,8 +87,22 @@ export function OnboardingChat({ initialQuestion }: OnboardingChatProps) {
   return (
     <div className="w-full md:w-2/3 min-h-screen p-4 md:p-8 flex flex-col">
       <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
-        <div 
-          className="flex-1 overflow-y-auto" 
+        {total > 0 && (
+          <div className="mb-4">
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>Setup</span>
+              <span>Step {Math.min(stepIndex + 1, total)} of {total}</span>
+            </div>
+            <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(((stepIndex) / Math.max(total, 1)) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+        <div
+          className="flex-1 overflow-y-auto"
           id="chat-container"
           ref={chatContainerRef}
         >
