@@ -188,9 +188,13 @@ export function MealsPanel({
         </ul>
       ) : (
         <div>
-          <p className="font-medium">No meal ideas yet — set your pattern and save to generate them.</p>
+          <p className="font-medium">No meal ideas right now.</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Pick a travel pattern and save. Ideas also pause when the planner can&apos;t safely cover your dietary
+            needs; you can still add fixed meals and log food.
+          </p>
           <button type="button" onClick={onSetUp} className={btnLink}>
-            Set where you are and what you have
+            Choose a travel pattern
           </button>
         </div>
       )}
