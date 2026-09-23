@@ -78,11 +78,32 @@ test("real PostgreSQL travel flow", { skip: !process.env.TEST_DATABASE_URL }, as
       const adaptive = await (await request("/api/tdee/adaptive", a.cookie)).json();
       assert.equal(adaptive.adaptiveEnabled, false);
     });
+    await t.test("adaptive calculation sums meals into days rather than averaging meal rows", async () => {
+      const { localDateKey, shiftDateKey } = await import("../../shared/dates");
+      const { calculateAdaptiveTDEE } = await import("../services/adaptive-tdee-service");
+      const first = shiftDateKey(localDateKey("UTC"), -10);
+      await pool.query("UPDATE users SET tdee=2100 WHERE id=$1", [b.id]);
+      for (const offset of [0, 8]) {
+        await pool.query("INSERT INTO health_logs(user_id,date,weight) VALUES ($1,$2,80)", [b.id, shiftDateKey(first, offset)]);
+      }
+      for (let day = 0; day < 8; day++) {
+        for (let meal = 0; meal < 3; meal++) {
+          await pool.query("INSERT INTO nutrition_logs(user_id,date,calories) VALUES ($1,$2,700)", [b.id, shiftDateKey(first, day)]);
+        }
+      }
+      const result = await calculateAdaptiveTDEE(b.id);
+      assert.equal(result?.avgDailyCalories, 2100);
+      assert.equal(result?.value, 2100);
+      await pool.query("DELETE FROM nutrition_logs WHERE user_id=$1 AND date=$2", [b.id, shiftDateKey(first, 3)]);
+      await pool.query("DELETE FROM nutrition_logs WHERE user_id=$1 AND date=$2", [b.id, shiftDateKey(first, 4)]);
+      assert.equal(await calculateAdaptiveTDEE(b.id), null, "partial intake history cannot activate adaptive targets");
+    });
   } finally {
     await new Promise<void>(resolve => server.close(() => resolve()));
     for (const id of accounts) {
       await pool.query("DELETE FROM travel_days WHERE user_id=$1", [id]);
       await pool.query("DELETE FROM nutrition_logs WHERE user_id=$1", [id]);
+      await pool.query("DELETE FROM health_logs WHERE user_id=$1", [id]);
       await pool.query("DELETE FROM users WHERE id=$1", [id]);
     }
     const { storage } = await import("../storage");

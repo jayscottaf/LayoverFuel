@@ -522,11 +522,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Barcode lookup — proxies Open Food Facts to avoid CORS issues
   app.get("/api/barcode/:code", async (req: Request, res: Response) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
     try {
       const { code } = req.params;
+      if (!/^\d{8,14}$/.test(code)) return res.status(400).json({ message: "Enter an 8 to 14 digit barcode" });
       const response = await fetch(
-        `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,brands,serving_size,serving_quantity,nutriments`
+        `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,brands,serving_size,serving_quantity,nutriments`,
+        { signal: AbortSignal.timeout(10_000), headers: { "User-Agent": "LayoverFuel/0.1 (nutrition review; github.com/jayscottaf/LayoverFuel)" } },
       );
+      if (response.status === 404) return res.status(200).json({ notFound: true });
+      if (!response.ok) return res.status(502).json({ message: "The food database is unavailable. Try again or enter the label manually." });
       const data = await response.json() as OFFResponse;
 
       if (data.status !== 1 || !data.product) {
@@ -561,7 +566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         n["fat_serving"] ??
         (n["fat_100g"] !== undefined ? n["fat_100g"] * scale : null);
 
-      if (calories === null || protein === null || carbs === null || fat === null) {
+      if ([calories, protein, carbs, fat].some(value => value === null || !Number.isFinite(value) || value < 0)) {
         return res.status(200).json({ notFound: true });
       }
 
@@ -569,14 +574,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: p.product_name || "Unknown Product",
         brand: p.brands || "",
         servingSize: p.serving_size || `${Math.round(servingQty)}g`,
-        calories: Math.round(calories),
-        protein: Math.round(protein * 10) / 10,
-        carbs: Math.round(carbs * 10) / 10,
-        fat: Math.round(fat * 10) / 10,
+        calories: Math.round(calories!),
+        protein: Math.round(protein! * 10) / 10,
+        carbs: Math.round(carbs! * 10) / 10,
+        fat: Math.round(fat! * 10) / 10,
       });
     } catch (error) {
       console.error("Barcode lookup error:", error);
-      return res.status(200).json({ notFound: true });
+      return res.status(502).json({ message: "The food database is unavailable. Try again or enter the label manually." });
     }
   });
 
