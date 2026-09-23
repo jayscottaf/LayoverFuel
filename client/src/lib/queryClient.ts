@@ -46,9 +46,10 @@ export async function apiRequest(
       signal: options?.signal,
     });
   } catch (error) {
+    if (options?.signal?.aborted) throw error;
     if (method === "GET" && owner && !navigator.onLine && owner === getActiveAccountId()) {
       const snapshot = await readSnapshot(owner, url);
-      if (snapshot) return snapshot;
+      if (snapshot && owner === getActiveAccountId() && !options?.signal?.aborted) return snapshot;
     }
     throw error;
   }

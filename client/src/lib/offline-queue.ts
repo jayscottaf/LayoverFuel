@@ -28,13 +28,22 @@ export async function queueItem(type: QueueItemType, data: Record<string, unknow
   if (type !== "nutrition") throw new Error("Offline workout and health saves are not supported yet");
   const ownerId = requireOwner();
   const id = String(data.clientRequestId ?? crypto.randomUUID());
+  const payload = { ...data, clientRequestId: id };
   const db = await database();
-  const existing = await db.get("queue", id);
-  if (existing && existing.ownerId !== ownerId) throw new Error("This draft belongs to another account");
-  if (!existing) await db.put("queue", { id, ownerId, type, data: { ...data, clientRequestId: id },
-    timestamp: Date.now(), retryCount: 0, status: "pending" });
-  db.close(); changed(); return id;
+  try {
+    const tx = db.transaction("queue", "readwrite");
+    const existing = await tx.store.get(id);
+    if (existing && existing.ownerId !== ownerId) throw new Error("This draft belongs to another account");
+    if (existing && canonical(existing.data) !== canonical(payload)) throw new Error("This meal changed after saving. Use a new draft to save the corrected values.");
+    if (!existing) await tx.store.put({ id, ownerId, type, data: payload,
+      timestamp: Date.now(), retryCount: 0, status: "pending" });
+    await tx.done;
+  } finally { db.close(); }
+  changed(); return id;
 }
+const canonical = (data: unknown) => JSON.stringify(data, (_key, value) =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value);
 export async function getAllItems(): Promise<QueueItem[]> {
   const db = await database();
   const items = await db.getAll("queue"); db.close();
@@ -50,8 +59,18 @@ export async function getPendingItems(): Promise<QueueItem[]> {
 export async function getPendingCount() { return (await getPendingItems()).length; }
 export async function hasQueuedItem(type: QueueItemType) { return (await getPendingItems()).some(item => item.type === type); }
 
-async function put(item: QueueItem) {
-  const db = await database(); await db.put("queue", item); db.close(); changed();
+async function mutate(id: string, update: (current: QueueItem) => QueueItem) {
+  const db = await database();
+  try {
+    const tx = db.transaction("queue", "readwrite");
+    const current = await tx.store.get(id);
+    if (!current) throw new Error("This draft is no longer available");
+    const next = update(current);
+    await tx.store.put(next);
+    await tx.done;
+    changed();
+    return next;
+  } finally { db.close(); }
 }
 let syncing: Promise<{ total: number; success: number; failed: number }> | undefined;
 async function performSync() {
@@ -60,31 +79,29 @@ async function performSync() {
   let success = 0; let failed = 0;
   for (const queued of items) {
     if (getActiveAccountId() !== ownerId) break;
-    const item = await getQueueItem(queued.id);
-    if (!item || item.status === "synced") continue;
+    const item = await mutate(queued.id, current => current.status === "synced" ? current : { ...current, status: "syncing" });
+    if (item.status === "synced") continue;
     try {
-      await put({ ...item, status: "syncing" });
       if (item.cancelled && item.savedId) {
         await apiRequest("DELETE", `/api/logs/nutrition/${item.savedId}`, undefined, { accountId: ownerId! });
-        await put({ ...item, status: "synced", error: undefined });
+        await mutate(item.id, current => ({ ...current, status: "synced", error: undefined }));
         success++;
         continue;
       }
       const response = await apiRequest("POST", "/api/logs/nutrition", item.data, { accountId: ownerId! });
       const saved = await response.json();
       if (!Number.isSafeInteger(saved.id)) throw new Error("The server did not confirm this meal");
-      // Read again: Undo may have arrived while the save request was in flight.
-      const db = await database();
-      const latest = await db.get("queue", item.id); db.close();
-      await put({ ...(latest ?? item), savedId: saved.id, status: "syncing" });
-      if (latest?.cancelled) await apiRequest("DELETE", `/api/logs/nutrition/${saved.id}`, undefined, { accountId: ownerId! });
-      await put({ ...(latest ?? item), status: "synced", savedId: saved.id, error: undefined });
+      // Commit acknowledgement atomically with the latest Undo intent, never a stale copy.
+      const latest = await mutate(item.id, current => ({ ...current, savedId: saved.id,
+        status: current.cancelled ? "pending" : "synced", error: undefined }));
+      if (latest.cancelled) {
+        await apiRequest("DELETE", `/api/logs/nutrition/${saved.id}`, undefined, { accountId: ownerId! });
+        await mutate(item.id, current => ({ ...current, status: "synced", error: undefined }));
+      }
       success++;
     } catch (error) {
-      const db = await database();
-      const latest = await db.get("queue", item.id); db.close();
-      await put({ ...(latest ?? item), status: "failed", retryCount: item.retryCount + 1,
-        error: error instanceof Error ? error.message : "Sync failed" });
+      await mutate(item.id, current => ({ ...current, status: "failed", retryCount: current.retryCount + 1,
+        error: error instanceof Error ? error.message : "Sync failed" }));
       failed++;
     }
   }
@@ -102,15 +119,13 @@ export function syncQueue() {
 export async function cancelQueuedNutrition(id: string) {
   const item = await getQueueItem(id);
   if (!item) throw new Error("This draft is no longer available for this account");
-  if (item.status === "pending" && item.retryCount === 0 && !item.savedId && !syncing) {
-    await put({ ...item, cancelled: true, status: "synced" });
-    return;
-  }
-  await put({ ...item, cancelled: true, status: "pending" });
+  const cancelled = await mutate(id, current => ({ ...current, cancelled: true,
+    status: current.status === "pending" && current.retryCount === 0 && !current.savedId && !syncing ? "synced" : "pending" }));
+  if (cancelled.status === "synced" && !cancelled.savedId) return;
   if (syncing) await syncing;
   const latest = await getQueueItem(id);
   if (latest?.savedId && navigator.onLine) {
-    await apiRequest("DELETE", `/api/logs/nutrition/${latest.savedId}`);
-    await put({ ...latest, cancelled: true, status: "synced" });
+    await apiRequest("DELETE", `/api/logs/nutrition/${latest.savedId}`, undefined, { accountId: item.ownerId });
+    await mutate(id, current => ({ ...current, cancelled: true, status: "synced" }));
   } else if (navigator.onLine) await syncQueue();
 }

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import "fake-indexeddb/auto";
 import { onlineManager } from "@tanstack/react-query";
-import { setActiveAccountId } from "../../client/src/lib/account";
+import { getActiveAccountId, setActiveAccountId } from "../../client/src/lib/account";
 import { apiRequest, queryClient } from "../../client/src/lib/queryClient";
 import { clearSnapshots, readSnapshot, saveSnapshot } from "../../client/src/lib/offline-snapshots";
 
@@ -30,6 +30,18 @@ test("offline queries use only the active account's snapshots and reject stale a
     assert.equal(await readSnapshot(301, path), undefined);
     assert.ok(await readSnapshot(302, path));
 
+    const originalGet = IDBObjectStore.prototype.get;
+    try {
+      IDBObjectStore.prototype.get = function (key) {
+        const request = originalGet.call(this, key);
+        if (this.name === "snapshots") request.addEventListener("success", () => setActiveAccountId(303), { once: true });
+        return request;
+      };
+      await assert.rejects(apiRequest("GET", path), "a snapshot resolving after an account switch must not escape");
+      assert.equal(getActiveAccountId(), 303);
+    } finally { IDBObjectStore.prototype.get = originalGet; }
+
+    setActiveAccountId(302);
     let finish!: (response: Response) => void;
     globalThis.fetch = () => new Promise(resolve => { finish = resolve; });
     const pending = apiRequest("GET", path);
