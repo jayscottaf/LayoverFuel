@@ -40,7 +40,7 @@ function PatternPicker({
       Home: 0,
       End: PLAN_PATTERNS.length - 1,
     };
-    if (e.key in moves) {
+    if (Object.prototype.hasOwnProperty.call(moves, e.key)) {
       e.preventDefault();
       select(moves[e.key]);
     }
@@ -96,16 +96,16 @@ function PatternPicker({
 
 function EquipmentPicker({
   value,
-  onChange,
+  onToggle,
 }: {
   value: string[];
-  onChange: (next: string[]) => void;
+  onToggle: (option: string, on: boolean) => void;
 }) {
   const uid = useId();
   return (
     <fieldset>
       <legend className="text-sm font-medium">What you have</legend>
-      <div className="mt-1.5 grid grid-cols-2 gap-x-2">
+      <div className="-mx-2 mt-1.5 grid grid-cols-2 gap-x-1">
         {EQUIPMENT_OPTIONS.map(option => {
           const id = `${uid}-${option.value.replace(/\s+/g, "-")}`;
           const checked = value.includes(option.value);
@@ -113,12 +113,12 @@ function EquipmentPicker({
             <label
               key={option.value}
               htmlFor={id}
-              className="-mx-2 flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2 transition-colors hover:bg-secondary"
+              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2 transition-colors hover:bg-secondary"
             >
               <Checkbox
                 id={id}
                 checked={checked}
-                onCheckedChange={next => onChange(toggleEquipment(value, option.value, next === true))}
+                onCheckedChange={next => onToggle(option.value, next === true)}
               />
               <span className="text-sm">{option.label}</span>
             </label>
@@ -179,7 +179,7 @@ export function ContextEditor({
   const update = <K extends keyof PlanContext>(key: K, value: PlanContext[K]) =>
     setForm(f => ({ ...f, [key]: value }));
 
-  const useMyLocation = () => {
+  const fillFromLocation = () => {
     geo.locate(({ latitude, longitude }) => {
       const value = `Near ${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
       setForm(f => ({ ...f, location: value }));
@@ -208,11 +208,17 @@ export function ContextEditor({
 
   const showGeoNote = geoFilled !== null && form.location === geoFilled;
   const geoError = geo.state.status === "error" ? geo.state.message : null;
-  const locationDescribedBy = showGeoNote || geoError ? geoNoteId : undefined;
+  const geoText = showGeoNote
+    ? "Only coordinates are saved — we don't look up place names yet. Edit this to add the city or hotel."
+    : geoError;
+  const locationDescribedBy = geoText ? geoNoteId : undefined;
 
   let status: string;
-  if (readOnly) status = dirty ? "You're offline. Your changes are kept here until you can save." : "You're offline. You can save changes when you reconnect.";
-  else if (saving) status = "Saving and updating your plan";
+  if (readOnly) {
+    status = dirty
+      ? "You're offline. Your changes stay here until you can save them."
+      : "You're offline. You can save changes when you reconnect.";
+  } else if (saving) status = "Saving and updating your plan";
   else if (dirty) status = "You have unsaved changes.";
   else status = "Your plan uses these details. Change anything above to update it.";
 
@@ -231,7 +237,10 @@ export function ContextEditor({
               placeholder="City, airport, hotel or area"
               value={form.location}
               aria-describedby={locationDescribedBy}
-              onChange={e => update("location", e.target.value)}
+              onChange={e => {
+                update("location", e.target.value);
+                if (geo.state.status === "error") geo.reset();
+              }}
               className={inputClass}
             />
           </Field>
@@ -240,7 +249,7 @@ export function ContextEditor({
               type="button"
               aria-disabled={geo.state.status === "locating" || undefined}
               onClick={() => {
-                if (geo.state.status !== "locating") useMyLocation();
+                if (geo.state.status !== "locating") fillFromLocation();
               }}
               className={btnLink}
             >
@@ -252,10 +261,9 @@ export function ContextEditor({
               {geo.state.status === "locating" ? "Finding your location" : "Use my current location"}
             </button>
           )}
-          <div id={geoNoteId} role="status" className="text-xs text-muted-foreground empty:hidden">
-            {showGeoNote
-              ? "Only coordinates are saved — we don't look up place names yet. Edit this to add the city or hotel."
-              : geoError}
+          {/* Always mounted so the note is announced; visually hidden while empty. */}
+          <div id={geoNoteId} role="status" className={geoText ? "text-xs text-muted-foreground" : "sr-only"}>
+            {geoText}
           </div>
         </div>
 
@@ -266,11 +274,7 @@ export function ContextEditor({
           <PatternPicker value={form.pattern} onChange={p => update("pattern", p)} labelId={patternLabelId} />
         </div>
 
-        <Field
-          id={`${uid}-windows`}
-          label="Meal windows"
-          hint="e.g. free 12:00–13:00, meeting until 18:30, dinner after 19:00"
-        >
+        <Field id={`${uid}-windows`} label="Meal windows">
           <input
             id={`${uid}-windows`}
             type="text"
@@ -281,19 +285,29 @@ export function ContextEditor({
             onChange={e => update("mealWindow", e.target.value)}
             className={inputClass}
           />
+          <p id={`${uid}-windows-hint`} className="text-xs text-muted-foreground">
+            e.g. free 12:00–13:00, meeting until 18:30, dinner after 19:00
+          </p>
         </Field>
 
-        <EquipmentPicker value={form.equipment} onChange={next => update("equipment", next)} />
+        <EquipmentPicker
+          value={form.equipment}
+          onToggle={(option, on) => setForm(f => ({ ...f, equipment: toggleEquipment(f.equipment, option, on) }))}
+        />
 
-        <Field id={`${uid}-notes`} label="Notes" hint="Fixed meals, dietary needs, anything to plan around">
+        <Field id={`${uid}-notes`} label="Notes">
           <textarea
             id={`${uid}-notes`}
             rows={3}
             maxLength={1000}
             value={form.notes}
+            aria-describedby={`${uid}-notes-hint`}
             onChange={e => update("notes", e.target.value)}
             className={textareaClass}
           />
+          <p id={`${uid}-notes-hint`} className="text-xs text-muted-foreground">
+            Fixed meals, dietary needs, anything to plan around
+          </p>
         </Field>
 
         <div className="flex flex-col gap-2 border-t pt-4">

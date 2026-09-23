@@ -22,43 +22,26 @@ export function isPlanPattern(v: unknown): v is PlanPattern {
 /** Exclusive "nothing available" equipment value understood by the plan service. */
 export const NO_EQUIPMENT = "none";
 
-const CORE_EQUIPMENT: Array<{ value: string; label: string }> = [
-  { value: "fridge", label: "Fridge" },
-  { value: "microwave", label: "Microwave" },
-  { value: "kettle", label: "Kettle" },
-  { value: "cooler bag", label: "Cooler bag" },
-];
-
-/**
- * Equipment checkboxes: the travel basics first, then anything else the plan
- * service lists (e.g. "kitchen", "none") so every value it understands can be set.
- */
-export const EQUIPMENT_OPTIONS: Array<{ value: string; label: string }> = [
-  ...CORE_EQUIPMENT,
-  ...PLAN_EQUIPMENT.filter(o => !CORE_EQUIPMENT.some(c => c.value === o.value)),
-];
+/** Only the values the plan service accepts; anything else would fail validation on save. */
+export const EQUIPMENT_OPTIONS: Array<{ value: string; label: string }> = PLAN_EQUIPMENT;
 
 const KNOWN_EQUIPMENT = new Set(EQUIPMENT_OPTIONS.map(o => o.value));
 
-/** Known values are stored lowercase; anything else the server returned is kept as-is. */
 function normalizeEquipment(values: unknown): string[] {
   if (!Array.isArray(values)) return [];
   const out: string[] = [];
   for (const raw of values) {
     if (typeof raw !== "string") continue;
-    const trimmed = raw.trim();
-    if (!trimmed) continue;
-    const lower = trimmed.toLowerCase();
-    const value = KNOWN_EQUIPMENT.has(lower) ? lower : trimmed;
-    if (!out.includes(value)) out.push(value);
+    const value = raw.trim().toLowerCase();
+    if (KNOWN_EQUIPMENT.has(value) && !out.includes(value)) out.push(value);
   }
-  return out;
+  return out.includes(NO_EQUIPMENT) ? [NO_EQUIPMENT] : out;
 }
 
 /** Check or uncheck one equipment option. "none" is exclusive of the other known options. */
 export function toggleEquipment(current: string[], value: string, on: boolean): string[] {
   if (!on) return current.filter(v => v !== value);
-  if (value === NO_EQUIPMENT) return [...current.filter(v => !KNOWN_EQUIPMENT.has(v)), NO_EQUIPMENT];
+  if (value === NO_EQUIPMENT) return [NO_EQUIPMENT];
   return [...current.filter(v => v !== NO_EQUIPMENT && v !== value), value];
 }
 

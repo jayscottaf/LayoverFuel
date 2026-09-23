@@ -16,6 +16,7 @@ import { DateNav } from "@/components/travel/log/date-nav";
 import { DaySummary, DaySummarySkeleton, type TargetsState } from "@/components/travel/log/day-summary";
 import { logAgainDraft, logMacros } from "@/components/travel/log/log-again";
 import { MealGroups, MealGroupsSkeleton } from "@/components/travel/log/meal-groups";
+import { PendingMealsNotice } from "@/components/travel/pending-meals";
 import { RetryButton } from "@/components/travel/log/retry-button";
 import { btnPrimary } from "@/components/travel/log/ui";
 import { useLogDate } from "@/components/travel/log/use-log-date";
@@ -194,6 +195,7 @@ export default function LogPage() {
           <div className={`flex min-w-0 flex-col gap-4 md:order-1 ${summary ? "md:col-span-3" : "md:col-span-5"}`}>
             {offlineNote}
             {refreshError}
+            <PendingMealsNotice date={date} />
             {meals}
             {showAdd && addButton}
           </div>

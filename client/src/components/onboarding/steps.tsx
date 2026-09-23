@@ -473,20 +473,16 @@ export function ResultStep({
       return (
         <StateMessage
           tone="offline"
-          title="Your details are saved"
-          body="You're offline, so your targets can't load yet. Reconnect to continue; they'll be on Today."
+          title="You're offline"
+          body="Your details are saved. Reconnect to see your starting targets and continue."
         />
       );
     }
     return (
       <StateMessage
         tone="neutral"
-        title="Your details are saved"
-        body={
-          failed
-            ? "Your starting targets didn't load just now. You'll see them on Today."
-            : "You'll see your starting targets on Today."
-        }
+        title={failed ? "Targets didn't load" : "Targets will be on Today"}
+        body="Your details are saved. You'll see your starting targets on the Today screen."
         action={
           failed ? (
             <button type="button" onClick={onRetry} className={secondaryButtonClass}>

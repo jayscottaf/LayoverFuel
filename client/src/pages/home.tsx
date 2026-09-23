@@ -4,6 +4,7 @@ import { nonNeg, useDashboard, useTravelPlan } from "@/components/travel/api";
 import { formatLocalTime, formatLongDate, timeZoneAbbreviation, useLocalDay } from "@/components/travel/local-date";
 import { Page, PageHeader, StateMessage } from "@/components/travel/primitives";
 import { CaptureRow } from "@/components/travel/today/capture-row";
+import { PendingMealsNotice } from "@/components/travel/pending-meals";
 import { EatenTodayPanel, EatenTodaySkeleton } from "@/components/travel/today/eaten-today-panel";
 import { NextUpPanel } from "@/components/travel/today/next-up-panel";
 import { planSubtitle } from "@/components/travel/today/plan-subtitle";
@@ -80,6 +81,7 @@ export default function HomePage() {
   }
 
   const capture = <CaptureRow today={today} />;
+  const pending = <PendingMealsNotice date={today} />;
   const nextUp = <NextUpPanel plan={plan} today={today} isOffline={isOffline} />;
 
   return (
@@ -92,6 +94,7 @@ export default function HomePage() {
           <div className="flex min-w-0 flex-col gap-6 md:col-span-3">
             {remaining}
             {capture}
+            {pending}
             {eaten}
           </div>
           <div className="flex min-w-0 flex-col gap-6 md:col-span-2">
@@ -104,6 +107,7 @@ export default function HomePage() {
         <div className="flex flex-col gap-4">
           {remaining}
           {capture}
+          {pending}
           {nextUp}
           {eaten}
           {hydration}

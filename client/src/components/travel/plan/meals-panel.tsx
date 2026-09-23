@@ -177,7 +177,7 @@ export function MealsPanel({
               busy={busy}
               onLog={onLog}
               onKeep={onKeep}
-              onRemove={meal => void onRemove(meal)}
+              onRemove={m => void onRemove(m)}
             />
           ))}
         </ul>

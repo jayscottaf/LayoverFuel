@@ -2,7 +2,8 @@ import { useId } from "react";
 import { Link } from "wouter";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { Info, Pin } from "lucide-react";
-import type { NutritionDraft, PlanMeal, TravelPlan } from "../api";
+import type { PlanMeal, TravelPlan } from "../api";
+import { planMealDraft } from "../plan/plan-utils";
 import { useCapture } from "../capture/capture-context";
 import { MacroLine, Panel, SectionTitle, SkeletonBlock, SourceBadge, StateMessage } from "../primitives";
 import { RetryButton, buttonSecondary, headerLink } from "./shared";
@@ -12,30 +13,6 @@ const COVERAGE_NOTE: Record<TravelPlan["coverage"], string> = {
 };
 
 /** A planned meal as an unsaved draft; the capture flow opens it for review before anything is saved. */
-function planMealDraft(meal: PlanMeal, today: string): Partial<NutritionDraft> {
-  const macros = {
-    calories: meal.calories,
-    protein: meal.protein,
-    carbs: meal.carbs,
-    fat: meal.fat,
-  };
-  return {
-    name: meal.name,
-    origin: "plan",
-    date: today,
-    items: [
-      {
-        name: meal.name,
-        quantity: 1,
-        unit: "serving",
-        ...macros,
-        source: meal.source === "manual" ? "manual" : "estimate",
-      },
-    ],
-    totals: macros,
-  };
-}
-
 function NextMeal({ meal, today }: { meal: PlanMeal; today: string }) {
   const { open } = useCapture();
   const kept = meal.status === "locked";
