@@ -68,7 +68,7 @@ export async function calculateAdaptiveTDEE(
 
     // Fetch nutrition logs
     const nutritionLogs = await storage.getNutritionLogs(userId);
-    const calorieData = nutritionLogs
+    const mealData = nutritionLogs
       .filter(log => {
         const logDate = new Date(log.date);
         return log.calories && logDate >= startDate && logDate <= endDate;
@@ -78,7 +78,15 @@ export async function calculateAdaptiveTDEE(
         calories: log.calories as number,
       }));
 
-    // Need at least 7 days of calorie data
+    const byDay = new Map<string, number>();
+    const firstWeightDay = weightData[0].date;
+    const lastWeightDay = weightData[weightData.length - 1].date;
+    for (const meal of mealData) {
+      if (meal.date < firstWeightDay || meal.date >= lastWeightDay) continue;
+      byDay.set(meal.date, (byDay.get(meal.date) ?? 0) + meal.calories);
+    }
+    const calorieData = Array.from(byDay, ([date, calories]) => ({ date, calories }));
+    // Meal rows must not count as complete days of intake.
     if (calorieData.length < 7) {
       console.log(`Insufficient calorie data: ${calorieData.length} entries`);
       return null;
@@ -102,6 +110,7 @@ export async function calculateAdaptiveTDEE(
       (new Date(weightData[weightData.length - 1].date).getTime() -
        new Date(weightData[0].date).getTime()) / (1000 * 60 * 60 * 24)
     );
+    if (actualDays < 7 || calorieData.length < actualDays * 0.85) return null;
 
     // Calculate calorie deficit/surplus
     // 1 lb = ~3500 calories

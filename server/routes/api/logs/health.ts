@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import { storage } from "../../../storage";
 import { insertHealthLogSchema } from "../../../../shared/schema";
 import { z } from "zod";
+import { dateKeySchema, dateKeyToDate, timezoneSchema } from "@shared/dates";
 
 // Create a modified schema that makes userId optional for client requests
 const ClientHealthLogSchema = insertHealthLogSchema
@@ -30,26 +31,9 @@ export async function handleHealthLogPost(req: Request, res: Response) {
 
     // Destructure after validation
     const { date, ...logData } = parsed;
-    let logDate: Date;
-
-    try {
-      // Check if we have a placeholder date format like "YYYY-MM-DD"
-      // or any other format that's not a valid date
-      if (date === "YYYY-MM-DD" || /^\d{4}-[A-Z]{2}-[A-Z]{2}$/i.test(date)) {
-        logDate = new Date();
-      } else {
-        logDate = new Date(date);
-        if (isNaN(logDate.getTime())) {
-          throw new Error("Invalid date format received");
-        }
-      }
-    } catch (error) {
-      const fallback = new Date();
-      logDate = fallback;
-    }
-
-    // Format the date as YYYY-MM-DD for database storage
-    const formattedDate = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}-${String(logDate.getDate()).padStart(2, '0')}`;
+    const formattedDate = dateKeySchema.parse(date);
+    const logDate = dateKeyToDate(formattedDate);
+    if (logData.timezone) timezoneSchema.parse(logData.timezone);
 
     // Check if log exists for this date and update it, otherwise create new
     const existingLog = await storage.getHealthLogByDate(userId, logDate);
@@ -97,7 +81,7 @@ export async function handleHealthLogGet(req: Request, res: Response) {
 
     // If specific date requested
     if (date && typeof date === 'string') {
-      const logDate = new Date(date);
+      const logDate = dateKeyToDate(dateKeySchema.parse(date));
       const log = await storage.getHealthLogByDate(userId, logDate);
       return res.status(200).json(log || null);
     }

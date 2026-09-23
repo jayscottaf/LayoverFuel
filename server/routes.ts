@@ -5,7 +5,8 @@ import session from "express-session";
 import passport from "passport";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { registerSchema, loginSchema, onboardingSchema } from "@shared/schema";
+import { registerSchema, loginSchema, onboardingSchema, insertWorkoutLogSchema } from "@shared/schema";
+import { dateKeySchema, dateKeyToDate, localDateKey, timezoneSchema } from "@shared/dates";
 import { 
   calculateTDEE, 
   calculateMacros 
@@ -17,16 +18,6 @@ import {
   onboardingQuestions,
   type OnboardingQuestion
 } from "./services/openai-service";
-import {
-  getOrCreateThread,
-  addMessageToThread,
-  runAssistantOnThread,
-  checkRunStatus,
-  getMessagesFromThread,
-  extractPendingNutritionLog
-} from "./services/assistant-service";
-import { generateMealPlan } from "./services/meal-service";
-import { generateWorkoutPlan } from "./services/workout-service";
 import { analyzeMealImage } from "./services/image-analysis-service";
 import nutritionRoutes from "./routes/api/logs/nutrition";
 import healthRoutes from "./routes/api/logs/health";
@@ -37,6 +28,10 @@ import { registerGoogleStrategies } from "./auth/google-strategies";
 import { getValidAccessToken } from "./services/google-oauth";
 import { detectFlights, fetchUpcomingEvents } from "./services/google-calendar";
 import { env } from "./config/env";
+import dashboardRoutes from "./routes/api/dashboard";
+import travelPlanRoutes from "./routes/api/travel-plan";
+import nutritionEstimateRoutes from "./routes/api/nutrition-estimate";
+import { accountBoundary, accountRateLimit, retiredAssistant } from "./middleware/account-boundary";
 declare module "express-session" {
   interface SessionData {
     userId: number;
@@ -57,10 +52,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       saveUninitialized: false,
       cookie: {
         secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
         maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       },
     })
   );
+  app.use("/api", accountBoundary);
+  app.use("/api/assistant", retiredAssistant);
+  app.use("/api/nutrition/estimate", accountRateLimit(), nutritionEstimateRoutes);
+  app.use("/api/meal-analysis", accountRateLimit(10));
+  app.use("/api/travel-plan", travelPlanRoutes);
+  app.use("/api", dashboardRoutes);
   app.use("/api/logs/nutrition", nutritionRoutes);
   app.use("/api/logs/health", healthRoutes);
   app.use("/api/tdee/adaptive", adaptiveTDEERoutes);
@@ -117,6 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Start onboarding
+      await new Promise<void>((resolve, reject) => req.session.regenerate(err => err ? reject(err) : resolve()));
       req.session.userId = user.id;
       req.session.onboarding = {
         currentQuestion: {
@@ -159,6 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Set session
+      await new Promise<void>((resolve, reject) => req.session.regenerate(err => err ? reject(err) : resolve()));
       req.session.userId = user.id;
       
       // Check if user has completed onboarding
@@ -203,64 +207,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Health check endpoint - useful for deployment debugging
-  app.get("/api/health", async (req: Request, res: Response) => {
-    const health: any = {
-      status: "ok",
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || "development",
-      checks: {}
-    };
-
+  // Readiness checks validate the tables this release actually needs.
+  app.get("/api/health", async (_req: Request, res: Response) => {
     try {
-      // Check database connection by attempting to query users table
-      try {
-        const userCount = await storage.getUser(1); // Try to access database
-        health.checks.database = {
-          status: "connected",
-          details: "Database connection successful"
-        };
-        health.checks.usersTable = {
-          status: "ok",
-          details: "Users table accessible"
-        };
-      } catch (dbError) {
-        health.checks.database = {
-          status: "error",
-          message: dbError instanceof Error ? dbError.message : "Database connection failed",
-          hint: "Check DATABASE_URL in Replit Secrets"
-        };
-        health.checks.usersTable = {
-          status: "error",
-          message: "Users table may not exist",
-          hint: "Run: npm run db:push on Replit"
-        };
-      }
-
-      // Check environment variables
-      health.checks.environment = {
-        databaseUrl: process.env.DATABASE_URL ? "set" : "missing",
-        sessionSecret: process.env.SESSION_SECRET ? "set" : "using default",
-        openaiKey: process.env.OPENAI_API_KEY ? "set" : "missing",
-        cloudinary: process.env.CLOUDINARY_CLOUD_NAME ? "set" : "missing"
-      };
-
-      // Check session store
-      health.checks.sessionStore = {
-        status: "configured",
-        details: "PostgreSQL session store initialized"
-      };
-
-    } catch (error) {
-      health.status = "error";
-      health.checks.general = {
-        status: "error",
-        message: error instanceof Error ? error.message : "Unknown error"
-      };
-      return res.status(503).json(health);
+      const { databaseReadiness } = await import("./services/readiness");
+      const result = await databaseReadiness();
+      res.status(result.ready ? 200 : 503).json({
+        status: result.ready ? "ok" : "schema_not_ready",
+        checks: { database: result.ready ? "ready" : "migration_required",
+          nutritionAI: process.env.OPENAI_API_KEY ? "configured" : "unavailable" },
+      });
+    } catch {
+      res.status(503).json({ status: "unavailable", message: "Database readiness check failed" });
     }
-
-    res.status(200).json(health);
   });
 
   // Onboarding Routes
@@ -324,7 +283,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update user record with all collected data
         await storage.updateUser(req.session.userId, {
           name: userData.name,
-          email: userData.email,
           age: userData.biometrics?.age,
           height: userData.biometrics?.height,
           weight: userData.biometrics?.weight,
@@ -445,11 +403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ message: "Unauthorized" });
     }
     try {
-      const allowed = ["name", "age", "height", "weight", "gender", "fitnessGoal", "activityLevel", "dietaryRestrictions", "gymMemberships", "maxCommuteMinutes", "quickLogMode"];
-      const updates: Record<string, any> = {};
-      for (const key of allowed) {
-        if (req.body[key] !== undefined) updates[key] = req.body[key];
-      }
+      const updates = onboardingSchema.partial().extend({ quickLogMode: z.boolean().optional() }).parse(req.body);
       const user = await storage.updateUser(req.session.userId, updates);
       if (!user) return res.status(404).json({ message: "User not found" });
       // Recalculate and persist TDEE whenever any profile field changes
@@ -467,313 +421,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Helper function to calculate logging streak
-  async function calculateStreak(userId: number): Promise<number> {
-    const allLogs = await storage.getNutritionLogs(userId);
-    if (allLogs.length === 0) return 0;
-
-    // Sort logs by date descending
-    const sortedLogs = allLogs.sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-
-    // Get unique dates (in case of multiple logs per day)
-    const uniqueDates = Array.from(
-      new Set(sortedLogs.map(log => new Date(log.date).toISOString().split('T')[0]))
-    ).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
-
-    // Check if user logged today
-    if (uniqueDates[0] !== todayStr) {
-      return 0; // No log today = no streak
-    }
-
-    // Count consecutive days
-    let streak = 1;
-    for (let i = 1; i < uniqueDates.length; i++) {
-      const currentDate = new Date(uniqueDates[i-1]);
-      const prevDate = new Date(uniqueDates[i]);
-
-      // Calculate day difference
-      const diffTime = currentDate.getTime() - prevDate.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 1) {
-        streak++;
-      } else {
-        break; // Gap in logging, streak ends
-      }
-    }
-
-    return streak;
-  }
-
-  // Dashboard Routes
-  app.get("/api/dashboard", async (req: Request, res: Response) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    
-    try {
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Always recalculate fresh — never use stale cached value
-      const tdee = calculateTDEE(user);
-      const macros = calculateMacros(user, tdee);
-      
-      // Get today's date for logs
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      // Get today's health log if it exists
-      const healthLog = await storage.getHealthLogByDate(user.id, today);
-      
-      // Get ALL nutrition logs for today (supports multiple meals per day)
-      const nutritionLogs = await storage.getNutritionLogsByDate(user.id, today);
-
-      // Aggregate nutrition totals from all logs
-      const nutritionTotals = nutritionLogs.reduce((acc, log) => ({
-        calories: acc.calories + (log.calories || 0),
-        protein: acc.protein + (log.protein || 0),
-        carbs: acc.carbs + (log.carbs || 0),
-        fat: acc.fat + (log.fat || 0),
-      }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
-
-      // Get today's workout log if it exists
-      const workoutLog = await storage.getWorkoutLogByDate(user.id, today);
-
-      // Get today's plan or generate a new one
-      let dailyPlan = await storage.getDailyPlanByDate(user.id, today);
-
-      if (!dailyPlan) {
-        // Generate a new plan
-        const mealPlan = await generateMealPlan(
-          user,
-          macros.protein,
-          macros.carbs,
-          macros.fat,
-          macros.targetCalories
-        );
-
-        const workoutPlan = await generateWorkoutPlan(user);
-
-        const motivation = await generateDailyMotivation(user);
-
-        // Create a new daily plan
-        dailyPlan = await storage.createDailyPlan({
-          date: today.toISOString().split('T')[0], // Convert Date to string format
-          userId: user.id,
-          meals: mealPlan,
-          workout: workoutPlan,
-          gymRecommendations: workoutPlan.gymRecommendation,
-          motivation,
-        });
-      }
-
-      // Calculate progress percentages for stats
-      const proteinProgress = nutritionTotals.protein
-        ? Math.round((nutritionTotals.protein / macros.protein) * 100)
-        : 0;
-
-      const calorieProgress = nutritionTotals.calories
-        ? Math.round((nutritionTotals.calories / macros.targetCalories) * 100)
-        : 0;
-
-      // Calculate streak
-      const streak = await calculateStreak(user.id);
-
-      // Hydration: bump target by ~1.5 glasses (12oz) per hour of flight today.
-      // Best-effort — silently falls back to 8 if calendar isn't connected.
-      let waterTarget = 8;
-      let waterTargetReason: string | null = null;
-      try {
-        if (user.googleRefreshToken) {
-          const dayStart = new Date(today);
-          const dayEnd = new Date(today);
-          dayEnd.setHours(23, 59, 59, 999);
-          const accessToken = await getValidAccessToken(user.id);
-          const events = await fetchUpcomingEvents(accessToken, dayStart, dayEnd);
-          const flights = detectFlights(events);
-          const totalFlightHours = flights.reduce(
-            (sum, f) => sum + (new Date(f.end).getTime() - new Date(f.start).getTime()) / 3_600_000,
-            0
-          );
-          if (totalFlightHours > 0) {
-            const boost = Math.ceil(totalFlightHours * 1.5);
-            waterTarget = 8 + boost;
-            waterTargetReason = `+${boost} for ${totalFlightHours.toFixed(1)}h flying today`;
-          }
-        }
-      } catch { /* leave waterTarget at 8 */ }
-
-      // Response with dashboard data
-      res.status(200).json({
-        user: {
-          name: user.name,
-          goal: user.fitnessGoal,
-        },
-        stats: {
-          tdee,
-          macros,
-          currentCalories: nutritionTotals.calories,
-          calorieProgress,
-          currentProtein: nutritionTotals.protein,
-          proteinProgress,
-          currentSteps: healthLog?.steps || 0,
-          stepsProgress: healthLog?.steps ? Math.round((healthLog.steps / 10000) * 100) : 0,
-          water: healthLog?.water || 0,
-          waterTarget,
-          waterTargetReason,
-          waterProgress: healthLog?.water ? Math.round((healthLog.water / waterTarget) * 100) : 0,
-          streak,
-        },
-        dailyPlan,
-        healthLog,
-        nutritionLog: {
-          ...nutritionTotals,
-          meals: nutritionLogs, // Array of all individual meal logs
-        },
-        workoutLog,
-      });
-    } catch (error) {
-      console.error("Dashboard error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-
-  // Stats endpoint for stats page
-  app.get("/api/stats", async (req: Request, res: Response) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    try {
-      const allNutritionLogs = await storage.getNutritionLogs(req.session.userId);
-
-      // Calculate streak
-      const streak = await calculateStreak(req.session.userId);
-
-      // Calculate total days logged (unique dates)
-      const uniqueDates = Array.from(
-        new Set(allNutritionLogs.map(log => new Date(log.date).toISOString().split('T')[0]))
-      );
-      const totalDaysLogged = uniqueDates.length;
-
-      // Calculate average calories
-      const totalCalories = allNutritionLogs.reduce((sum, log) => sum + (log.calories || 0), 0);
-      const avgCalories = allNutritionLogs.length > 0 ? Math.round(totalCalories / allNutritionLogs.length) : 0;
-
-      // Calculate consistency (% of last 30 days with logs)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const recentLogs = allNutritionLogs.filter(log =>
-        new Date(log.date) >= thirtyDaysAgo
-      );
-      const recentUniqueDates = Array.from(
-        new Set(recentLogs.map(log => new Date(log.date).toISOString().split('T')[0]))
-      );
-      const consistency = Math.round((recentUniqueDates.length / 30) * 100);
-
-      res.status(200).json({
-        streak,
-        totalDaysLogged,
-        avgCalories,
-        consistency,
-      });
-    } catch (error) {
-      console.error("Stats error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-
-  // Water tracking shortcut
-  app.post("/api/logs/water", async (req: Request, res: Response) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    try {
-      const { glasses } = req.body;
-      const today = new Date();
-      const existingLog = await storage.getHealthLogByDate(req.session.userId, today);
-      const todayStr = today.toISOString().split('T')[0];
-      let healthLog;
-      if (existingLog) {
-        healthLog = await storage.updateHealthLog(existingLog.id, { water: glasses });
-      } else {
-        healthLog = await storage.createHealthLog({ date: todayStr, userId: req.session.userId, water: glasses });
-      }
-      res.status(200).json(healthLog);
-    } catch (error) {
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-
-  // Health Log Routes
-  app.post("/api/logs/health", async (req: Request, res: Response) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    
-    try {
-      const { date, ...logData } = req.body;
-      const logDate = date ? new Date(date) : new Date();
-      
-      // Check if a log already exists for this date
-      const existingLog = await storage.getHealthLogByDate(req.session.userId, logDate);
-      
-      let healthLog;
-      if (existingLog) {
-        // Update existing log
-        healthLog = await storage.updateHealthLog(existingLog.id, logData);
-      } else {
-        // Create new log
-        healthLog = await storage.createHealthLog({
-          date: logDate.toISOString().split('T')[0], // Format date as string
-          userId: req.session.userId,
-          ...logData,
-        });
-      }
-      
-      res.status(200).json(healthLog);
-    } catch (error) {
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-
-  // Workout Log Routes
   app.post("/api/logs/workout", async (req: Request, res: Response) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    
+    if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
     try {
-      const { date, ...logData } = req.body;
-      const logDate = date ? new Date(date) : new Date();
-      
-      // Check if a log already exists for this date
-      const existingLog = await storage.getWorkoutLogByDate(req.session.userId, logDate);
-      
-      let workoutLog;
-      if (existingLog) {
-        // Update existing log
-        workoutLog = await storage.updateWorkoutLog(existingLog.id, logData);
-      } else {
-        // Create new log
-        workoutLog = await storage.createWorkoutLog({
-          date: logDate.toISOString().split('T')[0], // Format date as string
-          userId: req.session.userId,
-          ...logData,
-        });
-      }
-      
-      res.status(200).json(workoutLog);
+      const timezone = timezoneSchema.parse(req.body.timezone ?? req.get("X-Timezone") ?? "UTC");
+      const date = dateKeySchema.parse(req.body.date ?? localDateKey(timezone));
+      const data = insertWorkoutLogSchema.omit({ userId: true, createdAt: true }).extend({
+        date: dateKeySchema, duration: z.number().int().min(0).max(1440).nullable().optional(),
+      }).parse({ ...req.body, date, timezone });
+      const existing = await storage.getWorkoutLogByDate(req.session.userId, dateKeyToDate(date));
+      const saved = existing
+        ? await storage.updateWorkoutLog(existing.id, data)
+        : await storage.createWorkoutLog({ ...data, userId: req.session.userId });
+      res.json(saved);
     } catch (error) {
-      res.status(500).json({ message: "Server error" });
+      res.status(error instanceof z.ZodError ? 400 : 500).json({ message: "Workout was not saved" });
     }
   });
 
@@ -832,317 +494,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Meal analysis error:", error);
       res.status(500).json({ message: "Failed to analyze meal image" });
-    }
-  });
-
-  // Assistant Chat API Routes
-  
-  // Initialize or retrieve a thread — persists to user account when logged in
-  app.post("/api/assistant/thread", async (req: Request, res: Response) => {
-    try {
-      // If user is logged in, prefer their saved thread ID over the client-provided one
-      let clientThreadId = req.body.threadId as string | undefined;
-      
-      if (req.session.userId) {
-        const user = await storage.getUser(req.session.userId);
-        if (user?.assistantThreadId) {
-          // Verify OpenAI still knows about this thread (getOrCreateThread handles invalid IDs)
-          const resolvedId = await getOrCreateThread(user.assistantThreadId);
-          if (resolvedId !== user.assistantThreadId) {
-            // Thread was re-created; save new ID
-            await storage.updateUser(req.session.userId, { assistantThreadId: resolvedId });
-          }
-          return res.status(200).json({ threadId: resolvedId });
-        }
-        // No saved thread — create one from client hint or fresh
-        const newThreadId = await getOrCreateThread(clientThreadId);
-        await storage.updateUser(req.session.userId, { assistantThreadId: newThreadId });
-        return res.status(200).json({ threadId: newThreadId });
-      }
-
-      // Guest (not logged in) — just create/return thread without saving
-      const newThreadId = await getOrCreateThread(clientThreadId);
-      res.status(200).json({ threadId: newThreadId });
-    } catch (error) {
-      console.error("Error creating thread:", error);
-      res.status(500).json({ message: "Failed to create or retrieve thread" });
-    }
-  });
-  
-  // Send a message to the assistant
-  app.post("/api/assistant/message", async (req: Request, res: Response) => {
-    try {
-      const { threadId, message, imageData, imageDataArray } = req.body;
-
-      // Build user profile context if logged in
-      let profileContext = "";
-      if (req.session.userId) {
-        try {
-          const user = await storage.getUser(req.session.userId);
-          if (user) {
-            const GOAL_LABELS: Record<string, string> = {
-              lose_weight: "Lose Weight", maintain: "Maintain Weight",
-              gain_muscle: "Build Muscle", endurance: "Improve Endurance",
-            };
-            const ACTIVITY_LABELS: Record<string, string> = {
-              sedentary: "Sedentary", lightly_active: "Lightly Active",
-              moderately_active: "Moderately Active", very_active: "Very Active",
-              extra_active: "Extra Active",
-            };
-            const userTDEE = calculateTDEE(user);
-            const userMacros = calculateMacros(user, userTDEE);
-            const weightLbs = user.weight ? Math.round(user.weight * 2.20462 * 2) / 2 : null;
-            let heightStr: string | null = null;
-            if (user.height) {
-              const totalInches = user.height / 2.54;
-              const feet = Math.floor(totalInches / 12);
-              const inches = Math.round(totalInches - feet * 12);
-              heightStr = `${feet}'${inches}"`;
-            }
-            // Recent activity summary — last 7 days. Gives the assistant just
-            // enough memory to say things like "you've been under on protein"
-            // without bloating every run with raw logs.
-            let recentSummary: string | null = null;
-            try {
-              const allLogs = await storage.getNutritionLogs(user.id);
-              const today = new Date();
-              const sevenDaysAgo = new Date();
-              sevenDaysAgo.setDate(today.getDate() - 7);
-              const recent = allLogs.filter(l => {
-                const d = new Date(l.date as unknown as string);
-                return d >= sevenDaysAgo && d <= today;
-              });
-              if (recent.length > 0) {
-                const byDay = new Map<string, { cal: number; pro: number }>();
-                for (const l of recent) {
-                  const key = String(l.date);
-                  const acc = byDay.get(key) ?? { cal: 0, pro: 0 };
-                  acc.cal += Number(l.calories ?? 0);
-                  acc.pro += Number(l.protein ?? 0);
-                  byDay.set(key, acc);
-                }
-                const days = byDay.size;
-                const avgCal = Math.round(Array.from(byDay.values()).reduce((s, v) => s + v.cal, 0) / days);
-                const avgPro = Math.round(Array.from(byDay.values()).reduce((s, v) => s + v.pro, 0) / days);
-                const calDelta = avgCal - userMacros.targetCalories;
-                const proDelta = avgPro - userMacros.protein;
-                recentSummary = [
-                  `[Recent Activity — last 7 days]`,
-                  `Days logged: ${days}/7`,
-                  `Avg calories: ${avgCal} kcal (${calDelta >= 0 ? "+" : ""}${calDelta} vs target)`,
-                  `Avg protein: ${avgPro}g (${proDelta >= 0 ? "+" : ""}${proDelta}g vs target)`,
-                  `[End Recent Activity]`,
-                ].join("\n");
-              }
-            } catch { /* skip recent activity on error */ }
-
-            profileContext = [
-              `[User Profile]`,
-              `Name: ${user.name}`,
-              user.age ? `Age: ${user.age}` : null,
-              user.gender ? `Gender: ${user.gender}` : null,
-              weightLbs ? `Weight: ${weightLbs} lbs` : null,
-              heightStr ? `Height: ${heightStr}` : null,
-              user.fitnessGoal ? `Goal: ${GOAL_LABELS[user.fitnessGoal] ?? user.fitnessGoal}` : null,
-              user.activityLevel ? `Activity: ${ACTIVITY_LABELS[user.activityLevel] ?? user.activityLevel}` : null,
-              user.dietaryRestrictions?.length ? `Dietary: ${user.dietaryRestrictions.join(", ")}` : null,
-              user.gymMemberships?.length ? `Gym memberships: ${user.gymMemberships.join(", ")}` : null,
-              `Daily targets: ${userMacros.targetCalories} kcal | Protein: ${userMacros.protein}g | Carbs: ${userMacros.carbs}g | Fat: ${userMacros.fat}g`,
-              `[End Profile]`,
-              recentSummary,
-            ].filter(Boolean).join("\n");
-          }
-        } catch { /* continue without profile context */ }
-      }
-      
-      if (!threadId) {
-        return res.status(400).json({ message: "Thread ID is required" });
-      }
-      
-      // Support both single imageData and multiple imageDataArray
-      const images = imageDataArray || (imageData ? [imageData] : []);
-      
-      if (!message && images.length === 0) {
-        return res.status(400).json({ message: "Message or at least one image is required" });
-      }
-      
-      // Process and validate all image data
-      const validatedImages: string[] = [];
-      for (const img of images) {
-        try {
-          if (!img) continue;
-          
-          const imageSizeKB = Math.round(img.length / 1024);
-          console.log(`Processing image of approximately ${imageSizeKB}KB`);
-          
-          // Check if image data is too large (OpenAI limit is ~20MB, but we'll be more conservative)
-          if (imageSizeKB > 5000) { // 5MB limit
-            return res.status(413).json({ 
-              message: "Image is too large. Please use a smaller image (maximum 5MB)." 
-            });
-          }
-          
-          validatedImages.push(img);
-        } catch (imgError) {
-          console.error("Error processing image data:", imgError);
-          // Continue with other images rather than failing completely
-        }
-      }
-      
-      try {
-        // Add the message to the thread
-        console.log(`Adding message to thread ${threadId}`);
-        
-        // For debugging, log the image data sizes
-        if (validatedImages.length > 0) {
-          console.log(`Processing ${validatedImages.length} images for upload`);
-          console.log(`Images will be uploaded to Cloudinary and then sent to OpenAI`);
-        }
-        
-        await addMessageToThread(threadId, message || "", validatedImages);
-        console.log("Message and images added successfully");
-      } catch (messageError) {
-        console.error("Error adding message to thread:", messageError);
-        
-        // Provide more detailed error messages for common issues
-        let errorMessage = "Failed to add message to thread";
-        let statusCode = 500;
-        
-        if (messageError instanceof Error) {
-          const errorText = messageError.message.toLowerCase();
-          
-          // Check for common errors
-          if (errorText.includes('cloudinary')) {
-            errorMessage = "Error uploading image to cloud storage. Please try again or use a different image.";
-            statusCode = 502; // Bad Gateway - issue with external service
-          } else if (errorText.includes('too large') || errorText.includes('file size')) {
-            errorMessage = "Image is too large. Please try with a smaller image.";
-            statusCode = 413; // Request Entity Too Large
-          } else if (errorText.includes('rate limit') || errorText.includes('too many requests')) {
-            errorMessage = "Rate limit exceeded. Please try again in a few moments.";
-            statusCode = 429; // Too Many Requests
-          } else if (errorText.includes('invalid') && errorText.includes('format')) {
-            errorMessage = "Invalid image format. Please try a different image.";
-            statusCode = 400; // Bad Request
-          }
-        }
-        
-        return res.status(statusCode).json({ 
-          message: errorMessage, 
-          error: messageError instanceof Error ? messageError.message : String(messageError) 
-        });
-      }
-      
-      // Run the assistant on the thread
-      console.log(`Running assistant on thread ${threadId}`);
-      let run;
-      try {
-        run = await runAssistantOnThread(threadId, profileContext);
-        console.log(`Run created with ID: ${run.id}`);
-      } catch (runError) {
-        console.error("Error running assistant:", runError);
-        return res.status(500).json({ 
-          message: "Failed to run assistant", 
-          error: runError instanceof Error ? runError.message : String(runError) 
-        });
-      }
-      
-      // Poll for completion
-      let runStatus;
-      let attempts = 0;
-      const maxAttempts = 30; // Maximum 30 attempts (30 seconds)
-      
-      try {
-        runStatus = await checkRunStatus(threadId, run.id);
-        console.log(`Initial run status: ${runStatus.status}`);
-        
-        while (runStatus.status !== "completed" && attempts < maxAttempts) {
-          // Wait for 1 second
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Check the status again
-          runStatus = await checkRunStatus(threadId, run.id);
-          attempts++;
-          
-          if (attempts % 5 === 0) {
-            console.log(`Run status after ${attempts} attempts: ${runStatus.status}`);
-          }
-        }
-      } catch (statusError) {
-        console.error("Error checking run status:", statusError);
-        return res.status(500).json({ 
-          message: "Failed to check run status", 
-          error: statusError instanceof Error ? statusError.message : String(statusError) 
-        });
-      }
-      
-      if (runStatus.status !== "completed") {
-        return res.status(408).json({ message: "Assistant processing timed out" });
-      }
-      
-      // Get the messages from the thread
-      console.log(`Getting messages from thread ${threadId}`);
-      let messages;
-      try {
-        messages = await getMessagesFromThread(threadId);
-        
-        // Extract any proposed nutrition log from the newest assistant message.
-        // The log is NOT written here — it's returned to the client as a
-        // pending proposal that the user must explicitly confirm.
-        let pendingLog = null;
-        if (messages.data && messages.data.length > 0) {
-          const latestMessage = messages.data[0];
-          if (latestMessage.role === 'assistant') {
-            pendingLog = await extractPendingNutritionLog(latestMessage);
-          }
-        }
-
-        // Just log that messages were retrieved, not their entire content
-        console.log(`Retrieved ${messages.data?.length || 0} messages from thread ${threadId}`);
-
-        res.status(200).json({ messages: messages.data, pendingLog });
-        return;
-      } catch (messagesError) {
-        console.error("Error getting messages:", messagesError);
-        if (messagesError instanceof Error && messagesError.message.includes("SyntaxError")) {
-          return res.status(400).json({
-            message: "Invalid response format from assistant. Please try rephrasing your request or contact support.",
-            error: messagesError.message
-          });
-        }
-        return res.status(500).json({
-          message: "Failed to get messages",
-          error: messagesError instanceof Error ? messagesError.message : String(messagesError)
-        });
-      }
-    } catch (error) {
-      console.error("Error processing message:", error);
-      res.status(500).json({ 
-        message: "Failed to process message",
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-  
-  // Get all messages from a thread - for display only, no nutrition processing
-  app.get("/api/assistant/messages/:threadId", async (req: Request, res: Response) => {
-    try {
-      const { threadId } = req.params;
-      
-      if (!threadId) {
-        return res.status(400).json({ message: "Thread ID is required" });
-      }
-      
-      // Get the messages from the thread (without processing for nutrition)
-      const messages = await getMessagesFromThread(threadId);
-      
-      // DO NOT process messages for nutrition logging when just displaying them
-      // This prevents duplicate processing
-      
-      res.status(200).json({ messages: messages.data });
-    } catch (error) {
-      console.error("Error retrieving messages:", error);
-      res.status(500).json({ message: "Failed to retrieve messages" });
     }
   });
 

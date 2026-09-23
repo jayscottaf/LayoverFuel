@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { syncQueue, getPendingCount } from '@/lib/offline-queue';
 import { useToast } from '@/hooks/use-toast';
+import { invalidateNutrition } from '@/lib/nutrition';
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 
@@ -9,8 +9,8 @@ export function useOffline() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingCount, setPendingCount] = useState(0);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
-  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const running = useRef(false);
 
   // Update pending count
   const refreshPendingCount = useCallback(async () => {
@@ -24,7 +24,8 @@ export function useOffline() {
 
   // Sync queue and refresh data
   const performSync = useCallback(async () => {
-    if (syncStatus === 'syncing') return; // Already syncing
+    if (running.current || !navigator.onLine) return;
+    running.current = true;
 
     try {
       setSyncStatus('syncing');
@@ -46,9 +47,8 @@ export function useOffline() {
           description: `${result.success} log${result.success > 1 ? 's' : ''} synced successfully`,
         });
 
-        // Invalidate dashboard to show updated data
-        await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       }
+      if (result.success > 0) await invalidateNutrition();
 
       // Refresh pending count
       await refreshPendingCount();
@@ -65,14 +65,16 @@ export function useOffline() {
       });
 
       setTimeout(() => setSyncStatus('idle'), 3000);
+    } finally {
+      running.current = false;
     }
-  }, [syncStatus, queryClient, toast, refreshPendingCount]);
+  }, [toast, refreshPendingCount]);
 
   // Listen for online/offline events
   useEffect(() => {
     const handleOnline = () => {
       console.log('[OFFLINE] Connection restored');
-      setIsOnline(true);
+      setIsOnline(navigator.onLine);
 
       // Auto-sync when coming back online
       performSync();
@@ -86,9 +88,12 @@ export function useOffline() {
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    window.addEventListener('nutrition-queue-changed', refreshPendingCount);
+    window.addEventListener('account-changed', handleOnline);
 
     // Initial pending count check
     refreshPendingCount();
+    if (navigator.onLine) performSync();
 
     // Periodic check for pending items (every 30 seconds)
     const interval = setInterval(refreshPendingCount, 30000);
@@ -96,6 +101,8 @@ export function useOffline() {
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('nutrition-queue-changed', refreshPendingCount);
+      window.removeEventListener('account-changed', handleOnline);
       clearInterval(interval);
     };
   }, [performSync, refreshPendingCount]);

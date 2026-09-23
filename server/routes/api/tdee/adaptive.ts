@@ -1,6 +1,5 @@
 import { Request, Response, Router } from "express";
 import { storage } from "../../../storage";
-import { calculateAdaptiveTDEE } from "../../../services/adaptive-tdee-service";
 import { calculateTDEE } from "../../../services/tdee-service";
 
 export async function handleAdaptiveTDEEGet(req: Request, res: Response) {
@@ -10,12 +9,7 @@ export async function handleAdaptiveTDEEGet(req: Request, res: Response) {
   }
 
   try {
-    const days = parseInt(req.query.days as string) || 14;
-    const result = await calculateAdaptiveTDEE(userId, days);
-
-    if (result) {
-      return res.status(200).json({ ...result, source: "adaptive" });
-    }
+    const days = Math.min(90, Math.max(7, parseInt(req.query.days as string) || 14));
 
     // Insufficient adaptive data — fall back to the formula estimate so the
     // user sees a useful number on day 1 instead of an empty "unlock at 7+
@@ -24,7 +18,7 @@ export async function handleAdaptiveTDEEGet(req: Request, res: Response) {
     if (!user) {
       return res.status(200).json(null);
     }
-    const formulaTDEE = user.tdee ?? calculateTDEE(user);
+    const formulaTDEE = calculateTDEE(user);
 
     // Count days of nutrition logs to drive a progress indicator.
     const allNutrition = await storage.getNutritionLogs(userId);
@@ -44,6 +38,8 @@ export async function handleAdaptiveTDEEGet(req: Request, res: Response) {
       confidence: "low",
       daysOfData: recentDays,
       requiredDaysForAdaptive: 7,
+      adaptiveEnabled: false,
+      reason: "Adaptive targets are paused pending intake-completeness and accuracy validation.",
     });
   } catch (error) {
     console.error("💥 Error calculating adaptive TDEE:", error);

@@ -14,7 +14,9 @@
     "db:migrate:google": "node scripts/migrate-google-columns.mjs",
     "db:migrate:enums": "node scripts/migrate-goal-activity-enums.mjs",
     "db:migrate:logs": "node scripts/migrate-log-context-columns.mjs",
-    "test": "node --test"
+    "test": "node --import tsx --test server/tests/*.test.ts server/tests/*.test.js",
+    "db:migrate:travel": "node scripts/migrate-travel-foundation.mjs",
+    "db:check": "tsx scripts/check-schema.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
@@ -76,6 +78,7 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-local": "^1.0.0",
+    "pg": "^8.23.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -103,6 +106,7 @@
     "@types/passport": "^1.0.16",
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/passport-local": "^1.0.38",
+    "@types/pg": "^8.23.1",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
     "@types/ws": "^8.5.13",
@@ -110,6 +114,7 @@
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.30.4",
     "esbuild": "^0.25.0",
+    "fake-indexeddb": "^6.2.5",
     "postcss": "^8.4.47",
     "stylelint": "^16.19.1",
     "stylelint-config-standard": "^38.0.0",

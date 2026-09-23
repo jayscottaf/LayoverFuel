@@ -6,7 +6,7 @@ import {
   dailyPlans, type DailyPlan, type InsertDailyPlan
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, isNull } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -31,6 +31,7 @@ export interface IStorage {
   getNutritionLogByDate(userId: number, date: Date): Promise<NutritionLog | undefined>;
   getNutritionLogsByDate(userId: number, date: Date): Promise<NutritionLog[]>;
   getNutritionLogById(id: number): Promise<NutritionLog | undefined>;
+  getNutritionLogByRequestId(userId: number, requestId: string): Promise<NutritionLog | undefined>;
   createNutritionLog(log: InsertNutritionLog): Promise<NutritionLog>;
   updateNutritionLog(id: number, logData: Partial<NutritionLog>): Promise<NutritionLog | undefined>;
   deleteNutritionLog(id: number): Promise<boolean>;
@@ -135,7 +136,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(nutritionLogs)
-      .where(eq(nutritionLogs.userId, userId));
+      .where(and(eq(nutritionLogs.userId, userId), isNull(nutritionLogs.deletedAt)));
   }
 
   async getNutritionLogByDate(userId: number, date: Date): Promise<NutritionLog | undefined> {
@@ -147,6 +148,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(nutritionLogs.userId, userId),
+          isNull(nutritionLogs.deletedAt),
           sql`${nutritionLogs.date}::date = ${dateString}::date`
         )
       );
@@ -161,6 +163,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(nutritionLogs.userId, userId),
+          isNull(nutritionLogs.deletedAt),
           sql`${nutritionLogs.date}::date = ${dateString}::date`
         )
       );
@@ -171,7 +174,18 @@ export class DatabaseStorage implements IStorage {
     const [log] = await db
       .insert(nutritionLogs)
       .values(insertLog)
+      .onConflictDoNothing({ target: [nutritionLogs.userId, nutritionLogs.clientRequestId] })
       .returning();
+    if (log) return log;
+    const existing = await this.getNutritionLogByRequestId(insertLog.userId, insertLog.clientRequestId!);
+    if (!existing) throw new Error("Could not resolve saved meal");
+    return existing;
+  }
+
+  async getNutritionLogByRequestId(userId: number, requestId: string): Promise<NutritionLog | undefined> {
+    const [log] = await db.select().from(nutritionLogs).where(and(
+      eq(nutritionLogs.userId, userId), eq(nutritionLogs.clientRequestId, requestId),
+    ));
     return log;
   }
 
@@ -194,7 +208,8 @@ export class DatabaseStorage implements IStorage {
 
   async deleteNutritionLog(id: number): Promise<boolean> {
     const result = await db
-      .delete(nutritionLogs)
+      .update(nutritionLogs)
+      .set({ deletedAt: new Date() })
       .where(eq(nutritionLogs.id, id))
       .returning({ id: nutritionLogs.id });
     return result.length > 0;
