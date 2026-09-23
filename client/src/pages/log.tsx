@@ -1,479 +1,204 @@
-import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import {
-  Plus,
-  Flame,
-  Beef,
-  Wheat,
-  Droplets,
-  ChevronRight,
-  Utensils,
-  MessageCircle,
-  Pencil,
-  Trash2,
-  RotateCcw,
-  Loader2,
-  RefreshCw,
-  CloudUpload,
-} from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { useCallback, useId, useMemo, type ReactNode } from "react";
+import { NotebookPen, Plus, WifiOff } from "lucide-react";
 import { useOffline } from "@/hooks/use-offline";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { ToastAction } from "@/components/ui/toast";
+  nonNeg,
+  sumMacros,
+  useDashboard,
+  useNutritionDay,
+  type DashboardData,
+  type NutritionLog,
+} from "@/components/travel/api";
+import { useCapture } from "@/components/travel/capture/capture-context";
+import { formatDayLabel, formatShortDate, shiftDate, useLocalDay } from "@/components/travel/local-date";
+import { Page, PageHeader, StateMessage } from "@/components/travel/primitives";
+import { DateNav } from "@/components/travel/log/date-nav";
+import { DaySummary, DaySummarySkeleton, type TargetsState } from "@/components/travel/log/day-summary";
+import { logAgainDraft, logMacros } from "@/components/travel/log/log-again";
+import { MealGroups, MealGroupsSkeleton } from "@/components/travel/log/meal-groups";
+import { RetryButton } from "@/components/travel/log/retry-button";
+import { btnPrimary } from "@/components/travel/log/ui";
+import { useLogDate } from "@/components/travel/log/use-log-date";
+import { usePendingDeletes } from "@/components/travel/log/use-pending-deletes";
 
-interface MealLog {
-  id: number;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  mealStyle: string;
-  notes: string;
-  date: string;
+/** "today" / "yesterday" / "Mon, Sep 21" for use inside a sentence. */
+function dayPhrase(date: string, today: string): string {
+  if (date === today) return "today";
+  if (date === shiftDate(today, -1)) return "yesterday";
+  return formatShortDate(date);
 }
 
-interface NutritionLog {
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  meals: MealLog[];
-}
-
-interface DashboardData {
-  stats: {
-    tdee: number;
-    macros: { protein: number; carbs: number; fat: number };
-    currentCalories: number;
-    currentProtein: number;
-    water: number;
-  };
-  nutritionLog: NutritionLog | null;
-}
-
-function StatPill({ icon, label, value, unit, color }: {
-  icon: ReactNode; label: string; value: number; unit: string; color: string;
-}) {
-  return (
-    <div className={`flex-1 bg-gray-900 rounded-2xl p-3 flex flex-col gap-1`}>
-      <div className={`${color} w-fit`}>{icon}</div>
-      <p className="text-lg font-bold text-white">{value}<span className="text-xs font-normal text-gray-400 ml-0.5">{unit}</span></p>
-      <p className="text-xs text-gray-500">{label}</p>
-    </div>
-  );
-}
-
-export default function LogPage() {
-  const [, navigate] = useLocation();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const { pendingCount, syncStatus, manualSync, isOffline } = useOffline();
-
-  const { data, isLoading } = useQuery<DashboardData>({ queryKey: ["/api/dashboard"] });
-
-  const openChat = (msg: string) => {
-    sessionStorage.setItem("chatPrefill", msg);
-    navigate("/chat");
-  };
-
-  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-
-  const stats = data?.stats;
-  const log = data?.nutritionLog;
-
-  const meals = log?.meals ?? [];
-
-  // Optimistic hide on delete — populated by meal id, cleared on undo or commit
-  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<number>>(new Set());
-  const deleteTimeoutsRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
-  const [confirmDeleteMeal, setConfirmDeleteMeal] = useState<MealLog | null>(null);
-
-  // Edit sheet
-  const [editingMeal, setEditingMeal] = useState<MealLog | null>(null);
-  const [editForm, setEditForm] = useState<{ mealStyle: string; calories: string; protein: string; carbs: string; fat: string }>({
-    mealStyle: "", calories: "", protein: "", carbs: "", fat: "",
-  });
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
-
-  const openEdit = (meal: MealLog) => {
-    setEditingMeal(meal);
-    setEditForm({
-      mealStyle: meal.mealStyle ?? "",
-      calories: String(Math.round(meal.calories ?? 0)),
-      protein: String(Math.round(meal.protein ?? 0)),
-      carbs: String(Math.round(meal.carbs ?? 0)),
-      fat: String(Math.round(meal.fat ?? 0)),
-    });
-  };
-
-  const saveEdit = async () => {
-    if (!editingMeal) return;
-    setIsSavingEdit(true);
-    try {
-      await apiRequest("PATCH", `/api/logs/nutrition/${editingMeal.id}`, {
-        mealStyle: editForm.mealStyle,
-        calories: Number(editForm.calories) || 0,
-        protein: Number(editForm.protein) || 0,
-        carbs: Number(editForm.carbs) || 0,
-        fat: Number(editForm.fat) || 0,
-      });
-      await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      setEditingMeal(null);
-      toast({ title: "Updated", description: "Meal saved." });
-    } catch {
-      toast({ title: "Couldn't save", description: "Try again in a moment.", variant: "destructive" });
-    } finally {
-      setIsSavingEdit(false);
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      deleteTimeoutsRef.current.forEach(t => clearTimeout(t));
-      deleteTimeoutsRef.current.clear();
+function targetsFrom(
+  dashboard: { data?: DashboardData; isError: boolean; isFetching: boolean; refetch: () => unknown },
+  isOffline: boolean,
+): TargetsState {
+  const macros = dashboard.data?.stats?.macros;
+  if (dashboard.data) {
+    const calories = nonNeg(macros?.targetCalories);
+    if (calories <= 0) return { status: "unset" };
+    return {
+      status: "ready",
+      targets: {
+        calories,
+        protein: nonNeg(macros?.protein),
+        carbs: nonNeg(macros?.carbs),
+        fat: nonNeg(macros?.fat),
+      },
     };
-  }, []);
+  }
+  if (isOffline) return { status: "offline" };
+  if (dashboard.isError) {
+    return { status: "error", retry: () => void dashboard.refetch(), retrying: dashboard.isFetching };
+  }
+  return { status: "loading" };
+}
 
-  const mealEntries = meals.filter(m => !pendingDeleteIds.has(m.id));
+/**
+ * Food diary: pick a day, see what was logged against the daily targets, and
+ * correct, repeat, add or remove meals. Every change goes through review in
+ * the capture flow; deletes can be undone for a few seconds.
+ */
+export default function LogPage() {
+  const { today, timezone } = useLocalDay();
+  const { date, setDate, isToday } = useLogDate(today);
+  const { isOffline } = useOffline();
+  const { open } = useCapture();
+  const day = useNutritionDay(date);
+  // Targets are the same every day in this beta, so today's dashboard supplies them.
+  const dashboard = useDashboard(today, timezone);
+  const { hidden, requestDelete } = usePendingDeletes();
+  const offlineNoteId = useId();
 
-  const commitDelete = async (id: number) => {
-    deleteTimeoutsRef.current.delete(id);
-    try {
-      await apiRequest("DELETE", `/api/logs/nutrition/${id}`);
-      await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-    } catch {
-      toast({
-        title: "Couldn't delete meal",
-        description: "We'll show it again. Try once more in a moment.",
-        variant: "destructive",
-      });
-      // Restore from pending set so it reappears
-      setPendingDeleteIds(prev => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
+  const visible = useMemo<NutritionLog[] | null>(
+    () => (day.data ? day.data.filter(log => !hidden.has(log.id)) : null),
+    [day.data, hidden],
+  );
+  const totals = useMemo(() => (visible ? sumMacros(visible.map(logMacros)) : null), [visible]);
+
+  const dayLabel = formatDayLabel(date, today);
+  const phrase = dayPhrase(date, today);
+  const summaryTitle = isToday ? "Today so far" : `${dayLabel} total`;
+  const targets = targetsFrom(dashboard, isOffline);
+
+  const onEdit = useCallback((log: NutritionLog) => open({ editLog: log }), [open]);
+  const onLogAgain = useCallback(
+    (log: NutritionLog) => open({ date: today, draft: logAgainDraft(log, today, timezone) }),
+    [open, today, timezone],
+  );
+  const onDelete = useCallback((log: NutritionLog) => requestDelete(log, date), [requestDelete, date]);
+  const addToDay = () => open({ date });
+
+  const addButton = (
+    <button type="button" onClick={addToDay} className={`${btnPrimary} w-full sm:w-auto sm:self-start`}>
+      <Plus className="h-4 w-4" aria-hidden="true" />
+      {isToday ? "Add food to today" : "Add food to this day"}
+    </button>
+  );
+
+  let summary: ReactNode = null;
+  let meals: ReactNode;
+  let showAdd = false;
+
+  if (visible && totals) {
+    summary = <DaySummary title={summaryTitle} totals={totals} targets={targets} />;
+    if (visible.length > 0) {
+      showAdd = true;
+      meals = (
+        <MealGroups
+          logs={visible}
+          timezone={timezone}
+          isOffline={isOffline}
+          offlineNoteId={offlineNoteId}
+          onEdit={onEdit}
+          onLogAgain={onLogAgain}
+          onDelete={onDelete}
+        />
+      );
+    } else {
+      meals = (
+        <StateMessage
+          icon={<NotebookPen className="h-5 w-5" aria-hidden="true" />}
+          title={`Nothing logged for ${phrase}`}
+          body={
+            isToday
+              ? "Take a photo, describe it, scan a barcode or enter it yourself. You review everything before it's saved."
+              : "Add anything you ate that day. You review everything before it's saved."
+          }
+          action={addButton}
+        />
+      );
     }
-  };
-
-  const undoDelete = (id: number) => {
-    const t = deleteTimeoutsRef.current.get(id);
-    if (t) {
-      clearTimeout(t);
-      deleteTimeoutsRef.current.delete(id);
-    }
-    setPendingDeleteIds(prev => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-  };
-
-  const requestDelete = (meal: MealLog) => {
-    setConfirmDeleteMeal(null);
-    setPendingDeleteIds(prev => new Set(prev).add(meal.id));
-    const t = setTimeout(() => commitDelete(meal.id), 5000);
-    deleteTimeoutsRef.current.set(meal.id, t);
-
-    toast({
-      title: "Meal deleted",
-      description: meal.mealStyle || "Meal removed from today's log.",
-      action: (
-        <ToastAction altText="Undo" onClick={() => undoDelete(meal.id)}>
-          Undo
-        </ToastAction>
-      ),
-    });
-  };
-
-  const importYesterday = () => {
-    openChat(
-      "I'd like to log the same meals I had yesterday. Can you remind me what I logged and re-log them for today?"
+  } else if (isOffline) {
+    meals = (
+      <StateMessage
+        tone="offline"
+        title={`Meals for ${phrase} will load when you're back online`}
+        body="You can still log food. It's kept on this device and syncs when you reconnect."
+        action={addButton}
+      />
     );
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
-        <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-40 bg-gray-800" />
-            <Skeleton className="h-7 w-32 bg-gray-800" />
-          </div>
-          <div className="flex gap-2">
-            {[0, 1, 2, 3].map(i => (
-              <Skeleton key={i} className="flex-1 h-20 rounded-2xl bg-gray-900" />
-            ))}
-          </div>
-          <Skeleton className="h-28 rounded-2xl bg-gray-900" />
-          <Skeleton className="h-48 rounded-2xl bg-gray-900" />
-          <Skeleton className="h-16 rounded-2xl bg-gray-900" />
-        </div>
-      </div>
+  } else if (day.isError) {
+    meals = (
+      <StateMessage
+        tone="error"
+        title={`Meals for ${phrase} didn't load`}
+        body="Check your connection and try again. You can still log food."
+        action={<RetryButton onRetry={() => void day.refetch()} busy={day.isFetching} />}
+      />
     );
+  } else {
+    summary = <DaySummarySkeleton />;
+    meals = <MealGroupsSkeleton />;
   }
 
+  // Shown above a loaded list: explains why Edit and Delete are unavailable.
+  const offlineNote =
+    visible && isOffline ? (
+      <p id={offlineNoteId} className="flex items-start gap-2 rounded-xl bg-warning-soft px-4 py-3 text-sm">
+        <WifiOff className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <span>
+          You're offline. Editing and deleting need a connection. Log again and Add food still work; those meals
+          sync and appear here when you reconnect.
+        </span>
+      </p>
+    ) : null;
+
+  // A background refresh failed but earlier data is still on screen.
+  const refreshError =
+    visible && day.isError && !isOffline ? (
+      <StateMessage
+        tone="error"
+        title="Couldn't refresh this day"
+        body="Showing what was loaded before."
+        action={<RetryButton onRetry={() => void day.refetch()} busy={day.isFetching} />}
+      />
+    ) : null;
+
   return (
-    <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
-      <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+    <Page wide>
+      <PageHeader title="Food log" subtitle="Everything you've logged, day by day." />
 
-        {/* Header */}
-        <div>
-          <p className="text-gray-400 text-sm">{today}</p>
-          <h1 className="text-2xl font-bold text-white mt-0.5">Daily Log</h1>
-        </div>
+      <div className="flex flex-col gap-4 md:gap-6">
+        <DateNav date={date} today={today} onChange={setDate} />
 
-        {/* Pending sync banner */}
-        {pendingCount > 0 && (
-          <div className="bg-orange-500/10 border border-orange-500/30 rounded-2xl p-4 flex items-center gap-3">
-            <div className="bg-orange-500/20 rounded-xl p-2 shrink-0">
-              <CloudUpload className="h-4 w-4 text-orange-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-orange-200">
-                {pendingCount} item{pendingCount === 1 ? "" : "s"} waiting to sync
-              </p>
-              <p className="text-xs text-orange-300/80">
-                {isOffline
-                  ? "Will upload automatically when you're back online."
-                  : "Ready to send to the server."}
-              </p>
-            </div>
-            {!isOffline && (
-              <button
-                onClick={manualSync}
-                disabled={syncStatus === "syncing"}
-                className="shrink-0 flex items-center gap-1.5 bg-orange-500/20 hover:bg-orange-500/30 disabled:opacity-60 rounded-xl px-3 py-1.5 text-xs font-semibold text-orange-200 transition-colors"
-              >
-                {syncStatus === "syncing" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
-                {syncStatus === "syncing" ? "Syncing" : "Sync now"}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Stats row */}
-        <div className="flex gap-2">
-          <StatPill icon={<Flame className="h-4 w-4" />} label="Calories" value={stats?.currentCalories ?? 0} unit="kcal" color="text-orange-400" />
-          <StatPill icon={<Beef className="h-4 w-4" />} label="Protein" value={stats?.currentProtein ?? 0} unit="g" color="text-blue-400" />
-          <StatPill icon={<Wheat className="h-4 w-4" />} label="Carbs" value={log?.carbs ?? 0} unit="g" color="text-emerald-400" />
-          <StatPill icon={<Droplets className="h-4 w-4" />} label="Water" value={stats?.water ?? 0} unit="gl" color="text-cyan-400" />
-        </div>
-
-        {/* Calorie progress bar */}
-        {stats && (
-          <div className="bg-gray-900 rounded-2xl p-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-white font-medium">Calorie goal</span>
-              <span className="text-gray-400">{stats.currentCalories} / {stats.tdee} kcal</span>
-            </div>
-            <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-indigo-500 to-blue-400 rounded-full transition-all"
-                style={{ width: `${Math.min((stats.currentCalories / Math.max(stats.tdee, 1)) * 100, 100)}%` }}
-              />
-            </div>
-            <div className="flex gap-4 pt-1">
-              {[
-                { label: "Protein", val: stats.currentProtein, target: stats.macros?.protein ?? 0, color: "bg-blue-500" },
-                { label: "Carbs", val: log?.carbs ?? 0, target: stats.macros?.carbs ?? 0, color: "bg-emerald-500" },
-                { label: "Fat", val: log?.fat ?? 0, target: stats.macros?.fat ?? 0, color: "bg-amber-500" },
-              ].map(({ label, val, target, color }) => (
-                <div key={label} className="flex-1">
-                  <div className="h-1 bg-gray-800 rounded-full overflow-hidden mb-1">
-                    <div className={`h-full ${color} rounded-full`} style={{ width: `${Math.min((val / Math.max(target, 1)) * 100, 100)}%` }} />
-                  </div>
-                  <p className="text-xs text-gray-500">{label}: {val}g</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Meals logged */}
-        <div className="bg-gray-900 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold text-white">Meals Today</p>
-            <button
-              onClick={() => openChat("I'd like to log a meal. Here's what I ate: ")}
-              className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300"
-            >
-              <Plus className="h-3.5 w-3.5" /> Log meal
-            </button>
-          </div>
-
-          {mealEntries.length > 0 ? (
-            <div className="space-y-2">
-              {mealEntries.map((meal: MealLog) => (
-                <div key={meal.id} className="flex items-center gap-3 py-2 border-b border-gray-800 last:border-0">
-                  <div className="bg-gray-800 rounded-xl p-2">
-                    <Utensils className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white font-medium truncate">{meal.mealStyle || "Meal"}</p>
-                    <p className="text-xs text-gray-500">
-                      {Math.round(meal.calories) || 0} kcal · {Math.round(meal.protein) || 0}g P · {Math.round(meal.carbs) || 0}g C · {Math.round(meal.fat) || 0}g F
-                    </p>
-                    {meal.notes && meal.notes !== "Snap to Log · Photo analysis" && (
-                      <p className="text-xs text-gray-600 mt-0.5 truncate">{meal.notes}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => openEdit(meal)}
-                    className="shrink-0 p-2 rounded-xl text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
-                    aria-label={`Edit ${meal.mealStyle || "meal"}`}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setConfirmDeleteMeal(meal)}
-                    className="shrink-0 p-2 rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                    aria-label={`Delete ${meal.mealStyle || "meal"}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Utensils className="h-8 w-8 text-gray-700 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No meals logged yet today</p>
-              <div className="flex flex-col items-center gap-2 mt-3">
-                <button
-                  onClick={() => openChat("I'd like to log my first meal of the day. Here's what I ate: ")}
-                  className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
-                >
-                  <MessageCircle className="h-3.5 w-3.5" /> Log with AI chat
-                </button>
-                <button
-                  onClick={importYesterday}
-                  className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" /> Import from yesterday
-                </button>
-              </div>
-            </div>
+        {/*
+          One column on mobile: summary, then meals. On md+ the meals take the
+          wider left column and the summary sits in a sticky column on the right.
+          The summary only has controls when targets are missing, so keyboard focus
+          still reaches the meals first in the normal case.
+        */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-5 md:gap-6">
+          {summary && (
+            <div className="min-w-0 md:sticky md:top-8 md:order-2 md:col-span-2 md:self-start">{summary}</div>
           )}
+          <div className={`flex min-w-0 flex-col gap-4 md:order-1 ${summary ? "md:col-span-3" : "md:col-span-5"}`}>
+            {offlineNote}
+            {refreshError}
+            {meals}
+            {showAdd && addButton}
+          </div>
         </div>
-
-        {/* Quick log via chat */}
-        <button
-          onClick={() => openChat("I'd like to log a meal. Here's what I ate: ")}
-          className="w-full flex items-center gap-4 bg-gradient-to-r from-indigo-600/20 to-blue-600/20 border border-indigo-500/20 rounded-2xl p-4 hover:from-indigo-600/30 hover:to-blue-600/30 transition-all active:scale-98"
-        >
-          <div className="bg-indigo-500/20 rounded-xl p-3">
-            <MessageCircle className="h-5 w-5 text-indigo-400" />
-          </div>
-          <div className="text-left flex-1">
-            <p className="text-white font-medium text-sm">Log with AI</p>
-            <p className="text-xs text-gray-400">Describe a meal and I'll figure out the macros</p>
-          </div>
-          <ChevronRight className="h-5 w-5 text-gray-600" />
-        </button>
       </div>
-
-      <AlertDialog
-        open={!!editingMeal}
-        onOpenChange={open => !open && setEditingMeal(null)}
-      >
-        <AlertDialogContent className="bg-gray-900 border-gray-800 text-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Edit meal</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              Fix the description or macros for this entry.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-3 mt-2">
-            <div>
-              <label className="text-xs text-gray-400 uppercase tracking-wide">Meal</label>
-              <input
-                type="text"
-                value={editForm.mealStyle}
-                onChange={e => setEditForm(f => ({ ...f, mealStyle: e.target.value }))}
-                className="mt-1 w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2 border border-gray-700 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { key: "calories" as const, label: "Calories", unit: "kcal" },
-                { key: "protein" as const, label: "Protein", unit: "g" },
-                { key: "carbs" as const, label: "Carbs", unit: "g" },
-                { key: "fat" as const, label: "Fat", unit: "g" },
-              ].map(({ key, label, unit }) => (
-                <div key={key}>
-                  <label className="text-xs text-gray-400 uppercase tracking-wide">{label}</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      value={editForm[key]}
-                      onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))}
-                      className="mt-1 w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2 pr-10 border border-gray-700 focus:outline-none focus:border-indigo-500"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-0 text-xs text-gray-500">{unit}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <AlertDialogFooter className="mt-4">
-            <AlertDialogCancel className="bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:text-white">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={saveEdit}
-              disabled={isSavingEdit}
-              className="bg-indigo-600 text-white hover:bg-indigo-500"
-            >
-              {isSavingEdit ? "Saving…" : "Save"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
-        open={!!confirmDeleteMeal}
-        onOpenChange={open => !open && setConfirmDeleteMeal(null)}
-      >
-        <AlertDialogContent className="bg-gray-900 border-gray-800 text-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this meal?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              {confirmDeleteMeal?.mealStyle || "This meal"} will be removed from today's log.
-              You'll have 5 seconds to undo.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:text-white">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => confirmDeleteMeal && requestDelete(confirmDeleteMeal)}
-              className="bg-red-600 text-white hover:bg-red-500"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+    </Page>
   );
 }
