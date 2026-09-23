@@ -107,7 +107,7 @@ export function RadioCards<T extends string>({
             tabIndex={tabIndexFor(i)}
             onClick={() => onChange(o.value)}
             onKeyDown={e => onKeyDown(e, i)}
-            className={`flex min-h-11 w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors ${
+            className={`flex min-h-11 w-full items-start gap-3 rounded-lg border p-4 text-left transition-colors ${
               selected ? "border-primary bg-primary/5" : "bg-card hover:bg-secondary"
             }`}
           >

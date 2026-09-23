@@ -37,7 +37,7 @@ export function PageHeader({
     <header className="mb-6 flex items-start justify-between gap-4">
       <div className="min-w-0">
         {eyebrow && <p className="text-sm text-muted-foreground tabular">{eyebrow}</p>}
-        <h1 className="mt-0.5 text-2xl font-semibold tracking-tight md:text-3xl">{title}</h1>
+        <h1 className="mt-0.5 text-2xl font-semibold tracking-normal md:text-3xl">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-2">
@@ -54,7 +54,7 @@ export function PageHeader({
   );
 }
 
-/** A single surface. Do not nest Panels inside Panels. */
+/** Unframed page section; only individual items and dialogs use card surfaces. */
 export function Panel({
   children,
   className = "",
@@ -67,7 +67,7 @@ export function Panel({
   labelledBy?: string;
 }) {
   return (
-    <Tag aria-labelledby={labelledBy} className={`rounded-xl border bg-card p-4 md:p-5 ${className}`}>
+    <Tag aria-labelledby={labelledBy} className={`border-t py-5 ${className}`}>
       {children}
     </Tag>
   );
@@ -111,7 +111,7 @@ export function CalorieSummary({
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-4xl font-semibold tabular tracking-tight">
+        <p className="text-4xl font-semibold tabular tracking-normal">
           {fmtInt(Math.abs(remaining))}
           <span className="ml-1.5 text-base font-normal text-muted-foreground">
             kcal {over ? "over target" : "left"}
@@ -158,9 +158,9 @@ export function MacroMeter({
   const left = Math.round(target - consumed);
   return (
     <div className="min-w-0">
-      <div className="flex items-baseline justify-between gap-2 text-sm">
+      <div className="flex min-w-0 flex-col items-start gap-0.5 text-sm">
         <span className="font-medium">{tone.label}</span>
-        <span className="tabular text-muted-foreground">
+        <span className="break-words text-xs tabular text-muted-foreground">
           {Math.round(consumed)}/{Math.round(target)} g
         </span>
       </div>
@@ -228,7 +228,7 @@ export function StateMessage({
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
-      className={`flex items-start gap-3 rounded-xl border p-4 ${
+      className={`flex items-start gap-3 rounded-lg border p-4 ${
         tone === "error" ? "bg-danger-soft" : tone === "offline" ? "bg-warning-soft" : "bg-card"
       }`}
     >

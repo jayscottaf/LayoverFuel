@@ -59,7 +59,7 @@ export function RemainingPanel({
         <CalorieSummary consumed={consumed} target={targetCalories} basis="Based on logged meals" />
       ) : (
         <div>
-          <p className="text-4xl font-semibold tabular tracking-tight">
+          <p className="text-4xl font-semibold tabular tracking-normal">
             {fmtInt(consumed)}
             <span className="ml-1.5 text-base font-normal text-muted-foreground">kcal eaten</span>
           </p>
@@ -74,7 +74,7 @@ export function RemainingPanel({
       )}
 
       {hasMacroTargets ? (
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-1 md:gap-3 lg:grid-cols-3 lg:gap-4">
+        <div className="mt-5 grid grid-cols-3 gap-3">
           <MacroMeter macro="protein" consumed={eaten.protein} target={macroTargets.protein} />
           <MacroMeter macro="carbs" consumed={eaten.carbs} target={macroTargets.carbs} />
           <MacroMeter macro="fat" consumed={eaten.fat} target={macroTargets.fat} />
@@ -113,7 +113,7 @@ export function RemainingSkeleton() {
         <SkeletonBlock className="mt-4 h-10 w-48" />
         <SkeletonBlock className="mt-3 h-2 w-full" />
         <SkeletonBlock className="mt-2 h-3 w-56" />
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-1 md:gap-3 lg:grid-cols-3 lg:gap-4">
+        <div className="mt-5 grid grid-cols-3 gap-3">
           {[0, 1, 2].map(i => (
             <div key={i}>
               <SkeletonBlock className="h-4 w-full" />

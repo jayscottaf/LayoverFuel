@@ -165,7 +165,7 @@ export function BarcodeStep({
       <div className="space-y-5">
         {lookup.status === "idle" && !cameraBlocked && (
           <div className="space-y-2">
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border bg-muted">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border bg-muted">
               <video
                 ref={videoRef}
                 className="h-full w-full object-cover"
@@ -215,7 +215,7 @@ export function BarcodeStep({
         )}
 
         {busy && (
-          <div className="rounded-xl border bg-background p-4">
+          <div className="rounded-lg border bg-background p-4">
             <InlineSpinner label={`Looking up ${lookup.code}`} />
             <p className="mt-1 text-xs text-muted-foreground">Checking the food database.</p>
           </div>

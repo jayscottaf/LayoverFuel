@@ -105,7 +105,7 @@ export function PhotoStep({
         <img
           src={preview}
           alt="Your meal photo"
-          className="max-h-72 w-full rounded-xl border bg-muted object-cover"
+          className="max-h-72 w-full rounded-lg border bg-muted object-cover"
         />
 
         {analyzing && (

@@ -19,13 +19,13 @@ export type TargetsState =
   | { status: "error"; retry: () => void; retrying: boolean }
   | { status: "unset" };
 
-const METER_GRID = "grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-1 md:gap-3";
+const METER_GRID = "grid grid-cols-3 gap-3";
 
 /** Totals without a target to compare against (targets offline, failed, or not set up). */
 function TotalsOnly({ totals }: { totals: Macros }) {
   return (
     <div>
-      <p className="text-4xl font-semibold tabular tracking-tight">
+      <p className="text-4xl font-semibold tabular tracking-normal">
         {fmtInt(totals.calories)}
         <span className="ml-1.5 text-base font-normal text-muted-foreground">kcal eaten</span>
       </p>

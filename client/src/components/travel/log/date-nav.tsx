@@ -39,7 +39,7 @@ export function DateNav({
     <div
       role="group"
       aria-label="Choose a day"
-      className="flex flex-col gap-2 rounded-xl border bg-card p-2 md:flex-row md:items-center md:justify-between md:gap-6 md:p-3"
+      className="flex flex-col gap-2 rounded-lg border bg-card p-2 md:flex-row md:items-center md:justify-between md:gap-6 md:p-3"
     >
       <div className="flex items-center gap-2 md:min-w-[20rem]">
         <button
@@ -52,7 +52,7 @@ export function DateNav({
           <ChevronLeft className="h-5 w-5" aria-hidden="true" />
         </button>
         <div className="min-w-0 flex-1 text-center" aria-live="polite" aria-atomic="true">
-          <p className="truncate text-lg font-semibold tracking-tight">{formatDayLabel(date, today)}</p>
+          <p className="truncate text-lg font-semibold tracking-normal">{formatDayLabel(date, today)}</p>
           <p className="truncate text-sm text-muted-foreground">{formatLongDate(date)}</p>
         </div>
         <button

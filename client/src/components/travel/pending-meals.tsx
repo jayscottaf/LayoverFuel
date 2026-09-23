@@ -83,7 +83,7 @@ export function PendingMealsNotice({ date }: { date: string }) {
   };
 
   return (
-    <section aria-labelledby={`pending-${date}`} className="rounded-xl border border-dashed bg-warning-soft p-4">
+    <section aria-labelledby={`pending-${date}`} className="rounded-lg border border-dashed bg-warning-soft p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2">
           <CloudOff className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />

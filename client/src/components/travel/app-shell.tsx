@@ -59,7 +59,7 @@ function SideRail() {
   const { open } = useCapture();
   return (
     <nav aria-label="Primary" className="hidden w-60 shrink-0 flex-col border-r bg-card px-3 py-6 md:flex">
-      <Link href="/" className="px-3 text-lg font-semibold tracking-tight">
+      <Link href="/" className="px-3 text-lg font-semibold tracking-normal">
         LayoverFuel
       </Link>
       <button

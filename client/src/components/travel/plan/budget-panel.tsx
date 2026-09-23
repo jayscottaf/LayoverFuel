@@ -23,7 +23,7 @@ export function BudgetPanel({ plan, isToday }: { plan: TravelPlan; isToday: bool
         <CalorieSummary consumed={consumed.calories} target={targets.calories} basis="Based on logged meals" />
       ) : (
         <div>
-          <p className="text-4xl font-semibold tabular tracking-tight">
+          <p className="text-4xl font-semibold tabular tracking-normal">
             {fmtInt(consumed.calories)}
             <span className="ml-1.5 text-base font-normal text-muted-foreground">kcal eaten</span>
           </p>
@@ -38,7 +38,7 @@ export function BudgetPanel({ plan, isToday }: { plan: TravelPlan; isToday: bool
       )}
 
       {hasMacroTargets && (
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        <div className="mt-5 grid grid-cols-3 gap-3">
           <MacroMeter macro="protein" consumed={consumed.protein} target={targets.protein} />
           <MacroMeter macro="carbs" consumed={consumed.carbs} target={targets.carbs} />
           <MacroMeter macro="fat" consumed={consumed.fat} target={targets.fat} />
@@ -61,7 +61,7 @@ export function WhatChanged({ message }: { message: string | null | undefined })
   return (
     <div aria-live="polite" aria-atomic="true" className={text ? undefined : "sr-only"}>
       {text && (
-        <div className="flex items-start gap-3 rounded-xl bg-secondary px-4 py-3">
+        <div className="flex items-start gap-3 rounded-lg bg-secondary px-4 py-3">
           <History className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">What changed</p>
@@ -80,7 +80,7 @@ export function BudgetSkeleton() {
       <SkeletonBlock className="mt-4 h-10 w-44" />
       <SkeletonBlock className="mt-3 h-2 w-full" />
       <SkeletonBlock className="mt-2 h-3 w-2/3" />
-      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+      <div className="mt-5 grid grid-cols-3 gap-3">
         {[0, 1, 2].map(i => (
           <div key={i}>
             <SkeletonBlock className="h-4 w-full" />

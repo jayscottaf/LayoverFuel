@@ -45,6 +45,7 @@ test("real PostgreSQL travel flow", { skip: !process.env.TEST_DATABASE_URL }, as
       assert.ok(Number.isInteger(id));
       assert.equal(new Set(logs.map(log => log.id)).size, 1);
       assert.equal(logs[0].date, date);
+      assert.ok(Math.abs(Date.now() - new Date(logs[0].createdAt).getTime()) < 10_000, "logging timestamp must be an absolute instant, regardless of database timezone");
       assert.equal((await request("/api/logs/nutrition", a.cookie, "POST", { ...meal, calories: 999 })).status, 409);
       assert.equal((await request(`/api/logs/nutrition/${id}`, b.cookie, "PATCH", { calories: 0 })).status, 404);
       assert.deepEqual(await (await request(`/api/logs/nutrition?date=${date}`, b.cookie)).json(), []);

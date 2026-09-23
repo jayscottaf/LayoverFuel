@@ -456,7 +456,7 @@ export function ResultStep({
 }) {
   if (loading) {
     return (
-      <div role="status" aria-label="Loading your starting targets" className="rounded-xl border bg-card p-4 md:p-5">
+      <div role="status" aria-label="Loading your starting targets" className="rounded-lg border bg-card p-4 md:p-5">
         <SkeletonBlock className="h-4 w-32" />
         <SkeletonBlock className="mt-3 h-10 w-44" />
         <div className="mt-5 grid grid-cols-3 gap-3 border-t pt-4">
@@ -498,7 +498,7 @@ export function ResultStep({
     <div className="space-y-4">
       <Panel as="div">
         <p className="text-sm text-muted-foreground">Daily calorie target</p>
-        <p className="mt-1 text-4xl font-semibold tracking-tight tabular">
+        <p className="mt-1 text-4xl font-semibold tracking-normal tabular">
           {fmtInt(targets.targetCalories)}
           <span className="ml-1.5 text-base font-normal text-muted-foreground">kcal</span>
         </p>

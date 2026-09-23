@@ -51,7 +51,7 @@ export default function PlanPage() {
         {isOffline && (
           <p
             id={offlineNoteId}
-            className="mb-4 flex items-start gap-2 rounded-xl bg-warning-soft px-4 py-3 text-sm md:mb-6"
+            className="mb-4 flex items-start gap-2 rounded-lg bg-warning-soft px-4 py-3 text-sm md:mb-6"
           >
             <WifiOff className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             <span>

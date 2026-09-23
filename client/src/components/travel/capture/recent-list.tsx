@@ -69,7 +69,7 @@ export function RecentList({
     );
   } else {
     body = (
-      <ul className="divide-y overflow-hidden rounded-xl border bg-background">
+      <ul className="divide-y overflow-hidden rounded-lg border bg-background">
         {meals.map(meal => (
           <li key={meal.key}>
             <button

@@ -27,7 +27,7 @@ function EstimateNote({ draft }: { draft: ReviewDraft }) {
         ? "These are the planned numbers, not a verified menu. Adjust them to match what you actually ate."
         : "Some values are estimates — adjust if you know better.";
   return (
-    <div className="rounded-xl bg-highlight-soft p-3 text-sm">
+    <div className="rounded-lg bg-highlight-soft p-3 text-sm">
       <p className="flex items-center gap-1.5 font-medium">
         <Info className="h-4 w-4 shrink-0 text-highlight" aria-hidden="true" />
         Estimate
@@ -171,7 +171,7 @@ export function MealReview({
             {noItems ? (
               <StateMessage title="No items" body="Add an item to save this meal." />
             ) : (
-              <div className="divide-y rounded-xl border bg-background">
+              <div className="divide-y rounded-lg border bg-background">
                 {draft.items.map((item, index) => (
                   <ItemEditor
                     key={item.uid}
@@ -186,12 +186,12 @@ export function MealReview({
             )}
           </section>
 
-          <div className="flex items-end justify-between gap-3 rounded-xl bg-secondary p-3">
+          <div className="flex items-end justify-between gap-3 rounded-lg bg-secondary p-3">
             <div className="min-w-0">
               <p className="text-sm font-medium">Total</p>
               <MacroLine m={totals} className="mt-0.5" />
             </div>
-            <p className="shrink-0 text-3xl font-semibold tracking-tight tabular">
+            <p className="shrink-0 text-3xl font-semibold tracking-normal tabular">
               {fmtInt(totals.calories)}
               <span className="ml-1 text-sm font-normal text-muted-foreground">kcal</span>
             </p>

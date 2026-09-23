@@ -377,7 +377,7 @@ export function OnboardingView() {
         <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-4 pt-safe">
           <header className="pt-3 md:pt-10">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-lg font-semibold tracking-tight">LayoverFuel</span>
+              <span className="text-lg font-semibold tracking-normal">LayoverFuel</span>
               <button
                 type="button"
                 onClick={() => void signOut()}
@@ -436,7 +436,7 @@ export function OnboardingView() {
                   id={HEADING_ID}
                   ref={headingRef}
                   tabIndex={-1}
-                  className="text-2xl font-semibold tracking-tight focus:outline-none"
+                  className="text-2xl font-semibold tracking-normal focus:outline-none"
                 >
                   {copy.title}
                 </h1>

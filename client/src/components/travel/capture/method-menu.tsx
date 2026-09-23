@@ -33,7 +33,7 @@ export function MethodMenu({
             key={mode}
             type="button"
             onClick={() => onMethod(mode)}
-            className="flex min-h-16 items-start gap-3 rounded-xl border bg-background p-3 text-left transition-colors hover:bg-secondary"
+            className="flex min-h-16 items-start gap-3 rounded-lg border bg-background p-3 text-left transition-colors hover:bg-secondary"
           >
             <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
             <span className="min-w-0">

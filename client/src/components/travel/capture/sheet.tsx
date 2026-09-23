@@ -38,7 +38,7 @@ export const CaptureSheet = forwardRef<
         <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
           <DialogPrimitive.Content
             onEscapeKeyDown={onEscapeKeyDown}
-            className="pointer-events-auto flex max-h-[92dvh] min-h-[50dvh] w-full flex-col overflow-hidden rounded-t-xl border bg-card text-foreground shadow-lg duration-200 focus:outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-bottom-4 md:max-h-[85dvh] md:min-h-0 md:max-w-lg md:rounded-xl"
+            className="pointer-events-auto flex max-h-[92dvh] min-h-[50dvh] w-full flex-col overflow-hidden rounded-t-xl border bg-card text-foreground shadow-lg duration-200 focus:outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-bottom-4 md:max-h-[85dvh] md:min-h-0 md:max-w-lg md:rounded-lg"
           >
             <header className="flex shrink-0 items-center gap-1 border-b px-2 py-1.5">
               {onBack ? (

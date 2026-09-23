@@ -155,7 +155,7 @@ export default function LogPage() {
   // Shown above a loaded list: explains why Edit and Delete are unavailable.
   const offlineNote =
     visible && isOffline ? (
-      <p id={offlineNoteId} className="flex items-start gap-2 rounded-xl bg-warning-soft px-4 py-3 text-sm">
+      <p id={offlineNoteId} className="flex items-start gap-2 rounded-lg bg-warning-soft px-4 py-3 text-sm">
         <WifiOff className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <span>
           You're offline. Editing and deleting need a connection. Log again and Add food still work; those meals
