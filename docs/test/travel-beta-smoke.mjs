@@ -10,8 +10,13 @@ import { randomBytes } from "crypto";
 import { mkdirSync } from "fs";
 
 const require = createRequire(import.meta.url);
-const { chromium, devices } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 const BASE = process.env.SMOKE_BASE_URL || "http://localhost:5175";
+const baseUrl = new URL(BASE);
+if (!["localhost", "127.0.0.1", "[::1]"].includes(baseUrl.hostname) ||
+    !["http:", "https:"].includes(baseUrl.protocol)) {
+  throw new Error("Browser smoke tests require a local server with a disposable database.");
+}
+const { chromium, devices } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 const OUT = process.env.SMOKE_OUT || "./smoke-output";
 const TZ = "America/Chicago";
 mkdirSync(OUT, { recursive: true });

@@ -133,7 +133,7 @@ export function BarcodeStep({
   const submitTyped = (e: FormEvent) => {
     e.preventDefault();
     const code = typed.replace(/\D/g, "");
-    if (code.length < 6 || code.length > 14) {
+    if (code.length < 8 || code.length > 14) {
       setTypedError("Enter the 8 to 14 digit number printed under the barcode.");
       return;
     }

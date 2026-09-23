@@ -245,7 +245,8 @@ export function ContextEditor({
               aria-describedby={locationDescribedBy}
               onChange={e => {
                 update("location", e.target.value);
-                if (geo.state.status === "error") geo.reset();
+                geo.reset();
+                setGeoFilled(null);
               }}
               className={inputClass}
             />

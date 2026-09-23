@@ -48,6 +48,8 @@ npm run build
 
 The integration suite refuses non-local database hosts. It uses disposable accounts and exercises real Express sessions and PostgreSQL. Without `TEST_DATABASE_URL`, that suite is explicitly skipped. The existing Cloudinary test requires separate credentials and remains optional.
 
+`docs/test/travel-beta-smoke.mjs` reproduces the browser loop against a local server and disposable database. It creates a throwaway account, requires Playwright (or `PLAYWRIGHT_MODULE` pointing to an existing installation), and expects AI credentials to be absent for the unavailable-provider check. Run with `SMOKE_BASE_URL=http://127.0.0.1:5175 node docs/test/travel-beta-smoke.mjs`. Service workers are blocked in this test: its offline check covers a loaded app queuing and reconnecting, not an installed app's offline cold start. Screenshots default to the ignored `smoke-output/` directory.
+
 For offline-shell testing, build the client and run with `SERVE_STATIC=1` in development. Service workers register only in built clients. Visit the pages online first. Personalized read snapshots are account-scoped; API responses never enter the shared service-worker cache.
 
 ## Release Gates
@@ -69,10 +71,11 @@ September 22, 2026, local development only. Backend and UI feature branches are 
 - TypeScript and production build pass. The automated suite passes 15 tests with one optional Cloudinary test skipped; the PostgreSQL integration tests actually ran.
 - Two independent browser passes exercised the combined UI/backend. Codex verified onboarding, consistent targets, manual save, edit, delete/restore, date history, plan context, fixed dinner and plan-to-log totals against disposable local PostgreSQL.
 - Layout inspected at 402 x 874 and 1365 x 900 in light/dark themes. No horizontal overflow was found on the inspected mobile Today screen. These are desktop-browser viewports, not physical-iPhone results.
-- Claude also reports passing browser checks for offline queuing/reconnection. Code-level tests cover response-loss retries, duplicate prevention, account-scoped reads, account switching during a cached read, and Undo during upload followed by disconnection.
+- Claude reports 16/16 browser smoke checks passing, including offline queuing/reconnection, on the integrated UI/backend. Code-level tests cover response-loss retries, duplicate prevention, account-scoped reads, account switching during a cached read, and Undo during upload followed by disconnection.
 - Description estimation without a configured provider visibly preserves input and offers manual entry. Successful live photo/description estimation, barcode coverage and Google OAuth are not verified in this local environment.
 - Location permission is user-triggered. Current location currently supplies rounded coordinates, not city resolution. The pattern affects generic meal ideas; location, time windows, equipment and notes are retained for reference, not yet used by a venue search or schedule optimizer.
 - Existing Progress, Profile, Itinerary and authentication screens retain their legacy styling. The new nutrition loop is the redesigned surface.
+- Remaining review items: unsaved plan context is lost when switching Today/Tomorrow or leaving the page; deleting a log does not yet restore keyboard focus predictably. Save plan edits before switching days. Accessibility review is not complete.
 - The client still produces a large single JavaScript bundle (about 1.4 MB before gzip). Route/scanner splitting, accessibility audits, device-level offline cold starts and production database/configuration checks remain release work.
 
 Next milestone: real-device camera/offline/installation checks, evaluated live meal recognition, and sourced local food choices for the initial cities. Do not market this milestone as a complete travel recommendation engine or a finished Cal AI competitor.

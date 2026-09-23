@@ -26,27 +26,30 @@ export function useGeolocation() {
   const supported = typeof navigator !== "undefined" && "geolocation" in navigator && !!navigator.geolocation;
   const [state, setState] = useState<GeoState>({ status: "idle" });
   const mounted = useRef(true);
+  const request = useRef(0);
 
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
+      request.current += 1;
     };
   }, []);
 
   const locate = useCallback(
     (onFound: (coords: { latitude: number; longitude: number }) => void) => {
       if (!supported) return;
+      const id = ++request.current;
       setState({ status: "locating" });
       try {
         navigator.geolocation.getCurrentPosition(
           position => {
-            if (!mounted.current) return;
+            if (!mounted.current || request.current !== id) return;
             setState({ status: "idle" });
             onFound({ latitude: position.coords.latitude, longitude: position.coords.longitude });
           },
           error => {
-            if (!mounted.current) return;
+            if (!mounted.current || request.current !== id) return;
             setState({ status: "error", message: errorMessage(error) });
           },
           { enableHighAccuracy: false, timeout: 15_000, maximumAge: 5 * 60_000 },
@@ -58,7 +61,10 @@ export function useGeolocation() {
     [supported],
   );
 
-  const reset = useCallback(() => setState({ status: "idle" }), []);
+  const reset = useCallback(() => {
+    request.current += 1;
+    setState({ status: "idle" });
+  }, []);
 
   return { supported, state, locate, reset };
 }
