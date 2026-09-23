@@ -218,13 +218,17 @@ export function ContextEditor({
     status = dirty
       ? "You're offline. Your changes stay here until you can save them."
       : "You're offline. You can save changes when you reconnect.";
-  } else if (saving) status = "Saving and updating your plan";
+  } else if (saving) status = "Saving";
   else if (dirty) status = "You have unsaved changes.";
-  else status = "Your plan uses these details. Change anything above to update it.";
+  else status = "Saved for this day.";
 
   return (
     <Panel labelledBy={titleId}>
       <SectionTitle id={titleId}>Where you are and what you have</SectionTitle>
+      <p className="-mt-1 mb-4 text-sm text-muted-foreground">
+        Meal ideas currently use your travel pattern, dietary needs, targets and kept meals. Location, meal
+        windows, equipment and notes are saved for your reference and don&apos;t change the ideas yet.
+      </p>
 
       <form onSubmit={submit} noValidate className="flex flex-col gap-5">
         <div className="space-y-1.5">

@@ -95,7 +95,8 @@ function fmtNum(n: number): string {
 /** Locale guess for first-run units only; the user can switch at any time. */
 function prefersImperial(): boolean {
   try {
-    const locale = (typeof navigator !== "undefined" && navigator.language) || "";
+    const raw = (typeof navigator !== "undefined" && navigator.language) || "";
+    const locale = raw.split("@")[0].replace(/_/g, "-");
     const region = new Intl.Locale(locale).maximize().region ?? "";
     return ["US", "LR", "MM"].includes(region);
   } catch {
