@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import {
   PlanConflictError,
+  statusOf,
   keys,
   saveTravelPlan,
   type PlanContext,
@@ -66,12 +67,15 @@ export function usePlanMutations({
           return { ok: false, conflict: true };
         }
         const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+        const rejected = statusOf(error) === 400;
         toast({
           variant: "destructive",
           title: failureTitle,
           description: offline
             ? "You're offline. Try again when you reconnect."
-            : "Nothing was changed. Please try again in a moment.",
+            : rejected
+              ? "Some details weren't accepted. Keep meal windows under 120 characters and meal numbers at 0 or more."
+              : "Nothing was changed. Please try again in a moment.",
         });
         return { ok: false, conflict: false };
       } finally {

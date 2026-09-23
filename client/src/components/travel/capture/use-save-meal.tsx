@@ -100,7 +100,11 @@ export function useSaveMeal({
         const summary = `${payload.notes ?? "Meal"} · ${fmtInt(payload.calories)} kcal`;
         toast({
           title: result.queued ? "Saved on this device" : `Saved to ${dayPhrase(draft.date, today)}`,
-          description: result.queued ? "It will sync when you're back online." : summary,
+          description: result.queued
+            ? navigator.onLine
+              ? "LayoverFuel couldn't confirm it yet. Use Sync now on Today or Log to retry."
+              : "It will sync when you're back online."
+            : summary,
           action: (
             <ToastAction altText="Undo saving this meal" onClick={() => void undo(result)}>
               Undo

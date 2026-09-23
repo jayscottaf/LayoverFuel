@@ -411,9 +411,9 @@ export async function saveWater(glasses: number, date: string, timezone: string)
 /** Build the POST /api/logs/nutrition body from a reviewed draft. */
 export function draftToPayload(draft: NutritionDraft, timezone: string) {
   const items = draft.items.map(i => ({
-    name: i.name.trim() || "Item",
+    name: (i.name.trim() || "Item").slice(0, 200),
     quantity: nonNeg(i.quantity),
-    unit: i.unit.trim() || "serving",
+    unit: (i.unit.trim() || "serving").slice(0, 40),
     calories: Math.round(nonNeg(i.calories)),
     protein: round1(nonNeg(i.protein)),
     carbs: round1(nonNeg(i.carbs)),

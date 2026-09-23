@@ -196,11 +196,13 @@ export function ContextEditor({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!canSave) return;
-    const outcome = await onSave(form);
+    const submitted = form;
+    const outcome = await onSave(submitted);
     if (outcome.ok) {
       const saved = normalizeContext(outcome.plan.context);
       setBaseline(saved);
-      setForm(saved);
+      // Keep anything typed while the save was in flight.
+      setForm(current => (contextsEqual(current, submitted) ? saved : current));
       setGeoFilled(null);
     }
     // On a conflict the plan reloads and the form keeps the user's edits to save again.
@@ -283,7 +285,7 @@ export function ContextEditor({
             id={`${uid}-windows`}
             type="text"
             autoComplete="off"
-            maxLength={240}
+            maxLength={120}
             value={form.mealWindow}
             aria-describedby={`${uid}-windows-hint`}
             onChange={e => update("mealWindow", e.target.value)}
