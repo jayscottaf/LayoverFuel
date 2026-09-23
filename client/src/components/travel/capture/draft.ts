@@ -45,6 +45,9 @@ export interface DraftContext {
 }
 
 const ZERO: Macros = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+/** Server limits (shared/nutrition.ts foodItemSchema). */
+export const ITEM_NAME_MAX = 200;
+export const ITEM_UNIT_MAX = 40;
 const SOURCES: NutritionSource[] = ["manual", "label", "database", "estimate"];
 
 let uidCounter = 0;
@@ -65,9 +68,9 @@ function snapshot(i: Macros & { quantity: number }): ReviewItem["base"] {
 export function makeItem(input: Partial<NutritionItem>, fallbackSource: NutritionSource): ReviewItem {
   const q = nonNeg(input.quantity);
   const item: NutritionItem = {
-    name: typeof input.name === "string" ? input.name.trim() : "",
+    name: typeof input.name === "string" ? input.name.trim().slice(0, ITEM_NAME_MAX) : "",
     quantity: q > 0 ? q : 1,
-    unit: typeof input.unit === "string" && input.unit.trim() ? input.unit.trim() : "serving",
+    unit: typeof input.unit === "string" && input.unit.trim() ? input.unit.trim().slice(0, ITEM_UNIT_MAX) : "serving",
     calories: nonNeg(input.calories),
     protein: nonNeg(input.protein),
     carbs: nonNeg(input.carbs),
@@ -266,9 +269,9 @@ export function draftFromPartial(partial: Partial<NutritionDraft>, ctx: DraftCon
 /** Items as the server expects them: trimmed names, rounded nonnegative numbers. */
 export function cleanItems(items: NutritionItem[]): NutritionItem[] {
   return items.map(i => ({
-    name: i.name.trim() || "Item",
+    name: (i.name.trim() || "Item").slice(0, ITEM_NAME_MAX),
     quantity: nonNeg(i.quantity),
-    unit: i.unit.trim() || "serving",
+    unit: (i.unit.trim() || "serving").slice(0, ITEM_UNIT_MAX),
     calories: Math.round(nonNeg(i.calories)),
     protein: round1(nonNeg(i.protein)),
     carbs: round1(nonNeg(i.carbs)),

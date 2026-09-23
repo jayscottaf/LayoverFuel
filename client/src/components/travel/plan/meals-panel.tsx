@@ -37,7 +37,8 @@ function MealItem({
   readOnly: boolean;
   readOnlyNoteId?: string;
   busy: PlanBusy;
-  onLog: (meal: PlanMeal) => void;
+  /** Omitted for future days: meals are logged on the day they're eaten. */
+  onLog?: (meal: PlanMeal) => void;
   onKeep: (meal: PlanMeal, kept: boolean) => void;
   onRemove: (meal: PlanMeal) => void;
 }) {
@@ -62,10 +63,12 @@ function MealItem({
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {/* Logging still works offline: the capture flow queues the save. */}
+        {onLog && (
         <button type="button" onClick={() => onLog(meal)} className={btnSecondary}>
           <NotebookPen className="h-4 w-4" aria-hidden="true" />
           Log this<span className="sr-only">: {meal.name}</span>
         </button>
+        )}
 
         {manual ? (
           <button
@@ -157,7 +160,9 @@ export function MealsPanel({
           {isToday ? "Meal ideas for the rest of today" : "Meal ideas for tomorrow"}
         </h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Keep an idea to hold it in place when the plan updates.
+          {isToday
+            ? "Keep an idea to hold it in place when the plan updates."
+            : "Keep an idea to hold it in place. You can log it tomorrow, once you've eaten it."}
         </p>
       </div>
 
@@ -175,7 +180,7 @@ export function MealsPanel({
               readOnly={readOnly}
               readOnlyNoteId={readOnlyNoteId}
               busy={busy}
-              onLog={onLog}
+              onLog={isToday ? onLog : undefined}
               onKeep={onKeep}
               onRemove={m => void onRemove(m)}
             />
