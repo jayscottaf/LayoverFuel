@@ -37,6 +37,7 @@ export interface Macros {
   fat: number;
 }
 
+/** Item nutrients are totals for the stated quantity, not per unit. */
 export interface NutritionItem extends Macros {
   name: string;
   quantity: number;
@@ -87,6 +88,14 @@ export interface PlanMeal extends Macros {
   status: "planned" | "locked";
   source: "estimate" | "manual";
 }
+
+/** Equipment values the plan service understands. "none" is exclusive. */
+export const PLAN_EQUIPMENT: Array<{ value: string; label: string }> = [
+  { value: "fridge", label: "Fridge" },
+  { value: "microwave", label: "Microwave" },
+  { value: "kitchen", label: "Kitchen" },
+  { value: "none", label: "None of these" },
+];
 
 export interface PlanContext {
   location: string;
@@ -144,6 +153,8 @@ export interface NutritionDraft {
   confidence?: "low" | "medium" | "high";
   origin: "photo" | "describe" | "barcode" | "manual" | "recent" | "plan" | "edit";
   editingId?: number;
+  /** Set when logging a planned meal so the server removes it from the remaining plan. */
+  planMealId?: string;
 }
 
 // ---------- Helpers ----------
@@ -374,8 +385,13 @@ export async function patchNutritionLog(
   return (await res.json()) as NutritionLog;
 }
 
+/** Soft delete; the same record can be brought back with restoreNutritionLog. */
 export async function deleteNutritionLog(id: number): Promise<void> {
   await apiRequest("DELETE", `/api/logs/nutrition/${id}`);
+}
+
+export async function restoreNutritionLog(id: number): Promise<void> {
+  await apiRequest("POST", `/api/logs/nutrition/${id}/restore`, {});
 }
 
 export async function saveWater(glasses: number, date: string, timezone: string): Promise<void> {
@@ -407,6 +423,7 @@ export function draftToPayload(draft: NutritionDraft, timezone: string) {
     context: draft.context,
     items: items.length ? items : undefined,
     photoUrl: draft.photoUrl,
+    planMealId: draft.planMealId,
     clientRequestId: draft.clientRequestId,
   };
 }
