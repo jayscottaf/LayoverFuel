@@ -34,7 +34,7 @@ export function planSubtitle(plan: UseQueryResult<TravelPlan>, isOffline: boolea
   if (plan.data) {
     return (
       <Link href="/plan" className={textLink}>
-        Add where you are and your meal windows
+        Set up today's plan
       </Link>
     );
   }

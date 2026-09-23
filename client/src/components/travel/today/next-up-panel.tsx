@@ -113,7 +113,7 @@ export function NextUpPanel({
           <p className="mt-0.5 text-sm text-muted-foreground">
             {hasContext
               ? "Your plan has nothing left to suggest right now."
-              : "Add where you are and your meal windows to get ideas that fit your day."}
+              : "Choose a travel pattern in Plan to get meal ideas for the rest of your day."}
           </p>
           {!hasContext && (
             <Link href="/plan" className={`${buttonSecondary} mt-3`}>
