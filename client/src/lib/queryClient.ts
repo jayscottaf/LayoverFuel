@@ -33,7 +33,7 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
-  options?: { accountId?: number },
+  options?: { accountId?: number; signal?: AbortSignal },
 ): Promise<Response> {
   const owner = options?.accountId ?? getActiveAccountId();
   let res: Response;
@@ -43,6 +43,7 @@ export async function apiRequest(
       headers: { ...requestHeaders(url, owner), ...(data ? { "Content-Type": "application/json" } : {}) },
       body: data ? JSON.stringify(data) : undefined,
       credentials: "include",
+      signal: options?.signal,
     });
   } catch (error) {
     if (method === "GET" && owner && !navigator.onLine && owner === getActiveAccountId()) {
@@ -57,6 +58,7 @@ export async function apiRequest(
   if (method === "GET" && owner) {
     await saveSnapshot(owner, url, res.clone()).catch(() => {});
   }
+  if (!url.startsWith("/api/auth/") && owner !== getActiveAccountId()) throw new Error("Your account changed during this request");
   return res;
 }
 
@@ -66,24 +68,21 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey, signal }) => {
-    const res = await fetch(`${API_URL}${queryKey[0] as string}`, {
-      credentials: "include",
-      headers: requestHeaders(queryKey[0] as string),
-      signal,
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    try {
+      const res = await apiRequest("GET", queryKey[0] as string, undefined, { signal });
+      return await res.json();
+    } catch (error) {
+      if (unauthorizedBehavior === "returnNull" && error instanceof ApiError && error.status === 401) return null;
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
+      // Run reads offline so apiRequest can return account-scoped device snapshots.
+      networkMode: "always",
       refetchInterval: false,
       refetchOnWindowFocus: true,
       staleTime: 30_000,
