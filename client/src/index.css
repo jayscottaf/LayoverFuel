@@ -4,50 +4,163 @@
 
 @layer base {
   :root {
+    --background: 150 14% 97%;
+    --foreground: 160 16% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 160 16% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 16% 11%;
+    --primary: 161 94% 24%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 12% 93%;
+    --secondary-foreground: 160 16% 11%;
+    --muted: 150 12% 94%;
+    --muted-foreground: 160 7% 37%;
+    --accent: 150 14% 92%;
+    --accent-foreground: 160 16% 11%;
+    --destructive: 0 72% 42%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 11% 88%;
+    --input: 150 10% 84%;
+    --ring: 161 94% 28%;
+    --radius: 0.75rem;
+
+    /* Nutrition + status tokens (not part of shadcn; used via utilities below) */
+    --protein: 161 94% 28%;
+    --carbs: 32 88% 40%;
+    --fat: 212 20% 42%;
+    --highlight: 30 84% 42%;
+    --highlight-soft: 36 90% 94%;
+    --success-soft: 152 50% 93%;
+    --warning: 35 92% 33%;
+    --warning-soft: 42 95% 92%;
+    --danger-soft: 0 80% 96%;
+    --track: 150 10% 90%;
+
+    --chart-1: 161 94% 28%;
+    --chart-2: 32 88% 40%;
+    --chart-3: 212 20% 42%;
+    --chart-4: 190 60% 35%;
+    --chart-5: 0 60% 45%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 160 16% 11%;
+    --sidebar-primary: 161 94% 24%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 150 12% 94%;
+    --sidebar-accent-foreground: 160 16% 11%;
+    --sidebar-border: 150 11% 88%;
+    --sidebar-ring: 161 94% 28%;
+  }
+
+  .dark {
+    --background: 160 14% 6%;
+    --foreground: 150 12% 93%;
+    --card: 160 11% 9%;
+    --card-foreground: 150 12% 93%;
+    --popover: 160 11% 10%;
+    --popover-foreground: 150 12% 93%;
+    --primary: 158 64% 46%;
+    --primary-foreground: 160 40% 6%;
+    --secondary: 160 8% 14%;
+    --secondary-foreground: 150 12% 93%;
+    --muted: 160 8% 13%;
+    --muted-foreground: 150 6% 64%;
+    --accent: 160 8% 16%;
+    --accent-foreground: 150 12% 93%;
+    --destructive: 0 70% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 160 8% 17%;
+    --input: 160 8% 22%;
+    --ring: 158 64% 46%;
+
+    --protein: 158 64% 50%;
+    --carbs: 36 90% 58%;
+    --fat: 210 22% 66%;
+    --highlight: 32 90% 62%;
+    --highlight-soft: 30 40% 14%;
+    --success-soft: 158 40% 12%;
+    --warning: 38 92% 60%;
+    --warning-soft: 36 45% 13%;
+    --danger-soft: 0 40% 14%;
+    --track: 160 8% 18%;
+
+    --sidebar-background: 160 12% 7%;
+    --sidebar-foreground: 150 12% 93%;
+    --sidebar-primary: 158 64% 46%;
+    --sidebar-primary-foreground: 160 40% 6%;
+    --sidebar-accent: 160 8% 14%;
+    --sidebar-accent-foreground: 150 12% 93%;
+    --sidebar-border: 160 8% 17%;
+    --sidebar-ring: 158 64% 46%;
+  }
+
+  /* Legacy screens (Progress, Profile, Itinerary, auth) were designed for a
+     black canvas with hard-coded colors; keep them on that canvas. */
+  .legacy-dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 224 76% 58%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 224 76% 58%;
-    --radius: 0.5rem;
-
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    background-color: #000;
+    color: #fafafa;
   }
 
   html,
   body {
-    background-color: #09090b; /* Matches dark app theme, fills safe areas */
-    @apply font-sans antialiased text-white h-screen overflow-hidden;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    @apply font-sans antialiased h-screen overflow-hidden;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
   }
 
   * {
     @apply border-border;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  h1, h2, h3 {
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer utilities {
+  .tabular { font-variant-numeric: tabular-nums; }
+  .text-protein { color: hsl(var(--protein)); }
+  .text-carbs { color: hsl(var(--carbs)); }
+  .text-fat { color: hsl(var(--fat)); }
+  .text-highlight { color: hsl(var(--highlight)); }
+  .text-warning { color: hsl(var(--warning)); }
+  .bg-protein { background-color: hsl(var(--protein)); }
+  .bg-carbs { background-color: hsl(var(--carbs)); }
+  .bg-fat { background-color: hsl(var(--fat)); }
+  .bg-highlight { background-color: hsl(var(--highlight)); }
+  .bg-highlight-soft { background-color: hsl(var(--highlight-soft)); }
+  .bg-success-soft { background-color: hsl(var(--success-soft)); }
+  .bg-warning-soft { background-color: hsl(var(--warning-soft)); }
+  .bg-danger-soft { background-color: hsl(var(--danger-soft)); }
+  .bg-track { background-color: hsl(var(--track)); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+  .scroll-touch { -webkit-overflow-scrolling: touch; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

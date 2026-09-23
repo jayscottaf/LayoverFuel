@@ -1,658 +1,118 @@
 import type { ReactNode } from "react";
-import { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
-import { Dumbbell, Droplets, Flame, ChevronRight, Zap, Plus, X, Pencil, Check, GripVertical, ScanBarcode, Camera, WifiOff, Loader2, RefreshCw, Scale, Plane } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
-import { BarcodeScanner } from "@/components/ui/barcode-scanner";
-import { SnapToLog } from "@/components/ui/snap-to-log";
-import { WeightLogDialog } from "@/components/ui/weight-log-dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useOffline } from "@/hooks/use-offline";
+import { nonNeg, useDashboard, useTravelPlan } from "@/components/travel/api";
+import { formatLocalTime, formatLongDate, timeZoneAbbreviation, useLocalDay } from "@/components/travel/local-date";
+import { Page, PageHeader, StateMessage } from "@/components/travel/primitives";
+import { CaptureRow } from "@/components/travel/today/capture-row";
+import { PendingMealsNotice } from "@/components/travel/pending-meals";
+import { EatenTodayPanel, EatenTodaySkeleton } from "@/components/travel/today/eaten-today-panel";
+import { NextUpPanel } from "@/components/travel/today/next-up-panel";
+import { planSubtitle } from "@/components/travel/today/plan-subtitle";
+import { RemainingPanel, RemainingSkeleton } from "@/components/travel/today/remaining-panel";
+import { RetryButton, useIsDesktop } from "@/components/travel/today/shared";
+import { useWaterControl } from "@/components/travel/today/use-water";
+import { WaterPanel, WaterSkeleton } from "@/components/travel/today/water-panel";
 
-interface UpcomingItinerary {
-  connected: boolean;
-  flights: Array<{ id: string; start: string; end: string; location?: string | null; title?: string }>;
-  layovers: Array<{
-    arriveAt: string;
-    departAt: string;
-    durationMinutes: number;
-    airportGuess: string | null;
-    fromFlightId: string;
-    toFlightId: string;
-  }>;
-}
+const DEFAULT_WATER_TARGET = 8;
 
-interface DashboardData {
-  user: { name: string; goal: string };
-  stats: {
-    tdee: number;
-    macros: { protein: number; carbs: number; fat: number; targetCalories: number };
-    currentCalories: number;
-    calorieProgress: number;
-    currentProtein: number;
-    proteinProgress: number;
-    currentSteps: number;
-    stepsProgress: number;
-    water: number;
-    waterTarget?: number;
-    waterTargetReason?: string | null;
-    waterProgress: number;
-    streak: number;
-  };
-  dailyPlan: any;
-  nutritionLog: any;
-}
-
-interface Shortcut {
-  id: string;
-  emoji: string;
-  label: string;
-  subtext: string;
-  message: string;
-}
-
-const EMOJI_OPTIONS = [
-  "✈️","🏨","📸","🏋️","🥗","🍔","🥤","🍎","🍜","🥩",
-  "🚀","🏊","🚶","🧘","💊","🥑","🍳","🥪","🏃","🍵",
-  "🌮","🍣","🫙","🏖️","🌍","🎽","💪","🍱","🥐","🍇",
-];
-
-const DEFAULT_SHORTCUTS: Shortcut[] = [
-  {
-    id: "airport",
-    emoji: "✈️",
-    label: "Airport Meal",
-    subtext: "Log airport food",
-    message: "I just had a meal at the airport. Can you help me log it? Here's what I ate: ",
-  },
-  {
-    id: "hotel",
-    emoji: "🏨",
-    label: "Hotel Breakfast",
-    subtext: "Log hotel buffet",
-    message: "I had the hotel breakfast buffet this morning. Help me estimate the calories and macros for: ",
-  },
-  {
-    id: "snap",
-    emoji: "📸",
-    label: "Snap Meal",
-    subtext: "Photo analysis",
-    message: "I want to take a photo of my meal for you to analyze.",
-  },
-];
-
-const STORAGE_KEY = "layoverfuel_shortcuts";
-
-function loadShortcuts(): Shortcut[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return DEFAULT_SHORTCUTS;
-}
-
-function saveShortcuts(shortcuts: Shortcut[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(shortcuts));
-}
-
-function CalorieRing({ current, target }: { current: number; target: number }) {
-  const radius = 80;
-  const stroke = 10;
-  const normalizedRadius = radius - stroke / 2;
-  const circumference = 2 * Math.PI * normalizedRadius;
-  const progress = Math.min(current / Math.max(target, 1), 1);
-  const offset = circumference * (1 - progress);
-  const remaining = Math.max(target - current, 0);
-
-  return (
-    <div className="relative flex items-center justify-center">
-      <svg width={radius * 2} height={radius * 2} className="-rotate-90">
-        <circle cx={radius} cy={radius} r={normalizedRadius} fill="none" stroke="#1f2937" strokeWidth={stroke} />
-        <circle
-          cx={radius} cy={radius} r={normalizedRadius}
-          fill="none" stroke="url(#ringGrad)" strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 0.6s ease" }}
-        />
-        <defs>
-          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#6366f1" />
-            <stop offset="100%" stopColor="#3b82f6" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <div className="absolute flex flex-col items-center">
-        <span className="text-3xl font-bold text-white">{current.toLocaleString()}</span>
-        <span className="text-xs text-gray-400">/ {target.toLocaleString()} kcal</span>
-        <span className="text-xs text-gray-500 mt-0.5">{remaining} remaining</span>
-      </div>
-    </div>
-  );
-}
-
-function MacroBar({ label, current, target, color }: { label: string; current: number; target: number; color: string }) {
-  const pct = Math.min((current / Math.max(target, 1)) * 100, 100);
-  return (
-    <div className="flex-1">
-      <div className="flex justify-between text-xs mb-1">
-        <span className="text-gray-400">{label}</span>
-        <span className="text-white font-medium">{current}g</span>
-      </div>
-      <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%`, transition: "width 0.5s ease" }} />
-      </div>
-      <span className="text-xs text-gray-500">/ {target}g</span>
-    </div>
-  );
-}
-
-function WaterTracker({ glasses, target, reason, onAdd, onRemove }: { glasses: number; target: number; reason?: string | null; onAdd: () => void; onRemove: () => void }) {
-  // Cap rendered glass icons at 16 to keep the row reasonable on tiny screens.
-  const cells = Math.min(target, 16);
-  return (
-    <div className="bg-gray-900 rounded-2xl p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Droplets className="h-4 w-4 text-cyan-400" />
-          <span className="text-sm font-medium text-white">Water</span>
-          {reason && (
-            <span className="text-[10px] uppercase tracking-wider bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full">
-              flight boost
-            </span>
-          )}
-        </div>
-        <span className="text-xs text-gray-400">{glasses} / {target} glasses</span>
-      </div>
-      <div className="flex gap-1.5">
-        {Array.from({ length: cells }, (_, i) => (
-          <button
-            key={i}
-            onClick={i < glasses ? onRemove : onAdd}
-            className={`flex-1 h-8 rounded-lg transition-all ${
-              i < glasses ? "bg-cyan-500/80 hover:bg-cyan-400" : "bg-gray-800 hover:bg-gray-700 border border-gray-700"
-            }`}
-          />
-        ))}
-      </div>
-      {reason && (
-        <p className="text-xs text-cyan-300/80 mt-2">{reason} — cabin air is dry, drink up.</p>
-      )}
-    </div>
-  );
-}
-
+/**
+ * Today: where you are, what's left today, and the next good meal decision.
+ * Core loop: Today -> capture/correct a meal -> remaining-day plan.
+ */
 export default function HomePage() {
-  const queryClient = useQueryClient();
-  const [, navigate] = useLocation();
-  const [shortcuts, setShortcuts] = useState<Shortcut[]>(loadShortcuts);
-  const [showScanner, setShowScanner] = useState(false);
-  const [showSnapToLog, setShowSnapToLog] = useState(false);
-  const [showWeightDialog, setShowWeightDialog] = useState(false);
+  const { today, timezone, now } = useLocalDay();
+  const dashboard = useDashboard(today, timezone);
+  const plan = useTravelPlan(today, timezone);
+  const { isOffline } = useOffline();
+  const isDesktop = useIsDesktop();
+  const water = useWaterControl(today, timezone);
 
-  const { data, isLoading } = useQuery<DashboardData>({ queryKey: ["/api/dashboard"] });
-  const { data: itinerary } = useQuery<UpcomingItinerary>({
-    queryKey: ["/api/itinerary/upcoming"],
-    staleTime: 60_000,
-    retry: false,
-  });
-  const { isOffline, pendingCount, syncStatus, manualSync } = useOffline();
-  const [quickLogText, setQuickLogText] = useState("");
+  const eyebrow = `${formatLongDate(today)} · ${formatLocalTime(timezone, now)} ${timeZoneAbbreviation(timezone, now)}`;
+  const data = dashboard.data;
+  const retryDashboard = () => void dashboard.refetch();
 
-  // Surface the next layover ≥2h (computeLayovers already filters), if any.
-  const nextLayover = itinerary?.layovers?.find(l => new Date(l.departAt).getTime() > Date.now());
+  let remaining: ReactNode;
+  let eaten: ReactNode = null;
+  let hydration: ReactNode = null;
 
-  const waterMutation = useMutation({
-    mutationFn: (glasses: number) => apiRequest("POST", "/api/logs/water", { glasses }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] }),
-  });
-
-  const currentWater = data?.stats?.water ?? 0;
-  const waterTarget = data?.stats?.waterTarget ?? 8;
-  const waterTargetReason = data?.stats?.waterTargetReason ?? null;
-
-  const handleAddWater = () => waterMutation.mutate(Math.min(currentWater + 1, waterTarget));
-  const handleRemoveWater = () => waterMutation.mutate(Math.max(currentWater - 1, 0));
-
-  const openChatWith = (message: string) => {
-    sessionStorage.setItem("chatPrefill", message);
-    navigate("/chat");
-  };
-
-  const handleQuickLog = (e: React.FormEvent) => {
-    e.preventDefault();
-    const text = quickLogText.trim();
-    if (!text) return;
-    sessionStorage.setItem("chatPrefill", `I just ate: ${text}. Log it for me.`);
-    sessionStorage.setItem("chatAutoSubmit", "1");
-    setQuickLogText("");
-    navigate("/chat");
-  };
-
-  const fmtLayoverDuration = (mins: number) => {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return m === 0 ? `${h}h` : `${h}h${m}m`;
-  };
-
-  const openLayoverChat = (airport: string | null, mins: number) => {
-    const where = airport ? ` in ${airport}` : "";
-    openChatWith(
-      `I have a ${fmtLayoverDuration(mins)} layover${where}. Suggest a quick hotel-room or terminal workout and one healthy meal option that fits my goals.`
+  if (data) {
+    const waterTarget = nonNeg(data.stats?.waterTarget) || DEFAULT_WATER_TARGET;
+    remaining = (
+      <RemainingPanel
+        data={data}
+        today={today}
+        refreshFailed={dashboard.isError}
+        refreshing={dashboard.isFetching}
+        onRetry={retryDashboard}
+      />
     );
-  };
-
-  const greeting = () => {
-    const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 17) return "Good afternoon";
-    return "Good evening";
-  };
-
-  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-  const stats = data?.stats;
-  const macros = stats?.macros;
-
-  if (isLoading) {
-    return (
-      <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
-        <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
-          {/* Header skeleton */}
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-32 bg-gray-800" />
-              <Skeleton className="h-7 w-48 bg-gray-800" />
-            </div>
-            <Skeleton className="h-8 w-20 rounded-full bg-gray-800" />
-          </div>
-
-          {/* Hero Snap-to-Log skeleton */}
-          <Skeleton className="w-full rounded-3xl bg-gray-900" style={{ height: 200 }} />
-
-          {/* Calorie summary skeleton */}
-          <div className="bg-gray-900 rounded-3xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-28 bg-gray-800" />
-                <Skeleton className="h-8 w-40 bg-gray-800" />
-                <Skeleton className="h-3 w-20 bg-gray-800" />
-              </div>
-              <Skeleton className="h-20 w-20 rounded-full bg-gray-800" />
-            </div>
-            <div className="flex gap-3">
-              {[0, 1, 2].map(i => (
-                <div key={i} className="flex-1 space-y-2">
-                  <Skeleton className="h-3 w-full bg-gray-800" />
-                  <Skeleton className="h-1.5 w-full bg-gray-800" />
-                  <Skeleton className="h-3 w-12 bg-gray-800" />
-                </div>
-              ))}
-            </div>
-            <div className="pt-4 border-t border-gray-800 space-y-2">
-              <Skeleton className="h-4 w-24 bg-gray-800" />
-              <Skeleton className="h-7 w-full rounded-lg bg-gray-800" />
-            </div>
-          </div>
-
-          {/* Quick actions skeleton */}
-          <div className="flex gap-2 overflow-hidden">
-            {[0, 1, 2].map(i => (
-              <Skeleton key={i} className="shrink-0 h-14 rounded-2xl bg-gray-900" style={{ width: 160 }} />
-            ))}
-          </div>
-        </div>
-      </div>
+    eaten = <EatenTodayPanel meals={data.nutritionLog?.meals ?? []} today={today} />;
+    hydration = (
+      <WaterPanel
+        glasses={Math.round(nonNeg(data.stats?.water))}
+        target={Math.round(waterTarget)}
+        reason={data.stats?.waterTargetReason}
+        isOffline={isOffline}
+        onAdd={water.add}
+        onRemove={water.remove}
+      />
     );
+  } else if (isOffline) {
+    remaining = (
+      <StateMessage
+        tone="offline"
+        title="Today's totals will load when you're back online"
+        body="Logging still works. Meals you save are kept on this device and sync when you reconnect."
+      />
+    );
+  } else if (dashboard.isError) {
+    remaining = (
+      <StateMessage
+        tone="error"
+        title="Today's totals didn't load"
+        body="You can still log meals below; they'll count as soon as this loads."
+        action={<RetryButton onRetry={retryDashboard} busy={dashboard.isFetching} />}
+      />
+    );
+  } else {
+    remaining = <RemainingSkeleton />;
+    eaten = <EatenTodaySkeleton />;
+    hydration = <WaterSkeleton />;
   }
 
+  const capture = <CaptureRow today={today} />;
+  const pending = <PendingMealsNotice date={today} />;
+  const nextUp = <NextUpPanel plan={plan} today={today} isOffline={isOffline} />;
+
   return (
-    <>
-      <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
-        <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+    <Page wide>
+      <PageHeader eyebrow={eyebrow} title="Today" subtitle={planSubtitle(plan, isOffline)} />
 
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">{today}</p>
-              <h1 className="text-2xl font-bold text-white mt-0.5">
-                {greeting()}{data?.user?.name ? `, ${data.user.name.split(" ")[0]}` : ""}
-              </h1>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Offline/Sync Status Badge */}
-              {isOffline && pendingCount > 0 && (
-                <div className="flex items-center gap-1.5 bg-orange-500/20 rounded-full px-3 py-1.5 border border-orange-500/40">
-                  <WifiOff className="h-3.5 w-3.5 text-orange-400" />
-                  <span className="text-xs font-semibold text-orange-400">{pendingCount} pending</span>
-                </div>
-              )}
-
-              {syncStatus === 'syncing' && (
-                <div className="flex items-center gap-1.5 bg-blue-500/20 rounded-full px-3 py-1.5 border border-blue-500/40">
-                  <Loader2 className="h-3.5 w-3.5 text-blue-400 animate-spin" />
-                  <span className="text-xs font-semibold text-blue-400">Syncing...</span>
-                </div>
-              )}
-
-              {syncStatus === 'success' && (
-                <div className="flex items-center gap-1.5 bg-green-500/20 rounded-full px-3 py-1.5 border border-green-500/40">
-                  <Check className="h-3.5 w-3.5 text-green-400" />
-                  <span className="text-xs font-semibold text-green-400">Synced!</span>
-                </div>
-              )}
-
-              {/* Manual sync button - show when online with pending items */}
-              {!isOffline && pendingCount > 0 && syncStatus === 'idle' && (
-                <button
-                  onClick={manualSync}
-                  className="flex items-center gap-1.5 bg-indigo-500/20 rounded-full px-3 py-1.5 border border-indigo-500/40 hover:bg-indigo-500/30 transition-colors"
-                >
-                  <RefreshCw className="h-3.5 w-3.5 text-indigo-400" />
-                  <span className="text-xs font-semibold text-indigo-400">Sync {pendingCount}</span>
-                </button>
-              )}
-
-              {/* Streak Badge */}
-              <div className="flex items-center gap-1.5 bg-orange-500/20 rounded-full px-3 py-1.5">
-                <Flame className="h-4 w-4 text-orange-400" />
-                <span className="text-sm font-semibold text-orange-400">
-                  {data?.stats.streak ? `${data.stats.streak} day${data.stats.streak !== 1 ? 's' : ''}` : 'Start'}
-                </span>
-              </div>
-            </div>
+      {isDesktop ? (
+        // Two columns on md+: the day's numbers and meals on the left, the plan beside them.
+        <div className="grid items-start gap-6 md:grid-cols-5">
+          <div className="flex min-w-0 flex-col gap-6 md:col-span-3">
+            {remaining}
+            {capture}
+            {pending}
+            {eaten}
           </div>
-
-          {/* Layover action card — only when an upcoming layover is detected */}
-          {nextLayover && (
-            <button
-              onClick={() => openLayoverChat(nextLayover.airportGuess, nextLayover.durationMinutes)}
-              className="w-full bg-gradient-to-r from-emerald-600/20 to-teal-600/20 border border-emerald-500/30 rounded-2xl p-4 flex items-center gap-4 hover:from-emerald-600/30 hover:to-teal-600/30 active:scale-98 transition-all text-left"
-            >
-              <div className="bg-emerald-500/20 rounded-xl p-3 shrink-0">
-                <Plane className="h-5 w-5 text-emerald-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-emerald-300">Upcoming layover</p>
-                <p className="text-white font-semibold mt-0.5">
-                  {fmtLayoverDuration(nextLayover.durationMinutes)}{nextLayover.airportGuess ? ` in ${nextLayover.airportGuess}` : ""}
-                </p>
-                <p className="text-xs text-gray-400 mt-0.5">Tap for a workout + meal plan that fits</p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-gray-500 shrink-0" />
-            </button>
-          )}
-
-          {/* HERO: Quick Log */}
-          <button
-            onClick={() => setShowSnapToLog(true)}
-            className="w-full bg-gradient-to-br from-indigo-600 to-blue-600 rounded-3xl p-8 flex flex-col items-center justify-center gap-3 hover:from-indigo-500 hover:to-blue-500 active:scale-[0.98] transition-all shadow-lg shadow-indigo-500/20 border border-indigo-500/30"
-            style={{ minHeight: "200px" }}
-          >
-            <div className="bg-white/10 rounded-full p-6 backdrop-blur-sm">
-              <Camera className="h-12 w-12 text-white" />
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-white">Snap to Log</p>
-              <p className="text-indigo-200 text-sm mt-1">Take a photo to instantly log your meal</p>
-            </div>
-          </button>
-
-          {/* One-tap text quick log */}
-          <form onSubmit={handleQuickLog} className="flex gap-2">
-            <input
-              type="text"
-              value={quickLogText}
-              onChange={e => setQuickLogText(e.target.value)}
-              placeholder="Type a meal — e.g. two protein bars"
-              className="flex-1 min-w-0 bg-gray-900 text-white text-sm rounded-2xl px-4 py-3 border border-gray-800 focus:outline-none focus:border-indigo-500 placeholder-gray-500"
-            />
-            <button
-              type="submit"
-              disabled={!quickLogText.trim()}
-              className="shrink-0 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-2xl px-4 py-3 text-sm transition-colors"
-            >
-              Log
-            </button>
-          </form>
-
-          {/* Compact Calorie Summary */}
-          <div className="bg-gray-900 rounded-3xl p-5">
-            {/* Calorie Ring - Smaller */}
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Today's Calories</p>
-                <p className="text-3xl font-bold text-white">
-                  {(stats?.currentCalories ?? 0).toLocaleString()}
-                  <span className="text-lg text-gray-500"> / {(macros?.targetCalories ?? stats?.tdee ?? 2000).toLocaleString()}</span>
-                </p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {Math.max((macros?.targetCalories ?? stats?.tdee ?? 2000) - (stats?.currentCalories ?? 0), 0)} remaining
-                </p>
-              </div>
-              <div className="relative flex items-center justify-center">
-                <svg width={80} height={80} className="-rotate-90">
-                  <circle cx={40} cy={40} r={35} fill="none" stroke="#1f2937" strokeWidth={6} />
-                  <circle
-                    cx={40} cy={40} r={35}
-                    fill="none" stroke="url(#ringGradSmall)" strokeWidth={6}
-                    strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 35}
-                    strokeDashoffset={2 * Math.PI * 35 * (1 - Math.min((stats?.currentCalories ?? 0) / Math.max(macros?.targetCalories ?? stats?.tdee ?? 2000, 1), 1))}
-                    style={{ transition: "stroke-dashoffset 0.6s ease" }}
-                  />
-                  <defs>
-                    <linearGradient id="ringGradSmall" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#3b82f6" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <span className="absolute text-xl font-bold text-white">
-                  {Math.round(((stats?.currentCalories ?? 0) / Math.max(macros?.targetCalories ?? stats?.tdee ?? 2000, 1)) * 100)}%
-                </span>
-              </div>
-            </div>
-
-            {/* Inline Macros */}
-            <div className="flex gap-3 mb-4">
-              <MacroBar label="Protein" current={stats?.currentProtein ?? 0} target={macros?.protein ?? 150} color="bg-blue-500" />
-              <MacroBar label="Carbs" current={data?.nutritionLog?.carbs ?? 0} target={macros?.carbs ?? 200} color="bg-emerald-500" />
-              <MacroBar label="Fat" current={data?.nutritionLog?.fat ?? 0} target={macros?.fat ?? 65} color="bg-amber-500" />
-            </div>
-
-            {/* Inline Water Tracker */}
-            <div className="pt-4 border-t border-gray-800">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Droplets className="h-4 w-4 text-cyan-400" />
-                  <span className="text-sm font-medium text-white">Water</span>
-                  {waterTargetReason && (
-                    <span className="text-[10px] uppercase tracking-wider bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full">
-                      flight boost
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs text-gray-400">{currentWater} / {waterTarget} glasses</span>
-              </div>
-              <div className="flex gap-1">
-                {Array.from({ length: Math.min(waterTarget, 16) }, (_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-                        try { navigator.vibrate?.(10); } catch {}
-                      }
-                      if (i < currentWater) handleRemoveWater(); else handleAddWater();
-                    }}
-                    className={`flex-1 h-7 rounded-lg transition-all active:scale-90 ${
-                      i < currentWater ? "bg-cyan-500/80 hover:bg-cyan-400" : "bg-gray-800 hover:bg-gray-700 border border-gray-700"
-                    }`}
-                  />
-                ))}
-              </div>
-              {waterTargetReason && (
-                <p className="text-[11px] text-cyan-300/80 mt-1.5">{waterTargetReason} — cabin air is dry.</p>
-              )}
-            </div>
+          <div className="flex min-w-0 flex-col gap-6 md:col-span-2">
+            {nextUp}
+            {hydration}
           </div>
-
-          {/* Quick Actions - Simplified */}
-          <div>
-            <div className="flex flex-col gap-2 mb-2 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Quick Actions
-              </p>
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  onClick={() => setShowWeightDialog(true)}
-                  className="text-xs text-gray-400 hover:text-indigo-400 flex items-center gap-1"
-                >
-                  <Scale className="h-3.5 w-3.5" />
-                  Weight
-                </button>
-                <button
-                  onClick={() => setShowScanner(true)}
-                  className="text-xs text-gray-400 hover:text-indigo-400 flex items-center gap-1"
-                >
-                  <ScanBarcode className="h-3.5 w-3.5" />
-                  Barcode
-                </button>
-                <button
-                  onClick={() => navigate("/itinerary")}
-                  className="text-xs text-gray-400 hover:text-indigo-400 flex items-center gap-1"
-                >
-                  <Plane className="h-3.5 w-3.5" />
-                  Itinerary
-                </button>
-                <button
-                  onClick={() => navigate("/profile")}
-                  className="text-xs text-gray-400 hover:text-indigo-400 flex items-center gap-1"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit
-                </button>
-              </div>
-            </div>
-
-            {/* Horizontal scrollable shortcuts */}
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-              {shortcuts.slice(0, 5).map(shortcut => (
-                <button
-                  key={shortcut.id}
-                  onClick={() => openChatWith(shortcut.message)}
-                  className="shrink-0 bg-gray-900 rounded-2xl px-4 py-3 flex items-center gap-3 hover:bg-gray-800 active:scale-95 transition-all min-w-[160px]"
-                >
-                  <span className="text-2xl">{shortcut.emoji}</span>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-white leading-tight">{shortcut.label}</p>
-                    <p className="text-xs text-gray-500 leading-tight">{shortcut.subtext}</p>
-                  </div>
-                </button>
-              ))}
-              {shortcuts.length > 5 && (
-                <button
-                  onClick={() => navigate("/profile")}
-                  className="shrink-0 bg-gray-900/50 border border-dashed border-gray-700 rounded-2xl px-4 py-3 flex items-center gap-2 hover:bg-gray-900 transition-all min-w-[120px]"
-                >
-                  <Plus className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-400">See all</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Today's Workout */}
-          {data?.dailyPlan?.workout && (
-            <button
-              onClick={() => openChatWith("Can you walk me through today's workout?")}
-              className="w-full bg-gradient-to-r from-indigo-600/30 to-blue-600/30 border border-indigo-500/30 rounded-2xl p-4 flex items-center gap-4 active:scale-98 transition-transform hover:from-indigo-600/40 hover:to-blue-600/40"
-            >
-              <div className="bg-indigo-500/20 rounded-xl p-3">
-                <Dumbbell className="h-6 w-6 text-indigo-400" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-xs text-indigo-300 font-medium">Today's Workout</p>
-                <p className="text-white font-semibold mt-0.5">{data.dailyPlan.workout.title || "Hotel Room Workout"}</p>
-                <p className="text-gray-400 text-xs mt-0.5">
-                  {data.dailyPlan.workout.duration || "20-30 min"} · {data.dailyPlan.workout.intensityLevel || "Moderate"}
-                </p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-gray-500" />
-            </button>
-          )}
-
-          {/* Meal Plan */}
-          {data?.dailyPlan?.meals && (
-            <div className="bg-gray-900 rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-semibold text-white">Today's Meal Plan</p>
-                <button onClick={() => openChatWith("Tell me more about today's meal plan")} className="text-xs text-indigo-400 hover:text-indigo-300">
-                  See all
-                </button>
-              </div>
-              <div className="space-y-2">
-                {[
-                  { key: "breakfast", label: "Breakfast", emoji: "🌅" },
-                  { key: "lunch", label: "Lunch", emoji: "☀️" },
-                  { key: "dinner", label: "Dinner", emoji: "🌙" },
-                ].map(({ key, label, emoji }) => {
-                  const meal = data.dailyPlan.meals[key];
-                  if (!meal) return null;
-                  return (
-                    <div key={key} className="flex items-center gap-3 py-1.5">
-                      <span className="text-base">{emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-400">{label}</p>
-                        <p className="text-sm text-white font-medium truncate">{meal.name}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-xs text-gray-400">{meal.macros?.calories ?? "—"} kcal</p>
-                        <p className="text-xs text-blue-400">{meal.macros?.protein ?? "—"}g protein</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Generate plan CTA */}
-          {!data?.dailyPlan && (
-            <button
-              onClick={() => openChatWith("Can you generate my meal and workout plan for today? I'm traveling and staying at a hotel.")}
-              className="w-full bg-gray-900 border border-dashed border-gray-700 rounded-2xl p-5 flex flex-col items-center gap-2 hover:border-indigo-500/50 transition-colors"
-            >
-              <Zap className="h-6 w-6 text-indigo-400" />
-              <p className="text-white font-medium">Generate Today's Plan</p>
-              <p className="text-xs text-gray-500">Get a personalized meal + workout plan</p>
-            </button>
-          )}
         </div>
-      </div>
-
-      {/* Barcode Scanner */}
-      {showScanner && (
-        <BarcodeScanner
-          onClose={() => setShowScanner(false)}
-          onLogSuccess={() => queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] })}
-        />
+      ) : (
+        // One column; DOM order matches reading and focus order.
+        <div className="flex flex-col gap-4">
+          {remaining}
+          {capture}
+          {pending}
+          {nextUp}
+          {eaten}
+          {hydration}
+        </div>
       )}
-
-      {/* Snap to Log */}
-      {showSnapToLog && (
-        <SnapToLog
-          onClose={() => setShowSnapToLog(false)}
-          onLogSuccess={() => queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] })}
-        />
-      )}
-
-      {/* Weight Log Dialog */}
-      <WeightLogDialog
-        open={showWeightDialog}
-        onOpenChange={setShowWeightDialog}
-      />
-    </>
+    </Page>
   );
 }
