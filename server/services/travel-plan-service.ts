@@ -1,7 +1,7 @@
 import { sumNutrients, type Nutrients } from "@shared/nutrition";
 import { travelContextSchema, type PlanMeal, type TravelContext, type TravelPlan } from "@shared/travel-plan";
 
-type MealLog = Partial<Record<keyof Nutrients, number | null>> & { planMealId?: string | null };
+type MealLog = Partial<Record<keyof Nutrients, number | null>> & { planMealId?: string | null; mealStyle?: string | null };
 type Idea = { name: string; description: string; calories: number; protein: number; carbs: number; fat: number; excludes?: string[] };
 const ideas: Record<TravelContext["pattern"], Idea[]> = {
   hotel: [
@@ -34,7 +34,11 @@ export function buildTravelPlan(input: {
   // These templates are estimates, not an allergy-screened menu database.
   const unsupportedRestrictions = (input.restrictions ?? []).filter(restriction =>
     !["none", "vegetarian", "vegan", "dairy-free", "dairy free"].includes(restriction.trim().toLowerCase()));
-  const slots = Math.max(0, 3 - input.logs.length - locked.length);
+  const completedSlots = new Set(input.logs.flatMap(log => {
+    if (["breakfast", "lunch", "dinner"].includes(log.mealStyle ?? "")) return [log.mealStyle!];
+    return log.planMealId ? [`plan:${log.planMealId}`] : [];
+  }));
+  const slots = Math.max(0, 3 - completedSlots.size - locked.length);
   const reserved = sumNutrients(locked);
   const available = remaining.calories - reserved.calories;
   const candidates = ideas[context.pattern];

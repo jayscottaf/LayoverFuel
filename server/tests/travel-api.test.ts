@@ -78,6 +78,20 @@ test("real PostgreSQL travel flow", { skip: !process.env.TEST_DATABASE_URL }, as
       const adaptive = await (await request("/api/tdee/adaptive", a.cookie)).json();
       assert.equal(adaptive.adaptiveEnabled, false);
     });
+    await t.test("logged locked meals survive intervening plan edits and undo", async () => {
+      const day = "2026-09-24";
+      const url = `?date=${day}&timezone=America%2FNew_York`;
+      const initial = await (await request(`/api/travel-plan${url}`, a.cookie)).json();
+      const dinner = { ...initial.meals[0], id: "client-dinner", name: "Client dinner", status: "locked" };
+      await request("/api/travel-plan", a.cookie, "PUT", { ...initial, meals: [dinner] });
+      const log = await (await request("/api/logs/nutrition", a.cookie, "POST", { ...meal, date: day, clientRequestId: crypto.randomUUID(), planMealId: dinner.id })).json();
+      const afterMeal = await (await request(`/api/travel-plan${url}`, a.cookie)).json();
+      assert.equal(afterMeal.meals.some((item: any) => item.id === dinner.id), false);
+      assert.equal((await request("/api/travel-plan", a.cookie, "PUT", { ...afterMeal, context: { ...afterMeal.context, location: "Nashville" } })).status, 200);
+      await request(`/api/logs/nutrition/${log.id}`, a.cookie, "DELETE");
+      const afterUndo = await (await request(`/api/travel-plan${url}`, a.cookie)).json();
+      assert.deepEqual(afterUndo.meals.find((item: any) => item.id === dinner.id), dinner);
+    });
     await t.test("adaptive calculation sums meals into days rather than averaging meal rows", async () => {
       const { localDateKey, shiftDateKey } = await import("../../shared/dates");
       const { calculateAdaptiveTDEE } = await import("../services/adaptive-tdee-service");

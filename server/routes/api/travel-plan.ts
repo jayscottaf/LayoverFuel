@@ -42,8 +42,16 @@ router.get("/", async (req, res) => {
 router.put("/", async (req, res) => {
   try {
     const input = travelPlanInputSchema.parse(req.body);
+    const [existing] = await db.select().from(travelDays).where(and(
+      eq(travelDays.userId, req.session.userId!), eq(travelDays.date, input.date),
+    ));
+    const logs = await storage.getNutritionLogsByDate(req.session.userId!, dateKeyToDate(input.date));
+    const consumedIds = new Set(logs.map(log => log.planMealId).filter(Boolean));
+    // GET hides consumed choices; retain their definitions so undo can restore them.
+    const retained = (existing?.meals ?? []).filter(meal => meal.status === "locked" &&
+      consumedIds.has(meal.id) && !input.meals.some(next => next.id === meal.id));
     const values = { userId: req.session.userId!, date: input.date, timezone: input.timezone,
-      context: input.context, meals: input.meals, revision: input.revision + 1, updatedAt: new Date() };
+      context: input.context, meals: [...input.meals, ...retained], revision: input.revision + 1, updatedAt: new Date() };
     const result = input.revision === 0
       ? await db.insert(travelDays).values(values).onConflictDoNothing().returning()
       : await db.update(travelDays).set(values).where(and(

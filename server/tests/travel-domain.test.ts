@@ -46,3 +46,13 @@ test("unsupported restrictions suppress generic suggestions instead of guessing"
   assert.equal(plan.meals.length, 0);
   assert.match(plan.message, /dietary restrictions/);
 });
+
+test("snacks and multiple entries for one meal do not exhaust the remaining day", () => {
+  const input = { date: "2026-09-22", timezone: "UTC", targets: { calories: 2200, protein: 130, carbs: 250, fat: 70 } };
+  const snacks = Array.from({ length: 3 }, () => ({ calories: 100, mealStyle: "snack" }));
+  const plan = buildTravelPlan({ ...input, logs: snacks });
+  assert.equal(plan.remaining.calories, 1900);
+  assert.equal(plan.meals.length, 3);
+  const breakfast = buildTravelPlan({ ...input, logs: [...snacks, { calories: 300, mealStyle: "breakfast" }, { calories: 50, mealStyle: "breakfast" }] });
+  assert.equal(breakfast.meals.length, 2);
+});
