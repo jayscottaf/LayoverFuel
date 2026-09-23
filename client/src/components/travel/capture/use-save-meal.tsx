@@ -9,6 +9,7 @@ import {
   patchNutritionLog,
   refreshAfterNutritionChange,
   round1,
+  isValidationError,
   statusOf,
   sumMacros,
 } from "../api";
@@ -18,10 +19,12 @@ import { cleanItems, dayPhrase, type ReviewDraft } from "./draft";
 type SaveResult = Awaited<ReturnType<typeof saveNutrition>>;
 
 function saveErrorMessage(error: unknown): string {
+  if (isValidationError(error)) return "Some values weren't accepted. Each item needs a name, a quantity above 0 and numbers of 0 or more.";
   const status = statusOf(error);
   if (status === 400 || status === 422) return "Some values weren't accepted. Check the numbers and try again.";
   if (status === 401) return "You've been signed out. Sign in again, then retry — your entries are still here.";
   if (status === 404) return "This meal no longer exists. It may have been deleted on another device.";
+  if (status === 409) return "This meal was already saved with different details. Close and check your log.";
   return "Your entries are still here. Check your connection and try again.";
 }
 

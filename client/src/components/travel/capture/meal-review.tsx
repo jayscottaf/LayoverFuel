@@ -72,7 +72,8 @@ export function MealReview({
   const allZero = totals.calories <= 0 && totals.protein <= 0 && totals.carbs <= 0 && totals.fat <= 0;
   const noItems = draft.items.length === 0;
   const editBlocked = mode === "edit" && offline;
-  const canSave = !saving && !noItems && !(allZero && nameEmpty) && !editBlocked;
+  const badQuantity = draft.items.some(i => !(i.quantity > 0));
+  const canSave = !saving && !noItems && !(allZero && nameEmpty) && !editBlocked && !badQuantity;
   const fromDatabase = draft.items.some(i => i.source === "database");
 
   const setItems = (items: ReviewItem[]) => onChange(withItems(draft, items));
@@ -87,6 +88,7 @@ export function MealReview({
   let hint: string | null = null;
   if (editBlocked) hint = "You're offline. Changes to a saved meal need a connection.";
   else if (noItems) hint = "Add at least one item to save this meal.";
+  else if (badQuantity) hint = "Each item needs a quantity above 0. Remove items you didn't eat.";
   else if (allZero && nameEmpty) hint = "Add a name or some nutrition values to save.";
   else if (offline) hint = "You're offline. This meal will be kept on this device and sync when you reconnect.";
 

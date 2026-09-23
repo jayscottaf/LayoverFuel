@@ -159,12 +159,17 @@ export interface NutritionDraft {
 
 // ---------- Helpers ----------
 
+/** RFC 4122 v4 UUID; the server requires a UUID for request de-duplication. */
 export function newRequestId(): string {
   try {
-    return crypto.randomUUID();
-  } catch {
-    return `req-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
+    if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  } catch {}
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = Array.from(b, x => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
 export const nonNeg = (n: unknown): number => {
@@ -225,6 +230,11 @@ export function logSource(log: Pick<NutritionLog, "items">): NutritionSource | n
 export function statusOf(error: unknown): number | null {
   const m = error instanceof Error ? /^(\d{3}):/.exec(error.message) : null;
   return m ? Number(m[1]) : null;
+}
+
+/** Client-side validation failure (e.g. zod in saveNutrition) — not a network problem. */
+export function isValidationError(error: unknown): boolean {
+  return error instanceof Error && error.name === "ZodError";
 }
 
 // ---------- Query keys ----------
@@ -422,7 +432,7 @@ export function draftToPayload(draft: NutritionDraft, timezone: string) {
     notes: draft.name.trim() || undefined,
     context: draft.context,
     items: items.length ? items : undefined,
-    photoUrl: draft.photoUrl,
+    photoUrl: draft.photoUrl?.startsWith("https://") ? draft.photoUrl : undefined,
     planMealId: draft.planMealId,
     clientRequestId: draft.clientRequestId,
   };
