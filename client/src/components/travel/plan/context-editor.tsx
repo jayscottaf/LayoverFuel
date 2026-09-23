@@ -312,7 +312,7 @@ export function ContextEditor({
             className={textareaClass}
           />
           <p id={`${uid}-notes-hint`} className="text-xs text-muted-foreground">
-            Fixed meals, dietary needs, anything to plan around
+            For your reference. Add fixed meals below the meal ideas; dietary needs come from your profile.
           </p>
         </Field>
 
