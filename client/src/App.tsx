@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -6,44 +7,67 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/context/auth-context";
 
 import NotFound from "@/pages/not-found";
-import ChatPage from "@/pages/chat-page";
 import HomePage from "@/pages/home";
 import LogPage from "@/pages/log";
+import PlanPage from "@/pages/plan";
 import StatsPage from "@/pages/stats";
 import ProfilePage from "@/pages/profile";
 import ItineraryPage from "@/pages/itinerary";
 import LoginPage from "@/pages/auth/login";
 import RegisterPage from "@/pages/auth/register";
 import { OnboardingView } from "@/components/onboarding/OnboardingView";
-import { MobileNavigation } from "@/components/dashboard/MobileNavigation";
+import { ThemeProvider } from "@/components/travel/theme";
+import { AppShell, LegacyScreen } from "@/components/travel/app-shell";
+import { CaptureProvider } from "@/components/travel/capture/capture-context";
 
 function LoadingScreen() {
   return (
-    <div className="fixed inset-0 bg-black flex items-center justify-center">
-      <div className="text-center space-y-3">
-        <div className="w-12 h-12 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-gray-500 text-sm">Loading...</p>
+    <div className="fixed inset-0 flex items-center justify-center bg-background" role="status">
+      <div className="space-y-3 text-center">
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="text-sm text-muted-foreground">Loading</p>
       </div>
     </div>
   );
 }
 
+function Redirect({ to }: { to: string }) {
+  const [, navigate] = useLocation();
+  useEffect(() => navigate(to, { replace: true }), [navigate, to]);
+  return null;
+}
+
+function legacy(Component: React.ComponentType) {
+  return function LegacyRoute() {
+    return (
+      <LegacyScreen>
+        <Component />
+      </LegacyScreen>
+    );
+  };
+}
+
+const LegacyStats = legacy(StatsPage);
+const LegacyProfile = legacy(ProfilePage);
+const LegacyItinerary = legacy(ItineraryPage);
+
 function AuthedApp() {
   return (
-    <div className="fixed inset-0 bg-black">
-      <div className="flex flex-col h-full" style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <CaptureProvider>
+      <AppShell>
         <Switch>
           <Route path="/" component={HomePage} />
-          <Route path="/chat" component={ChatPage} />
+          <Route path="/plan" component={PlanPage} />
           <Route path="/log" component={LogPage} />
-          <Route path="/stats" component={StatsPage} />
-          <Route path="/profile" component={ProfilePage} />
-          <Route path="/itinerary" component={ItineraryPage} />
+          <Route path="/stats" component={LegacyStats} />
+          <Route path="/profile" component={LegacyProfile} />
+          <Route path="/itinerary" component={LegacyItinerary} />
+          {/* The general coach is paused; send old links to the structured log. */}
+          <Route path="/chat">{() => <Redirect to="/log" />}</Route>
           <Route component={NotFound} />
         </Switch>
-        <MobileNavigation />
-      </div>
-    </div>
+      </AppShell>
+    </CaptureProvider>
   );
 }
 
@@ -53,20 +77,19 @@ function Router() {
 
   if (isLoading) return <LoadingScreen />;
 
-  const isAuthRoute = location.startsWith("/auth");
-
   if (!isAuthenticated) {
     return (
-      <Switch>
-        <Route path="/auth/register" component={RegisterPage} />
-        <Route component={LoginPage} />
-      </Switch>
+      <div className="legacy-dark dark min-h-screen">
+        <Switch>
+          <Route path="/auth/register" component={RegisterPage} />
+          <Route component={LoginPage} />
+        </Switch>
+      </div>
     );
   }
 
-  if (isAuthRoute) {
-    window.location.href = "/";
-    return <LoadingScreen />;
+  if (location.startsWith("/auth")) {
+    return <Redirect to="/" />;
   }
 
   if (!isOnboardingComplete) {
@@ -79,12 +102,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <Toaster />
-          <Router />
-        </AuthProvider>
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <AuthProvider>
+            <Toaster />
+            <Router />
+          </AuthProvider>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
