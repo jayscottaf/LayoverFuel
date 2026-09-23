@@ -328,7 +328,7 @@ export function ContextEditor({
                   Saving
                 </>
               ) : (
-                "Save and update plan"
+                "Save"
               )}
             </button>
             {dirty && !saving && (
