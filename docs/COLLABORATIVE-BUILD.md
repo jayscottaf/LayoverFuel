@@ -10,6 +10,8 @@
 
 Health-conscious business, crew and leisure travelers are core users. Jason tests first; recruitment is not a prerequisite. The first complete loop is Today -> capture/correct -> saved meal -> updated remaining-day plan.
 
+The first device is an iPhone 16 Pro. Nashville, LaGuardia and Saratoga Springs are the initial location scenarios, not a claim that local restaurant coverage is already available.
+
 The first plan is explicitly generic. Hotel/local-meal, grocery/room-meal and packed-food patterns do not claim verified nearby availability. Venue lookup, access, hours, menu licensing and sourced restaurant nutrition remain separate work. Unsupported dietary restrictions pause generic suggestions instead of guessing.
 
 ## Data Contracts
@@ -59,3 +61,18 @@ For offline-shell testing, build the client and run with `SERVE_STATIC=1` in dev
 ## Deliberately Deferred
 
 App Store packaging, payments, health-platform integrations, calendar inference improvements, verified nearby places, calibrated photo accuracy, encrypted private photo retention and broad health coaching are not claimed complete by this milestone.
+
+## First Integrated Milestone
+
+September 22, 2026, local development only. Backend and UI feature branches are integrated on `codex/travel-foundation`; production and `main` remain unchanged.
+
+- TypeScript and production build pass. The automated suite passes 15 tests with one optional Cloudinary test skipped; the PostgreSQL integration tests actually ran.
+- Two independent browser passes exercised the combined UI/backend. Codex verified onboarding, consistent targets, manual save, edit, delete/restore, date history, plan context, fixed dinner and plan-to-log totals against disposable local PostgreSQL.
+- Layout inspected at 402 x 874 and 1365 x 900 in light/dark themes. No horizontal overflow was found on the inspected mobile Today screen. These are desktop-browser viewports, not physical-iPhone results.
+- Claude also reports passing browser checks for offline queuing/reconnection. Code-level tests cover response-loss retries, duplicate prevention, account-scoped reads, account switching during a cached read, and Undo during upload followed by disconnection.
+- Description estimation without a configured provider visibly preserves input and offers manual entry. Successful live photo/description estimation, barcode coverage and Google OAuth are not verified in this local environment.
+- Location permission is user-triggered. Current location currently supplies rounded coordinates, not city resolution. The pattern affects generic meal ideas; location, time windows, equipment and notes are retained for reference, not yet used by a venue search or schedule optimizer.
+- Existing Progress, Profile, Itinerary and authentication screens retain their legacy styling. The new nutrition loop is the redesigned surface.
+- The client still produces a large single JavaScript bundle (about 1.4 MB before gzip). Route/scanner splitting, accessibility audits, device-level offline cold starts and production database/configuration checks remain release work.
+
+Next milestone: real-device camera/offline/installation checks, evaluated live meal recognition, and sourced local food choices for the initial cities. Do not market this milestone as a complete travel recommendation engine or a finished Cal AI competitor.
