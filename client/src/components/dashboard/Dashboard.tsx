@@ -10,6 +10,7 @@ import { DailyCheckInCard } from "./DailyCheckInCard";
 import { MobileNavigation } from "./MobileNavigation";
 import { Heading } from "../ui/heading";
 import { useToast } from "@/hooks/use-toast";
+import { weightHistoryFromHealthLogs } from "@/lib/weight-history";
 
 export interface DashboardData {
   user: {
@@ -82,10 +83,7 @@ export function Dashboard({ demoData }: DashboardProps) {
     setMobileSidebarOpen(!mobileSidebarOpen);
   };
 
-  // Mock data for weight progress chart if no actual data
-  const weightData = data?.healthLog?.weight 
-    ? [{ date: new Date().toLocaleDateString(), weight: data.healthLog.weight }]
-    : [];
+  const weightData = weightHistoryFromHealthLogs(data?.healthLog ? [data.healthLog] : []);
 
   return (
     <div className="relative min-h-screen bg-gray-50">

@@ -1,9 +1,5 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-
-interface WeightEntry {
-  date: string;
-  weight: number;
-}
+import { validWeightEntries, weightAxisDomain, type WeightEntry } from "@/lib/weight-history";
 
 interface WeightProgressChartProps {
   data: WeightEntry[];
@@ -11,9 +7,9 @@ interface WeightProgressChartProps {
   className?: string;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
-    const date = new Date(label);
+    const date = new Date(`${payload[0].payload.date}T00:00:00`);
     const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const roundedWeight = Math.round(payload[0].value * 2) / 2;
 
@@ -35,32 +31,22 @@ export function WeightProgressChart({
   goalWeight,
   className = ""
 }: WeightProgressChartProps) {
-  const chartData = data.length > 0 ? data : [];
+  const chartData = validWeightEntries(data);
+  const validGoalWeight = goalWeight !== undefined && Number.isFinite(goalWeight) && goalWeight > 0
+    ? goalWeight
+    : undefined;
 
   // Format dates for better display and round weights to nearest 0.5 lbs
   const formattedData = chartData.map(entry => ({
     ...entry,
     weight: Math.round(entry.weight * 2) / 2,
-    displayDate: new Date(entry.date).toLocaleDateString('en-US', {
+    displayDate: new Date(`${entry.date}T00:00:00`).toLocaleDateString('en-US', {
       month: 'numeric',
       day: 'numeric'
     })
   }));
 
-  // Calculate Y-axis domain with padding (use rounded weights)
-  const weights = formattedData.map(d => d.weight);
-  const allWeights = goalWeight ? [...weights, goalWeight] : weights;
-
-  // Only calculate range if we have valid weight data
-  let minWeight = 150;
-  let maxWeight = 200;
-  if (weights.length > 0 && weights.every(w => w > 0)) {
-    const min = Math.min(...allWeights);
-    const max = Math.max(...allWeights);
-    // Add 5 lbs padding above and below, but keep it reasonable
-    minWeight = Math.max(min - 5, 50);  // Never go below 50 lbs
-    maxWeight = max + 5;
-  }
+  const [minWeight, maxWeight] = weightAxisDomain(formattedData, validGoalWeight);
 
   return (
     <div className={`${className}`}>
@@ -100,9 +86,9 @@ export function WeightProgressChart({
                   tickFormatter={(value) => `${value}`}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                {goalWeight && (
+                {validGoalWeight !== undefined && (
                   <ReferenceLine
-                    y={goalWeight}
+                    y={validGoalWeight}
                     stroke="#10B981"
                     strokeDasharray="8 4"
                     strokeWidth={1.5}
@@ -151,7 +137,7 @@ export function WeightProgressChart({
               <div className="w-3 h-0.5 bg-blue-500"></div>
               <span className="text-xs text-gray-400">Current</span>
             </div>
-            {goalWeight && (
+            {validGoalWeight !== undefined && (
               <div className="flex items-center gap-2">
                 <div className="w-3 h-0.5 bg-green-500" style={{ borderTop: '2px dashed #10B981', height: 0 }}></div>
                 <span className="text-xs text-gray-400">Goal</span>

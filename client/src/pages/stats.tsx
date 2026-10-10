@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { ArrowUp, ArrowDown, TrendingUp, Calendar, Scale, Flame, Target, Award } from "lucide-react";
 import { WeightProgressChart } from "@/components/dashboard/WeightProgressChart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { weightHistoryFromHealthLogs } from "@/lib/weight-history";
 
 interface WeightData {
   date: string;
@@ -61,11 +62,7 @@ export default function StatsPage() {
       const response = await apiRequest("GET", `/api/logs/health?start=${startDate.toISOString().split('T')[0]}&end=${endDate.toISOString().split('T')[0]}`);
       const data = await response.json();
 
-      // Transform data for chart - keep raw date for chart component to format
-      return data.map((log: any) => ({
-        date: log.date, // Keep ISO date string for proper parsing
-        weight: log.weight * 2.20462, // Convert kg to lbs for display
-      }));
+      return weightHistoryFromHealthLogs(data);
     },
   });
 
@@ -143,7 +140,7 @@ export default function StatsPage() {
                   <span className="text-sm text-gray-400">Current Weight</span>
                 </div>
                 <p className="text-3xl font-bold text-white">
-                  {currentWeight ? Math.round(currentWeight * 2) / 2 : 0} <span className="text-lg text-gray-500">lbs</span>
+                  {currentWeight !== undefined ? Math.round(currentWeight * 2) / 2 : "--"} <span className="text-lg text-gray-500">lbs</span>
                 </p>
                 {weightChange !== 0 && (
                   <div className={`flex items-center gap-1 mt-1 ${weightChange > 0 ? 'text-red-400' : 'text-green-400'}`}>
