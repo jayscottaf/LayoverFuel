@@ -2,6 +2,7 @@
 // Build first, then: node scripts/camera-fixture.mjs
 // Open http://127.0.0.1:5186/?dashboard=error&camera=ready
 // Dashboard: error, slow, ok. Camera: ready, denied, missing, pending, delayed.
+// Quick Log: quick=1. Save: error, slow, ok. Undo: retry, lost, ok.
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
@@ -10,6 +11,11 @@ const root = resolve("dist/public");
 let dashboardMode = "error";
 let estimateMode = "ok";
 let dashboardRequests = 0;
+let saveMode = "ok";
+let undoMode = "ok";
+let saves = 0;
+let deletes = 0;
+let logs = [];
 const user = { id: 1001, name: "Camera Tester", email: "camera@example.test", isOnboardingComplete: true, googleCalendarConnected: false, quickLogMode: false };
 const dashboard = {
   user: { name: user.name, goal: "maintain_weight" },
@@ -54,11 +60,40 @@ function cameraMock(mode) {
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, "http://127.0.0.1");
   const json = (status, data) => { res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" }); res.end(JSON.stringify(data)); };
-  if (url.pathname === "/__fixture/status") return json(200, { dashboardMode, dashboardRequests });
+  if (url.pathname === "/__fixture/status") return json(200, { dashboardMode, dashboardRequests, saves, deletes, logs });
   if (url.pathname === "/api/dashboard") {
     dashboardRequests += 1;
     if (dashboardMode === "slow") return;
-    return setTimeout(() => json(dashboardMode === "error" ? 500 : 200, dashboardMode === "error" ? { message: "Fixture dashboard unavailable" } : dashboard), 100);
+    const totals = { ...dashboard, stats: { ...dashboard.stats,
+      currentCalories: 480 + logs.reduce((sum, log) => sum + log.calories, 0),
+      currentProtein: 25 + logs.reduce((sum, log) => sum + log.protein, 0),
+    }, nutritionLog: { ...dashboard.nutritionLog,
+      calories: 480 + logs.reduce((sum, log) => sum + log.calories, 0),
+      protein: 25 + logs.reduce((sum, log) => sum + log.protein, 0),
+      carbs: 45 + logs.reduce((sum, log) => sum + log.carbs, 0),
+      fat: 15 + logs.reduce((sum, log) => sum + log.fat, 0),
+      meals: logs,
+    } };
+    return setTimeout(() => json(dashboardMode === "error" ? 500 : 200, dashboardMode === "error" ? { message: "Fixture dashboard unavailable" } : totals), 100);
+  }
+  if (url.pathname === "/api/logs/nutrition" && req.method === "POST") {
+    saves += 1;
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    if (saveMode === "error") return json(503, { message: "Fixture save unavailable" });
+    const log = { ...JSON.parse(body), id: saves, userId: user.id };
+    logs.push(log);
+    if (saveMode === "slow") return setTimeout(() => json(200, log), 1500);
+    return json(200, log);
+  }
+  if (/^\/api\/logs\/nutrition\/\d+$/.test(url.pathname) && req.method === "DELETE") {
+    deletes += 1;
+    const id = Number(url.pathname.split("/").pop());
+    if (undoMode === "retry" && deletes === 1) return json(503, { message: "Fixture delete unavailable" });
+    if (!logs.some(log => log.id === id)) return json(404, { message: "Log not found" });
+    logs = logs.filter(log => log.id !== id);
+    if (undoMode === "lost" && deletes === 1) return json(503, { message: "Fixture deletion response lost" });
+    res.writeHead(204); return res.end();
   }
   if (url.pathname === "/api/auth/me" || url.pathname === "/api/user/profile") return json(200, user);
   if (url.pathname === "/api/itinerary/upcoming") return json(200, { connected: false, flights: [], layovers: [] });
@@ -75,6 +110,10 @@ const server = createServer(async (req, res) => {
     if (extname(file) === ".html") {
       dashboardMode = ["error", "slow", "ok"].includes(url.searchParams.get("dashboard")) ? url.searchParams.get("dashboard") : "error";
       estimateMode = ["error", "slow", "ok"].includes(url.searchParams.get("estimate")) ? url.searchParams.get("estimate") : "ok";
+      saveMode = ["error", "slow", "ok"].includes(url.searchParams.get("save")) ? url.searchParams.get("save") : "ok";
+      undoMode = ["retry", "lost", "ok"].includes(url.searchParams.get("undo")) ? url.searchParams.get("undo") : "ok";
+      user.quickLogMode = url.searchParams.get("quick") === "1";
+      saves = 0; deletes = 0; logs = [];
       const mode = ["ready", "denied", "missing", "pending", "delayed"].includes(url.searchParams.get("camera")) ? url.searchParams.get("camera") : "ready";
       data = Buffer.from(data.toString().replace("<head>", `<head>${cameraMock(mode)}`));
     }

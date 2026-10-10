@@ -57,6 +57,12 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
   const [isEditing, setIsEditing] = useState(false);
   const [isLogging, setIsLogging] = useState(false);
   const [showUndo, setShowUndo] = useState(false);
+  const [isUndoing, setIsUndoing] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [undoError, setUndoError] = useState(false);
+  const writeInFlight = useRef(false);
+  const savedLogId = useRef<number | null>(null);
+  const mounted = useRef(true);
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -71,8 +77,18 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
   const remainingPro = Math.max(targetPro - (dashboard?.stats?.currentProtein ?? 0), 0);
 
   const quickLogMode = profile?.quickLogMode ?? false;
+  const validMeal = description.trim().length > 0 &&
+    Object.values(macros).every(value => Number.isFinite(value) && value >= 0);
+
+  const refreshMealData = () => {
+    void queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+    void queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+    void queryClient.invalidateQueries({ queryKey: ["/api/tdee/adaptive"] });
+    void queryClient.invalidateQueries({ queryKey: ["/api/logs/nutrition"] });
+  };
 
   const analysePreview = async (preview: string) => {
+    if (!mounted.current || writeInFlight.current || savedLogId.current !== null) return;
     const run = ++analysisRun.current;
     analysisRequest.current?.abort();
     const controller = new AbortController();
@@ -83,6 +99,7 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
     setIsEditing(false);
     setAnalysing(true);
     setAnalysisFailed(false);
+    setSaveError(null);
     setProgressStep("upload");
     try {
       // Brief upload step so the stepper animation is perceptible
@@ -92,6 +109,10 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
       if (run !== analysisRun.current) return;
       if (!data.result) throw new Error("No result");
       const r: AnalysisResult = data.result;
+      if (!r.estimate || ![r.estimate.calories, r.estimate.protein, r.estimate.carbs, r.estimate.fat]
+        .every(value => typeof value === "number" && Number.isFinite(value) && value >= 0)) {
+        throw new Error("Invalid meal estimate");
+      }
       setProgressStep("ready");
       setResult(r);
       const desc = r.foodItems?.length ? r.foodItems.join(", ") : "Detected meal";
@@ -100,7 +121,7 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
 
       // Auto-log if Quick Log Mode is enabled
       if (quickLogMode) {
-        await logMealInstantly(desc, r.estimate);
+        await saveMeal(desc, r.estimate, true);
       }
     } catch {
       if (run !== analysisRun.current) return;
@@ -120,14 +141,21 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
     await analysePreview(preview);
   };
 
-  const logMealInstantly = async (desc: string, estimate: MealEstimate) => {
+  const saveMeal = async (desc: string, estimate: MealEstimate, quick = false) => {
+    if (writeInFlight.current || savedLogId.current !== null) return;
+    if (!desc.trim() || !Object.values(estimate).every(value => Number.isFinite(value) && value >= 0)) return;
+    writeInFlight.current = true;
+    setIsLogging(true);
+    setSaveError(null);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
     const logData = {
       date: new Date().toISOString().slice(0, 10),
       calories: estimate.calories,
       protein: estimate.protein,
       carbs: estimate.carbs,
       fat: estimate.fat,
-      mealStyle: desc,
+      mealStyle: desc.trim(),
       notes: "Snap to Log · Photo analysis",
       timezone: currentTimezone(),
     };
@@ -143,102 +171,100 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
           description: `${desc} saved. Will sync when online.`,
         });
 
-        // Close immediately when offline
-        onLogSuccess?.();
-        onClose();
-      } else {
-        // Normal online logging
-        await apiRequest("POST", "/api/logs/nutrition", logData);
-        await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-
-        // Show undo toast for 5 seconds
-        setShowUndo(true);
-        if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
-        undoTimeoutRef.current = setTimeout(() => {
-          setShowUndo(false);
+        if (mounted.current) {
           onLogSuccess?.();
           onClose();
-        }, 5000);
+        }
+      } else {
+        const response = await apiRequest("POST", "/api/logs/nutrition", logData, { signal: controller.signal });
+        const saved = await response.json();
+        if (!Number.isSafeInteger(saved.id) || saved.id <= 0) throw new Error("Missing saved meal id");
+        savedLogId.current = saved.id;
+        refreshMealData();
+        if (!mounted.current) return;
+
+        if (quick) {
+          setShowUndo(true);
+          setUndoError(false);
+          if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+          undoTimeoutRef.current = setTimeout(() => {
+            setShowUndo(false);
+            onLogSuccess?.();
+            onClose();
+          }, 5000);
+        } else {
+          toast({ title: "Logged!", description: `${desc} added to today's log.` });
+          onLogSuccess?.();
+          onClose();
+        }
       }
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to log. Please try again.", variant: "destructive" });
+    } catch {
+      if (mounted.current) {
+        setSaveError("Couldn't confirm the save. Your photo and edits are still here. Check your diary before retrying to avoid a duplicate.");
+      }
+    } finally {
+      clearTimeout(timeout);
+      writeInFlight.current = false;
+      if (mounted.current) setIsLogging(false);
     }
   };
 
   const handleUndo = async () => {
-    // Cancel the auto-close timer
+    if (writeInFlight.current || savedLogId.current === null) return;
     if (undoTimeoutRef.current) {
       clearTimeout(undoTimeoutRef.current);
       undoTimeoutRef.current = null;
     }
-    setShowUndo(false);
-    // The meal is already logged, so we'd need to implement deletion
-    // For now, just hide the undo and let user stay to re-edit
-    toast({ title: "Cancelled", description: "You can edit and re-log if needed." });
+    writeInFlight.current = true;
+    setIsUndoing(true);
+    setUndoError(false);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    try {
+      try {
+        await apiRequest("DELETE", `/api/logs/nutrition/${savedLogId.current}`, undefined, { signal: controller.signal });
+      } catch (error) {
+        // A response-loss retry can find that the first deletion already succeeded.
+        if (!(error instanceof Error) || !error.message.startsWith("404:")) throw error;
+      }
+      savedLogId.current = null;
+      refreshMealData();
+      if (mounted.current) {
+        setShowUndo(false);
+        toast({ title: "Meal removed", description: "Your photo and edits are ready to review again." });
+      }
+    } catch {
+      if (mounted.current) setUndoError(true);
+    } finally {
+      clearTimeout(timeout);
+      writeInFlight.current = false;
+      if (mounted.current) setIsUndoing(false);
+    }
   };
 
   useEffect(() => {
+    mounted.current = true;
     return () => {
+      mounted.current = false;
       analysisRun.current += 1;
       analysisRequest.current?.abort();
       if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
     };
   }, []);
 
-  const handleLog = async () => {
-    if (!result) return;
-    setIsLogging(true);
-
-    const logData = {
-      date: new Date().toISOString().slice(0, 10),
-      calories: macros.calories,
-      protein: macros.protein,
-      carbs: macros.carbs,
-      fat: macros.fat,
-      mealStyle: description,
-      notes: "Snap to Log · Photo analysis",
-      timezone: currentTimezone(),
-    };
-
-    try {
-      if (isOffline) {
-        // Queue for later sync
-        await queueItem('nutrition', logData);
-        await refreshPendingCount();
-
-        toast({
-          title: "Queued Offline",
-          description: `${description} saved. Will sync when online.`,
-        });
-      } else {
-        // Normal online logging
-        await apiRequest("POST", "/api/logs/nutrition", logData);
-        await queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-        toast({ title: "Logged!", description: `${description} added to today's log.` });
-      }
-
-      onLogSuccess?.();
-      onClose();
-    } catch (error) {
-      errorToast({
-        title: "Couldn't log meal",
-        description: "Check your connection and try again.",
-        onRetry: handleLog,
-      });
-    } finally {
-      setIsLogging(false);
-    }
-  };
+  const handleLog = () => { if (result) void saveMeal(description, macros); };
+  const requestClose = () => { if (!writeInFlight.current) onClose(); };
 
   const reset = () => {
     setImage(null);
     setResult(null);
     setIsEditing(false);
     setAnalysisFailed(false);
+    setSaveError(null);
   };
 
   return (
-    <Dialog.Root open onOpenChange={open => { if (!open) onClose(); }}>
+    <Dialog.Root open onOpenChange={open => { if (!open) requestClose(); }}>
     <Dialog.Portal>
     <Dialog.Content
       aria-describedby={undefined}
@@ -260,7 +286,8 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
         <button
           type="button"
           aria-label="Close photo log"
-          onClick={onClose}
+          onClick={requestClose}
+          disabled={isLogging || isUndoing}
           className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
         >
           <X className="h-5 w-5" />
@@ -312,6 +339,8 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
               {isEditing ? (
                 <div className="space-y-2">
                   <input
+                    aria-label="Meal description"
+                    disabled={isLogging}
                     className="w-full bg-gray-800 text-white text-sm rounded-xl px-3 py-2 border border-gray-700 focus:outline-none focus:border-indigo-500"
                     value={description}
                     onChange={e => setDescription(e.target.value)}
@@ -323,6 +352,10 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
                         <p className="text-xs text-gray-500 mb-1 capitalize">{k === "calories" ? "Cal" : k}</p>
                         <input
                           type="number"
+                          aria-label={k === "calories" ? "Calories" : k[0].toUpperCase() + k.slice(1)}
+                          disabled={isLogging}
+                          min="0"
+                          step="any"
                           className="w-full bg-gray-800 text-white text-sm rounded-xl px-2 py-1.5 border border-gray-700 focus:outline-none focus:border-indigo-500 text-center"
                           value={macros[k]}
                           onChange={e => setMacros(prev => ({ ...prev, [k]: Number(e.target.value) }))}
@@ -334,7 +367,7 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
               ) : (
                 <>
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-white font-semibold text-sm leading-snug">{description}</p>
+                    <p className="min-w-0 break-words text-white font-semibold text-sm leading-snug">{description}</p>
                     {result?.confidence && (
                       <span
                         className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
@@ -352,7 +385,7 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
                   </div>
                   {result?.range && result.range.caloriesLow !== result.range.caloriesHigh && (
                     <p className="text-xs text-gray-400 mt-1">
-                      Range: {result.range.caloriesLow}–{result.range.caloriesHigh} kcal — tap any value below to adjust.
+                      Estimated range: {result.range.caloriesLow}–{result.range.caloriesHigh} kcal
                     </p>
                   )}
                   <div className="grid grid-cols-4 gap-2 mt-3">
@@ -387,8 +420,11 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
             {/* Action buttons (hidden when logged in Quick Log Mode) */}
             {!showUndo && (
               <>
+                {saveError && <p role="alert" className="text-sm text-red-300">{saveError}</p>}
+                {!validMeal && <p role="alert" className="text-sm text-amber-300">Enter a meal name and non-negative nutrition values.</p>}
                 <div className="flex gap-2">
                   <button
+                    disabled={isLogging}
                     onClick={() => setIsEditing(p => !p)}
                     className="flex items-center justify-center gap-1.5 flex-1 py-3 rounded-2xl bg-gray-800 text-gray-300 text-sm font-medium hover:bg-gray-700 transition-colors"
                   >
@@ -397,7 +433,7 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
                   </button>
                   <button
                     onClick={handleLog}
-                    disabled={isLogging}
+                    disabled={isLogging || !validMeal}
                     className="flex items-center justify-center gap-1.5 flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
                   >
                     {isLogging ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
@@ -407,6 +443,7 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
 
                 <button
                   onClick={reset}
+                  disabled={isLogging}
                   className="w-full py-2.5 text-gray-500 text-sm hover:text-gray-300 transition-colors flex items-center justify-center gap-1.5"
                 >
                   <ChevronRight className="h-3.5 w-3.5 rotate-180" />
@@ -420,19 +457,21 @@ export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) 
 
       {/* Undo Toast (Quick Log Mode only) */}
       {showUndo && (
-        <div className="fixed bottom-24 left-4 right-4 z-50 flex justify-center">
+        <div role="status" className="shrink-0 px-4 pb-6 flex justify-center">
           <div className="bg-green-600 text-white rounded-2xl px-5 py-3 shadow-2xl flex items-center gap-4 max-w-sm w-full border border-green-500">
             <Check className="h-5 w-5 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm">Logged!</p>
+              <p className="font-semibold text-sm">{undoError ? "Removal not confirmed" : "Logged!"}</p>
               <p className="text-xs text-green-100 truncate">{description}</p>
+              {undoError && <p className="text-xs text-green-100">Try Undo again to check.</p>}
             </div>
             <button
               onClick={handleUndo}
+              disabled={isUndoing}
               className="shrink-0 bg-white/20 hover:bg-white/30 rounded-xl px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1"
             >
-              <Undo className="h-3.5 w-3.5" />
-              Undo
+              {isUndoing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Undo className="h-3.5 w-3.5" />}
+              {isUndoing ? "Removing..." : "Undo"}
             </button>
           </div>
         </div>
