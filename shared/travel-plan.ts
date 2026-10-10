@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { dateKeySchema, timezoneSchema } from "./dates";
 import { nutrientsSchema, type Nutrients } from "./nutrition";
+import { publicSourceUrl } from "./nearby-meals";
 
 export const travelContextSchema = z.object({
   location: z.string().trim().max(200).default(""),
@@ -13,6 +14,12 @@ export const planMealSchema = nutrientsSchema.extend({
   id: z.string().min(1).max(100), name: z.string().trim().min(1).max(200),
   description: z.string().max(1000),
   status: z.enum(["planned", "locked"]), source: z.enum(["estimate", "manual"]),
+  venue: z.object({
+    name: z.string().min(1).max(100), address: z.string().min(1).max(200),
+    menuUrl: z.string().max(2000).refine(value => !!publicSourceUrl(value)),
+    locationUrl: z.string().max(2000).refine(value => !!publicSourceUrl(value)),
+    checkedAt: z.string().datetime(),
+  }).optional(),
 });
 export const travelPlanInputSchema = z.object({
   date: dateKeySchema, timezone: timezoneSchema,

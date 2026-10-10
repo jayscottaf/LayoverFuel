@@ -35,6 +35,9 @@ test("real PostgreSQL travel flow", { skip: !process.env.TEST_DATABASE_URL }, as
       assert.equal((await request("/api/assistant/messages/not-a-real-thread")).status, 401);
       assert.equal((await request("/api/assistant/thread", a.cookie, "POST", {})).status, 410);
       assert.equal((await request("/api/travel-plan")).status, 401);
+      assert.equal((await request("/api/nearby-meals", "", "POST", { area: "Nashville, TN", kind: "restaurant" })).status, 401);
+      assert.equal((await request("/api/nearby-meals", a.cookie, "POST", { area: "Nashville, TN", kind: "restaurant", latitude: 36 })).status, 400);
+      assert.equal((await request("/api/nearby-meals", a.cookie, "POST", { area: "Nashville, TN", kind: "restaurant" }, { "X-Account-Id": String(b.id) })).status, 409);
       const wrong = await request("/api/logs/nutrition", a.cookie, "POST", meal, { "X-Account-Id": String(b.id) });
       assert.equal(wrong.status, 409);
     });

@@ -31,6 +31,7 @@ import { env } from "./config/env";
 import dashboardRoutes from "./routes/api/dashboard";
 import travelPlanRoutes from "./routes/api/travel-plan";
 import nutritionEstimateRoutes from "./routes/api/nutrition-estimate";
+import nearbyMealsRoutes from "./routes/api/nearby-meals";
 import { accountBoundary, accountRateLimit, retiredAssistant } from "./middleware/account-boundary";
 declare module "express-session" {
   interface SessionData {
@@ -62,6 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/nutrition/estimate", accountRateLimit(), nutritionEstimateRoutes);
   app.use("/api/meal-analysis", accountRateLimit(10));
   app.use("/api/travel-plan", travelPlanRoutes);
+  app.use("/api/nearby-meals", accountRateLimit(5), nearbyMealsRoutes);
   app.use("/api", dashboardRoutes);
   app.use("/api/logs/nutrition", nutritionRoutes);
   app.use("/api/logs/health", healthRoutes);

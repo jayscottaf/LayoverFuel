@@ -14,11 +14,12 @@
     "db:migrate:google": "node scripts/migrate-google-columns.mjs",
     "db:migrate:enums": "node scripts/migrate-goal-activity-enums.mjs",
     "db:migrate:logs": "node scripts/migrate-log-context-columns.mjs",
-    "db:migrate:deploy": "npm run db:migrate:google && npm run db:migrate:logs && npm run db:migrate:travel && npm run db:check && npm run ai:check",
+    "db:migrate:deploy": "npm run db:migrate:google && npm run db:migrate:logs && npm run db:migrate:travel && npm run db:check && npm run ai:check && npm run nearby:check",
     "test": "node --import tsx --test server/tests/*.test.ts server/tests/*.test.js",
     "db:migrate:travel": "node scripts/migrate-travel-foundation.mjs",
     "db:check": "tsx scripts/check-schema.ts",
-    "ai:check": "tsx scripts/check-nutrition-provider.ts"
+    "ai:check": "tsx scripts/check-nutrition-provider.ts",
+    "nearby:check": "tsx scripts/check-nearby-provider.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
