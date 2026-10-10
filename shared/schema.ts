@@ -1,4 +1,6 @@
-import { pgTable, text, serial, integer, timestamp, real, date, json, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, real, date, json, boolean, uniqueIndex } from "drizzle-orm/pg-core";
+import { foodItemSchema, type FoodItem } from "./nutrition";
+import type { PlanMeal, TravelContext } from "./travel-plan";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -42,7 +44,24 @@ export const nutritionLogs = pgTable("nutrition_logs", {
   timezone: text("timezone"),                  // IANA tz at time of logging
   context: text("context"),                    // 'home' | 'airport' | 'inflight' | 'hotel' | 'other'
   createdAt: timestamp("created_at").defaultNow(),
-});
+  clientRequestId: text("client_request_id"),
+  requestFingerprint: text("request_fingerprint"),
+  planMealId: text("plan_meal_id"),
+  items: json("items").$type<FoodItem[]>(),
+  photoUrl: text("photo_url"),
+  deletedAt: timestamp("deleted_at"),
+}, table => [uniqueIndex("nutrition_user_request_unique").on(table.userId, table.clientRequestId)]);
+
+export const travelDays = pgTable("travel_days", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  date: date("date").notNull(),
+  timezone: text("timezone").notNull(),
+  revision: integer("revision").notNull().default(0),
+  context: json("context").$type<TravelContext>().notNull(),
+  meals: json("meals").$type<PlanMeal[]>().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, table => [uniqueIndex("travel_days_user_date_unique").on(table.userId, table.date)]);
 
 export const workoutLogs = pgTable("workout_logs", {
   id: serial("id").primaryKey(),
@@ -89,7 +108,7 @@ export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true });
 
 export const insertNutritionLogSchema = createInsertSchema(nutritionLogs)
-  .omit({ id: true });
+  .omit({ id: true }).extend({ items: z.array(foodItemSchema).nullable().optional() });
 
 export const insertWorkoutLogSchema = createInsertSchema(workoutLogs)
   .omit({ id: true });
@@ -111,9 +130,9 @@ export const loginSchema = registerSchema;
 
 export const onboardingSchema = z.object({
   name: z.string(),
-  age: z.number().int().min(1),
-  height: z.number().int().min(1),
-  weight: z.number().min(1),
+  age: z.number().int().min(18).max(100),
+  height: z.number().int().min(100).max(250),
+  weight: z.number().min(30).max(350),
   gender: z.enum(['male', 'female', 'other']),
   fitnessGoal: z.enum(['lose_weight', 'maintain', 'gain_muscle', 'endurance']),
   activityLevel: z.enum(['sedentary', 'lightly_active', 'moderately_active', 'very_active', 'extra_active']),

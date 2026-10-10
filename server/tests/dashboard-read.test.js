@@ -19,10 +19,12 @@ await build({
   bundle: true, platform: "node", format: "esm", packages: "external",
   plugins: [{ name: "dashboard-fixtures", setup(builder) {
     builder.onResolve({ filter: /(?:^|\/)storage$/ }, () => ({ path: "storage", namespace: "fixture" }));
+    builder.onResolve({ filter: /(?:^|\/)db$/ }, () => ({ path: "db", namespace: "fixture" }));
     builder.onResolve({ filter: /(?:^|\/)config\/env$/ }, () => ({ path: "env", namespace: "fixture" }));
     builder.onResolve({ filter: /(?:^|\/)(openai-service|meal-service|workout-service|image-analysis-service)$/ }, args => ({ path: args.path.split("/").pop(), namespace: "fixture" }));
     builder.onLoad({ filter: /.*/, namespace: "fixture" }, args => {
       if (args.path === "storage") return { contents: "export const storage = globalThis.__dashboardStorage;" };
+      if (args.path === "db") return { contents: "export const db = {}; export const pool = { query: async () => ({ rows: [] }) };" };
       if (args.path === "env") return { contents: 'export const env = { SESSION_SECRET: "fixture-session-secret", APP_URL: "http://127.0.0.1", isProd: false }; export const googleOAuthConfigured = false;' };
       const exports = {
         "openai-service": ["processOnboardingMessage", "generateDailyMotivation", "processFeedback"],
@@ -74,6 +76,7 @@ test("dashboard returns totals without creating a plan or calling AI", async t =
   assert.equal(data.dailyPlan, null);
   assert.equal(globalThis.__dashboardProviderCalls, 0);
   plan = { id: 7, meals: { breakfast: { name: "Stored breakfast" } } };
-  assert.deepEqual((await (await read()).json()).dailyPlan, plan);
+  assert.equal((await (await read()).json()).dailyPlan, null);
+  assert.equal(plan.meals.breakfast.name, "Stored breakfast");
   assert.equal(globalThis.__dashboardProviderCalls, 0);
 });

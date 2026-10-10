@@ -1,202 +1,90 @@
-
-import { Request, Response } from "express";
-import { storage } from "../../../storage";
-import { insertNutritionLogSchema } from "../../../../shared/schema";
+import { Request, Response, Router } from "express";
 import { z } from "zod";
+import { createHash } from "node:crypto";
+import { storage } from "../../../storage";
+import { dateKeySchema, dateKeyToDate } from "@shared/dates";
+import { nutritionInputSchema, nutritionPatchSchema, sumNutrients } from "@shared/nutrition";
 
-// Create a modified schema that makes userId optional for client requests
-// This way we can fill it in with the session userId or fallback value
-const ClientNutritionLogSchema = insertNutritionLogSchema
-  .omit({ userId: true })
-  .merge(z.object({
-    userId: z.number().optional()
-  }));
+function fail(res: Response, error: unknown) {
+  if (error instanceof z.ZodError) return res.status(400).json({ message: "Check the meal fields", issues: error.flatten() });
+  console.error("Nutrition request failed", error);
+  return res.status(500).json({ message: "Unable to save or retrieve this meal. Please retry." });
+}
 
 export async function handleNutritionLogPost(req: Request, res: Response) {
-  console.log("📝 Nutrition log POST received");
-
   const userId = req.session?.userId;
-  if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
+  if (!userId) return res.status(401).json({ message: "Unauthorized" });
   try {
-    // Validate incoming request with the client schema (userId optional)
-    const clientData = ClientNutritionLogSchema.parse(req.body);
-    
-    // Now add the userId from session or fallback
-    const parsed = {
-      ...clientData,
-      userId: userId
-    };
-
-    // Destructure after validation
-    const { date, ...logData } = parsed;
-    let logDate: Date;
-
-    try {
-      // Check if we have a placeholder date format like "YYYY-MM-DD" 
-      // or any other format that's not a valid date
-      if (date === "YYYY-MM-DD" || /^\d{4}-[A-Z]{2}-[A-Z]{2}$/i.test(date)) {
-        logDate = new Date();
-      } else {
-        logDate = new Date(date);
-        if (isNaN(logDate.getTime())) {
-          throw new Error("Invalid date format received");
-        }
-      }
-    } catch (error) {
-      const fallback = new Date();
-      logDate = fallback;
-    }
-    
-    // Format the date as YYYY-MM-DD for database storage
-    const formattedDate = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}-${String(logDate.getDate()).padStart(2, '0')}`;
-
-    // Save the nutrition log
-    const nutritionLog = await storage.createNutritionLog({
-      ...logData,
-      date: formattedDate, // Use our pre-formatted date string
-      userId,
-    });
-
-    console.log(`✅ Nutrition log saved - ID: ${nutritionLog.id} for user ${userId}`);
-
-    res.status(200).json(nutritionLog);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      console.error("Zod validation error:", error.flatten());
-      return res.status(400).json({ message: "Validation failed", issues: error.flatten() });
-    }
-    console.error("💥 Server error while logging nutrition:", error);
-    res.status(500).json({
-      message: "Server error",
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
+    const input = nutritionInputSchema.parse(req.body);
+    const data = input.items?.length ? { ...input, ...sumNutrients(input.items) } : input;
+    const requestFingerprint = createHash("sha256").update(JSON.stringify(data)).digest("hex");
+    const saved = await storage.createNutritionLog({ ...data, requestFingerprint, userId });
+    if (saved.requestFingerprint !== requestFingerprint) return res.status(409).json({ message: "This request ID belongs to a different meal. Start a new meal entry." });
+    if (saved.deletedAt) return res.status(409).json({ message: "This request was already saved and removed. Use a new request to log it again." });
+    return res.json(saved);
+  } catch (error) { return fail(res, error); }
 }
 
 export async function handleNutritionLogGet(req: Request, res: Response) {
   const userId = req.session?.userId;
-  if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
+  if (!userId) return res.status(401).json({ message: "Unauthorized" });
   try {
-    const { date, start, end } = req.query;
-
-    // If specific date requested
-    if (date && typeof date === 'string') {
-      const logDate = new Date(date);
-      const logs = await storage.getNutritionLogsByDate(userId, logDate);
-      return res.status(200).json(logs);
+    if (req.query.date !== undefined) {
+      const date = dateKeySchema.parse(req.query.date);
+      return res.json(await storage.getNutritionLogsByDate(userId, dateKeyToDate(date)));
     }
-
-    // If date range requested
-    if (start && end && typeof start === 'string' && typeof end === 'string') {
-      const allLogs = await storage.getNutritionLogs(userId);
-      const filtered = allLogs.filter(log => {
-        const logDate = new Date(log.date);
-        return logDate >= new Date(start) && logDate <= new Date(end);
-      });
-      return res.status(200).json(filtered);
+    let logs = await storage.getNutritionLogs(userId);
+    if (req.query.start !== undefined || req.query.end !== undefined) {
+      const start = dateKeySchema.parse(req.query.start);
+      const end = dateKeySchema.parse(req.query.end);
+      if (end < start) return res.status(400).json({ message: "End date must follow start date" });
+      logs = logs.filter(log => log.date >= start && log.date <= end);
     }
-
-    // Default: return all logs
-    const logs = await storage.getNutritionLogs(userId);
-    res.status(200).json(logs);
-  } catch (error) {
-    console.error("💥 Error fetching nutrition logs:", error);
-    res.status(500).json({
-      message: "Server error",
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
+    return res.json(logs.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id));
+  } catch (error) { return fail(res, error); }
 }
 
-// Allowed editable fields. Restricted on purpose — date/userId stay immutable.
-const NutritionLogPatchSchema = z.object({
-  mealStyle: z.string().optional(),
-  calories: z.number().optional(),
-  protein: z.number().optional(),
-  carbs: z.number().optional(),
-  fat: z.number().optional(),
-  fiber: z.number().optional(),
-  notes: z.string().nullable().optional(),
-  context: z.string().nullable().optional(),
-});
+async function ownedLog(req: Request, res: Response) {
+  if (!req.session?.userId) { res.status(401).json({ message: "Unauthorized" }); return; }
+  const id = Number(req.params.id);
+  if (!Number.isSafeInteger(id) || id <= 0) { res.status(400).json({ message: "Invalid meal ID" }); return; }
+  const log = await storage.getNutritionLogById(id);
+  if (!log || log.userId !== req.session.userId) { res.status(404).json({ message: "Meal not found" }); return; }
+  return log;
+}
 
 export async function handleNutritionLogPatch(req: Request, res: Response) {
-  const userId = req.session?.userId;
-  if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ message: "Invalid log id" });
-  }
   try {
-    const existing = await storage.getNutritionLogById(id);
-    if (!existing) return res.status(404).json({ message: "Log not found" });
-    if (existing.userId !== userId) return res.status(403).json({ message: "Forbidden" });
-
-    const patch = NutritionLogPatchSchema.parse(req.body);
-    const updated = await storage.updateNutritionLog(id, patch);
-    return res.status(200).json(updated);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Validation failed", issues: error.flatten() });
-    }
-    console.error("💥 Error updating nutrition log:", error);
-    return res.status(500).json({
-      message: "Server error",
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
+    const log = await ownedLog(req, res);
+    if (!log) return;
+    if (log.deletedAt) return res.status(404).json({ message: "Meal not found" });
+    const input = nutritionPatchSchema.parse(req.body);
+    const hasTotals = ["calories", "protein", "carbs", "fat"].some(key => key in input);
+    const patch = input.items?.length ? { ...input, ...sumNutrients(input.items) }
+      : hasTotals && !input.items ? { ...input, items: [] } : input;
+    return res.json(await storage.updateNutritionLog(log.id, patch));
+  } catch (error) { return fail(res, error); }
 }
 
 export async function handleNutritionLogDelete(req: Request, res: Response) {
-  const userId = req.session?.userId;
-  if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ message: "Invalid log id" });
-  }
-
   try {
-    const existing = await storage.getNutritionLogById(id);
-    if (!existing) {
-      return res.status(404).json({ message: "Log not found" });
-    }
-    if (existing.userId !== userId) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-
-    const removed = await storage.deleteNutritionLog(id);
-    if (!removed) {
-      return res.status(404).json({ message: "Log not found" });
-    }
-
-    console.log(`🗑️  Nutrition log deleted - ID: ${id} for user ${userId}`);
+    const log = await ownedLog(req, res);
+    if (!log) return;
+    await storage.deleteNutritionLog(log.id);
     return res.status(204).send();
-  } catch (error) {
-    console.error("💥 Error deleting nutrition log:", error);
-    return res.status(500).json({
-      message: "Server error",
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
+  } catch (error) { return fail(res, error); }
 }
 
-import { Router } from "express";
 const router = Router();
 router.post("/", handleNutritionLogPost);
 router.get("/", handleNutritionLogGet);
 router.patch("/:id", handleNutritionLogPatch);
 router.delete("/:id", handleNutritionLogDelete);
-
+router.post("/:id/restore", async (req, res) => {
+  try {
+    const log = await ownedLog(req, res);
+    if (!log) return;
+    res.json(await storage.updateNutritionLog(log.id, { deletedAt: null }));
+  } catch (error) { fail(res, error); }
+});
 export default router;
-
