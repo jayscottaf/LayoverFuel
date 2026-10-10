@@ -1,12 +1,12 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { Loader2, LocateFixed } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PLAN_PATTERN_LABELS, type PlanContext, type PlanPattern, type TravelPlan } from "../api";
 import { Field, Panel, SectionTitle, SkeletonBlock, inputClass } from "../primitives";
 import { EQUIPMENT_OPTIONS, PLAN_PATTERNS, contextsEqual, normalizeContext, toggleEquipment } from "./plan-utils";
 import { btnLink, btnPrimary, btnQuiet, textareaClass } from "./ui";
 import type { PlanBusy, SaveOutcome } from "./use-plan-mutations";
-import { useGeolocation } from "./use-geolocation";
+import { CurrentAreaButton } from "./current-area-button";
 
 /** The location input, so other parts of the screen can send people here. */
 export const PLAN_LOCATION_INPUT_ID = "plan-context-location";
@@ -150,18 +150,16 @@ export function ContextEditor({
   const uid = useId();
   const titleId = `${uid}-title`;
   const patternLabelId = `${uid}-pattern`;
-  const geoNoteId = `${uid}-geo-note`;
   const statusId = `${uid}-status`;
 
   const serverContext = useMemo(() => normalizeContext(plan.context), [plan.context]);
   const [baseline, setBaseline] = useState<PlanContext>(serverContext);
   const [form, setForm] = useState<PlanContext>(serverContext);
-  const [geoFilled, setGeoFilled] = useState<string | null>(null);
-  const geo = useGeolocation();
+  const [locating, setLocating] = useState(false);
 
   const dirty = !contextsEqual(form, baseline);
   const saving = busy?.kind === "context";
-  const canSave = dirty && !readOnly && busy === null;
+  const canSave = dirty && !readOnly && busy === null && !locating;
 
   // Track the latest dirty state for the sync effect below without re-running it on every keystroke.
   const dirtyRef = useRef(dirty);
@@ -179,18 +177,8 @@ export function ContextEditor({
   const update = <K extends keyof PlanContext>(key: K, value: PlanContext[K]) =>
     setForm(f => ({ ...f, [key]: value }));
 
-  const fillFromLocation = () => {
-    geo.locate(({ latitude, longitude }) => {
-      const value = `Near ${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
-      setForm(f => ({ ...f, location: value }));
-      setGeoFilled(value);
-    });
-  };
-
   const discard = () => {
     setForm(baseline);
-    setGeoFilled(null);
-    geo.reset();
   };
 
   const submit = async (e: FormEvent) => {
@@ -203,17 +191,9 @@ export function ContextEditor({
       setBaseline(saved);
       // Keep anything typed while the save was in flight.
       setForm(current => (contextsEqual(current, submitted) ? saved : current));
-      setGeoFilled(null);
     }
     // On a conflict the plan reloads and the form keeps the user's edits to save again.
   };
-
-  const showGeoNote = geoFilled !== null && form.location === geoFilled;
-  const geoError = geo.state.status === "error" ? geo.state.message : null;
-  const geoText = showGeoNote
-    ? "Only coordinates are saved — we don't look up place names yet. Edit this to add the city or hotel."
-    : geoError;
-  const locationDescribedBy = geoText ? geoNoteId : undefined;
 
   let status: string;
   if (readOnly) {
@@ -228,7 +208,7 @@ export function ContextEditor({
     <Panel labelledBy={titleId}>
       <SectionTitle id={titleId}>Where you are and what you have</SectionTitle>
       <p className="-mt-1 mb-4 text-sm text-muted-foreground">
-        Location, meal windows and equipment are reference notes only in this beta.
+        Meal windows and equipment are reference notes. Nearby menus are researched separately.
       </p>
 
       <form onSubmit={submit} noValidate className="flex flex-col gap-5">
@@ -241,36 +221,15 @@ export function ContextEditor({
               maxLength={160}
               placeholder="City, airport, hotel or area"
               value={form.location}
-              aria-describedby={locationDescribedBy}
+              disabled={locating}
               onChange={e => {
                 update("location", e.target.value);
-                geo.reset();
-                setGeoFilled(null);
               }}
               className={inputClass}
             />
           </Field>
-          {geo.supported && (
-            <button
-              type="button"
-              aria-disabled={geo.state.status === "locating" || undefined}
-              onClick={() => {
-                if (geo.state.status !== "locating") fillFromLocation();
-              }}
-              className={btnLink}
-            >
-              {geo.state.status === "locating" ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <LocateFixed className="h-4 w-4" aria-hidden="true" />
-              )}
-              {geo.state.status === "locating" ? "Finding your location" : "Use my current location"}
-            </button>
-          )}
-          {/* Always mounted so the note is announced; visually hidden while empty. */}
-          <div id={geoNoteId} role="status" className={geoText ? "text-xs text-muted-foreground" : "sr-only"}>
-            {geoText}
-          </div>
+          <CurrentAreaButton disabled={readOnly || saving} onBusyChange={setLocating}
+            onFound={value => update("location", value)} />
         </div>
 
         <div className="space-y-1.5">
@@ -330,7 +289,7 @@ export function ContextEditor({
               )}
             </button>
             {dirty && !saving && (
-              <button type="button" onClick={discard} className={btnQuiet}>
+              <button type="button" disabled={locating} onClick={discard} className={btnQuiet}>
                 Discard changes
               </button>
             )}

@@ -9,6 +9,7 @@ import { ContextEditor, ContextSkeleton, PLAN_LOCATION_INPUT_ID } from "@/compon
 import { MealsPanel, MealsSkeleton } from "@/components/travel/plan/meals-panel";
 import { RetryButton } from "@/components/travel/plan/retry-button";
 import { usePlanMutations } from "@/components/travel/plan/use-plan-mutations";
+import { NearbyMeals } from "@/components/travel/plan/nearby-meals";
 
 type Day = "today" | "tomorrow";
 
@@ -64,6 +65,7 @@ export default function PlanPage() {
           <div className="flex min-w-0 flex-col gap-4 md:col-span-3 md:gap-6">
             <BudgetPanel plan={data} isToday={isToday} />
             <WhatChanged message={data.message} />
+            <NearbyMeals key={date} plan={data} isToday={isToday} readOnly={isOffline} mutations={mutations} />
             <MealsPanel
               plan={data}
               date={date}

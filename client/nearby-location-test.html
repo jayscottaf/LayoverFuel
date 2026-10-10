@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Location fixture</title></head>
+<body><div id="root"></div><script type="module">
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { CurrentAreaButton } from '/src/components/travel/plan/current-area-button.tsx';
+import '/src/index.css';
+const mode = new URLSearchParams(location.search).get('mode') || 'success';
+const originalTimeout = window.setTimeout.bind(window);
+window.setTimeout = (callback, delay, ...args) => originalTimeout(callback, delay === 25000 && mode === 'timeout' ? 100 : delay, ...args);
+Object.defineProperty(navigator, 'geolocation', { value: { getCurrentPosition(success, failure) {
+  if (mode === 'denied') return failure({ code: 1 });
+  if (mode === 'timeout') return;
+  success({ coords: { latitude: 36.1627, longitude: -86.7816 } });
+} } });
+window.fetch = async () => new Response(JSON.stringify({ lookupSource: mode === 'ip' ? 'ipGeolocation' : 'coordinates',
+  city: 'Nashville', locality: 'Downtown', principalSubdivision: 'Tennessee', countryName: 'United States of America' }), { status: 200 });
+function Fixture() {
+  const [area, setArea] = React.useState('No area selected');
+  return React.createElement('main', { className: 'mx-auto max-w-md p-6 space-y-4' },
+    React.createElement('h1', null, 'Synthetic location fixture'),
+    React.createElement('p', null, 'No external location requests. Mode: ' + mode),
+    React.createElement(CurrentAreaButton, { onFound: setArea }),
+    React.createElement('p', { role: 'status' }, area));
+}
+createRoot(document.getElementById('root')).render(React.createElement(Fixture));
+</script></body></html>

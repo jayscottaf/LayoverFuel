@@ -10,7 +10,7 @@ import { btnLink, btnQuiet, btnSecondary, btnSecondaryPressed } from "./ui";
 import type { PlanBusy, PlanMutations } from "./use-plan-mutations";
 
 const COVERAGE_NOTE =
-  "These are general meal ideas for your travel pattern, not verified nearby places. Nutrition is estimated.";
+  "Unlinked ideas are generic. Kept local choices include their menu sources. Nutrition is estimated.";
 
 function MealStatus({ meal }: { meal: PlanMeal }) {
   if (meal.source === "manual" || meal.status === "locked") {
@@ -56,6 +56,11 @@ function MealItem({
         <MealStatus meal={meal} />
       </div>
       {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+      {meal.venue && <div className="mt-2 text-xs text-muted-foreground">
+        <p>{meal.venue.address}</p>
+        <a className="inline-block min-h-11 py-3 text-primary underline" href={meal.venue.menuUrl} target="_blank" rel="noopener noreferrer">Menu source</a>
+        <span> · Researched {new Date(meal.venue.checkedAt).toLocaleDateString()}</span>
+      </div>}
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
         <MacroLine m={planMacros(meal)} />
         <SourceBadge source={manual ? "manual" : "estimate"} />

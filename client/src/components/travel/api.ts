@@ -87,6 +87,7 @@ export interface PlanMeal extends Macros {
   description: string;
   status: "planned" | "locked";
   source: "estimate" | "manual";
+  venue?: { name: string; address: string; menuUrl: string; locationUrl: string; checkedAt: string };
 }
 
 /** Equipment values the plan service understands. "none" is exclusive. */
@@ -152,6 +153,7 @@ export interface NutritionDraft {
   range?: { caloriesLow: number; caloriesHigh: number };
   confidence?: "low" | "medium" | "high";
   origin: "photo" | "describe" | "barcode" | "manual" | "recent" | "plan" | "edit";
+  estimateNote?: string;
   editingId?: number;
   /** Set when logging a planned meal so the server removes it from the remaining plan. */
   planMealId?: string;

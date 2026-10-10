@@ -10,9 +10,9 @@
 
 Health-conscious business, crew and leisure travelers are core users. Jason tests first; recruitment is not a prerequisite. The first complete loop is Today -> capture/correct -> saved meal -> updated remaining-day plan.
 
-The first device is an iPhone 16 Pro. Nashville, LaGuardia and Saratoga Springs are the initial location scenarios, not a claim that local restaurant coverage is already available.
+The first device is an iPhone 16 Pro. Nashville, LaGuardia and Saratoga Springs are the initial location scenarios. The October 10 nearby-food extension adds on-demand web research rather than a comprehensive venue database.
 
-The first plan is explicitly generic. Hotel/local-meal, grocery/room-meal and packed-food patterns do not claim verified nearby availability. Venue lookup, access, hours, menu licensing and sourced restaurant nutrition remain separate work. Unsupported dietary restrictions pause generic suggestions instead of guessing.
+Pattern-generated ideas remain generic. A separate nearby search researches named menu choices and branch addresses with source links. Kept results retain those links in the plan. This is area-based research, not verified walking distance, live inventory, open-now status or allergy screening. Nutrition remains estimated. Unsupported dietary restrictions pause generic suggestions instead of guessing; researched menus must still be checked with the venue.
 
 ## Data Contracts
 
@@ -62,7 +62,7 @@ For offline-shell testing, build the client and run with `SERVE_STATIC=1` in dev
 
 ## Deliberately Deferred
 
-App Store packaging, payments, health-platform integrations, calendar inference improvements, verified nearby places, calibrated photo accuracy, encrypted private photo retention and broad health coaching are not claimed complete by this milestone.
+App Store packaging, payments, health-platform integrations, calendar inference improvements, comprehensive live venue/access coverage, calibrated photo accuracy, encrypted private photo retention and broad health coaching are not claimed complete by this milestone.
 
 ## First Integrated Milestone
 
@@ -91,3 +91,26 @@ Next milestone: real-device camera/offline/installation checks, evaluated live m
 - Camera repair and genuine Undo are carried forward into the reviewed capture flow. Nothing is automatically saved from an AI estimate.
 - Release remains a personal travel beta. Nearby venue availability, reverse geocoding, calibrated meal recognition, device-level installation/offline testing, broader accessibility work and legacy screen redesign are still outstanding.
 - Vercel's legacy ignore file excluded `shared/`; the new frontend imports those validators. The exclusion was removed after the hosted build caught it. Shared files are build inputs, not separately published public assets. Production verification must check both hosts, not just a local build or GitHub push.
+
+## October 10 Nearby Meals Extension
+
+- Implemented by Codex using the established Express/OpenAI/React stack. No additional Claude work is claimed for this extension.
+- User-triggered, one-shot browser geolocation resolves a named area through BigDataCloud's client-only reverse geocoder. An explicit disclosure precedes permission: coordinates and IP go to that provider for area lookup and improvement of its location data. No IP fallback, background watching, or LayoverFuel coordinate storage. Manual area entry remains available.
+- POST `/api/nearby-meals` accepts only `area` and `kind` (restaurant, grocery, airport). It requires a session, checks account ownership, limits requests and cancels upstream work on disconnection. Health profile and meal history are not sent to search.
+- Hosted Responses web search is required; a second structured extraction converts researched menus into reviewable choices. Both menu and branch links must occur in search citations. Public HTTPS URLs, bounds and duplicates are validated. The server does not fetch arbitrary returned links.
+- Meal nutrition is always an estimate with portion assumptions. Sources and research time are visible. Hours, route, stock, airport/security access, dietary preferences and allergies are not guaranteed. A cited link establishes provenance, not independent proof of every extracted claim.
+- Results reorder from the current remaining calories without another web request; higher-protein preference is optional. Kept choices retain venue/source metadata across plan refresh. Review and explicit save remain required to log a meal.
+- Type check and build pass. 29 automated tests pass, with one optional Cloudinary test skipped; real PostgreSQL integration ran. New tests cover citation gating, URL/input validation, account isolation, search/extraction wire contracts, source retention and dynamic ranking.
+- Browser tests use disposable accounts and synthetic provider responses for the local search -> keep -> review -> save -> changed totals loop. Location fixtures cover successful area resolution, permission denial, deadline recovery and rejection of IP-only guesses. A 393 x 852 embedded browser viewport rendered results without horizontal overflow; it is not a physical-iPhone test.
+- Railway deployment runs a bounded real-provider Nashville search before switching traffic. This verifies supported model/tool contracts and nonempty sourced results, not comprehensive city coverage or nutrition accuracy.
+
+## Beta Exit Checklist
+
+Recommended acceptance criteria for the first personal production release, not claims already achieved:
+
+1. Complete at least three actual travel days and 30 meal logs on the iPhone 16 Pro, covering photo/manual/barcode, edits, Undo, install, permission failures, offline cold start and reconnection. No unresolved crash, lost meal, duplicate retry or wrong-account data issue.
+2. Test dates across midnight and timezone changes. Reconcile meal totals, remaining targets and kept-plan behavior against saved records.
+3. Evaluate a representative set of labeled/weighed and restaurant meals, record calorie/macronutrient errors and calibrate uncertainty. Do not claim photo accuracy based only on successful API calls. Ensure users can correct every estimate.
+4. Independently check recommendation branches and named menu items in initial cities/airport terminals; measure incorrect, stale, inaccessible and missing results. Do not advertise allergy safety, open-now status or walking-distance precision without dedicated evidence.
+5. Finish app privacy/retention and account/data recovery controls, security review, monitoring, quota/cost limits, backups with a restore test, accessibility, and high-impact performance issues. Decide the target audience and supported feature boundary before removing the beta label.
+6. Treat Apple App Store packaging, privacy disclosures, review and publication as a separate release project. Removing a beta label does not itself publish an iOS app.

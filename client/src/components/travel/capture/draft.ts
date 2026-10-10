@@ -258,6 +258,7 @@ export function draftFromPartial(partial: Partial<NutritionDraft>, ctx: DraftCon
       photoUrl: partial.photoUrl,
       range: validRange(partial.range),
       confidence: validConfidence(partial.confidence),
+      estimateNote: partial.estimateNote,
       origin: partial.origin && partial.origin !== "edit" ? partial.origin : "plan",
       // Lets the server take a logged planned meal out of the remaining plan.
       planMealId: typeof partial.planMealId === "string" && partial.planMealId ? partial.planMealId : undefined,

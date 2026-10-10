@@ -107,6 +107,7 @@ export function planMealDraft(meal: PlanMeal, date: string): Partial<NutritionDr
   const mealStyle = slotFromName(meal.name);
   return {
     name: meal.name,
+    ...(meal.venue ? { estimateNote: `${meal.description} Nutrition is estimated, not published restaurant nutrition. Confirm ingredients and portion at the venue.` } : {}),
     origin: "plan",
     date,
     ...(mealStyle ? { mealStyle } : {}),

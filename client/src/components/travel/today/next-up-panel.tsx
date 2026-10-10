@@ -9,7 +9,7 @@ import { MacroLine, Panel, SectionTitle, SkeletonBlock, SourceBadge, StateMessag
 import { RetryButton, buttonSecondary, headerLink } from "./shared";
 
 const COVERAGE_NOTE: Record<TravelPlan["coverage"], string> = {
-  generic: "General ideas for your pattern, not verified nearby places.",
+  generic: "Unlinked ideas are generic. Kept local choices have menu sources in Plan. All nutrition is estimated.",
 };
 
 /** A planned meal as an unsaved draft; the capture flow opens it for review before anything is saved. */
@@ -28,6 +28,7 @@ function NextMeal({ meal, today }: { meal: PlanMeal; today: string }) {
         )}
       </div>
       {meal.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{meal.description}</p>}
+      {meal.venue && <a className="mt-2 inline-block min-h-11 py-3 text-xs text-primary underline" href={meal.venue.menuUrl} target="_blank" rel="noopener noreferrer">Menu source</a>}
       <MacroLine m={meal} className="mt-2" />
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <SourceBadge source={meal.source === "manual" ? "manual" : "estimate"} />

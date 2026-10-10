@@ -24,7 +24,7 @@ function EstimateNote({ draft }: { draft: ReviewDraft }) {
     origin === "photo" || origin === "describe"
       ? "Photo and text estimates can miss oils and portion size — adjust if you know better."
       : origin === "plan"
-        ? "These are the planned numbers, not a verified menu. Adjust them to match what you actually ate."
+        ? "These nutrition numbers are estimates, not published menu nutrition. Adjust them to match what you actually ate."
         : "Some values are estimates — adjust if you know better.";
   return (
     <div className="rounded-lg bg-highlight-soft p-3 text-sm">
