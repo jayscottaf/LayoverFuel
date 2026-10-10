@@ -1,6 +1,5 @@
 # Exclude backend server files from Vercel deployment
 server/
-shared/
 
 # Exclude config files
 .replit

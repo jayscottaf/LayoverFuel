@@ -1,4 +1,4 @@
-import { apiRequest, queryClient } from "./queryClient";
+import { readApiJson, queryClient } from "./queryClient";
 import { queueItem, syncQueue, getQueueItem, getAllItems, cancelQueuedNutrition } from "./offline-queue";
 import { nutritionInputSchema, type NutritionInput } from "@shared/nutrition";
 
@@ -23,7 +23,7 @@ export async function undoNutrition(result: NutritionSaveResult): Promise<void> 
   else {
     const queued = (await getAllItems()).find(item => item.savedId === result.id);
     if (queued) await cancelQueuedNutrition(queued.id);
-    else await apiRequest("DELETE", `/api/logs/nutrition/${result.id}`);
+    else await readApiJson("DELETE", `/api/logs/nutrition/${result.id}`);
   }
   await invalidateNutrition();
 }
