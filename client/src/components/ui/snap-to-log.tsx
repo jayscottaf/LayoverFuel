@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { X, Check, Camera, Loader2, ChevronRight, Pencil, Undo, WifiOff } from "lucide-react";
-import { ImageUpload } from "@/components/ui/image-upload";
+import { MealCamera } from "@/components/ui/meal-camera";
 import { AIProgress, type AIProgressStep } from "@/components/ui/ai-progress";
 import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -40,11 +41,15 @@ interface UserProfile {
 interface SnapToLogProps {
   onClose: () => void;
   onLogSuccess?: () => void;
+  dashboard?: DashboardStats;
 }
 
-export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
+export function SnapToLog({ onClose, onLogSuccess, dashboard }: SnapToLogProps) {
   const [image, setImage] = useState<string | null>(null);
   const [analysing, setAnalysing] = useState(false);
+  const [analysisFailed, setAnalysisFailed] = useState(false);
+  const analysisRun = useRef(0);
+  const analysisRequest = useRef<AbortController | null>(null);
   const [progressStep, setProgressStep] = useState<AIProgressStep>("upload");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [description, setDescription] = useState("");
@@ -56,7 +61,7 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: dashboard } = useQuery<DashboardStats>({ queryKey: ["/api/dashboard"] });
+  // The home page owns totals; mounting capture must not retry that query.
   const { data: profile } = useQuery<UserProfile>({ queryKey: ["/api/user/profile"] });
   const { isOffline, refreshPendingCount } = useOffline();
 
@@ -68,16 +73,23 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
   const quickLogMode = profile?.quickLogMode ?? false;
 
   const analysePreview = async (preview: string) => {
+    const run = ++analysisRun.current;
+    analysisRequest.current?.abort();
+    const controller = new AbortController();
+    analysisRequest.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 60_000);
     setImage(preview);
     setResult(null);
     setIsEditing(false);
     setAnalysing(true);
+    setAnalysisFailed(false);
     setProgressStep("upload");
     try {
       // Brief upload step so the stepper animation is perceptible
       setProgressStep("analyze");
-      const res = await apiRequest("POST", "/api/meal-analysis", { imageData: preview });
+      const res = await apiRequest("POST", "/api/meal-analysis", { imageData: preview }, { signal: controller.signal });
       const data = await res.json();
+      if (run !== analysisRun.current) return;
       if (!data.result) throw new Error("No result");
       const r: AnalysisResult = data.result;
       setProgressStep("ready");
@@ -91,13 +103,16 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
         await logMealInstantly(desc, r.estimate);
       }
     } catch {
+      if (run !== analysisRun.current) return;
+      setAnalysisFailed(true);
       errorToast({
         title: "Analysis failed",
         description: "Couldn't identify this meal. Try again or use a clearer photo.",
         onRetry: () => analysePreview(preview),
       });
     } finally {
-      setAnalysing(false);
+      clearTimeout(timeout);
+      if (run === analysisRun.current) setAnalysing(false);
     }
   };
 
@@ -164,6 +179,8 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
 
   useEffect(() => {
     return () => {
+      analysisRun.current += 1;
+      analysisRequest.current?.abort();
       if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
     };
   }, []);
@@ -217,10 +234,14 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
     setImage(null);
     setResult(null);
     setIsEditing(false);
+    setAnalysisFailed(false);
   };
 
   return (
-    <div
+    <Dialog.Root open onOpenChange={open => { if (!open) onClose(); }}>
+    <Dialog.Portal>
+    <Dialog.Content
+      aria-describedby={undefined}
       className="fixed inset-0 z-50 bg-black flex flex-col"
       style={{ paddingTop: "max(env(safe-area-inset-top), 16px)" }}
     >
@@ -228,7 +249,7 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
       <div className="flex items-center justify-between px-4 py-3 shrink-0">
         <div className="flex items-center gap-2">
           <Camera className="h-5 w-5 text-indigo-400" />
-          <h2 className="text-white font-semibold">Snap to Log</h2>
+          <Dialog.Title className="text-white font-semibold">Snap to Log</Dialog.Title>
           {isOffline && (
             <div className="flex items-center gap-1 bg-orange-500/20 rounded-full px-2 py-0.5 border border-orange-500/40">
               <WifiOff className="h-3 w-3 text-orange-400" />
@@ -237,6 +258,8 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
           )}
         </div>
         <button
+          type="button"
+          aria-label="Close photo log"
           onClick={onClose}
           className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
         >
@@ -245,32 +268,16 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
 
         {/* No image yet */}
         {!image && !analysing && (
-          <div className="text-center space-y-5 w-full max-w-xs">
-            <div className="w-20 h-20 rounded-3xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center mx-auto">
-              <Camera className="h-10 w-10 text-indigo-400" />
-            </div>
-            <div>
-              <p className="text-white font-semibold text-lg">Photo Log</p>
-              <p className="text-gray-400 text-sm mt-1">Take or upload a photo of your meal and AI will instantly estimate the nutrition.</p>
-            </div>
-            <ImageUpload
-              onImageSelect={handleImageSelect}
-              className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold flex items-center justify-center gap-2 transition-colors"
-            >
-              <Camera className="h-5 w-5" />
-              Take or upload a photo
-            </ImageUpload>
-            <p className="text-xs text-gray-600">Works best with plated meals, restaurant dishes, and home cooking</p>
-          </div>
+          <MealCamera onCapture={preview => void analysePreview(preview)} onImageSelect={handleImageSelect} />
         )}
 
         {/* Analysing */}
         {analysing && (
-          <div className="text-center space-y-4">
+          <div role="status" className="mx-auto max-w-sm py-8 text-center space-y-4">
             {image && (
               <img src={image} alt="Meal" className="w-40 h-40 rounded-2xl object-cover mx-auto opacity-60" />
             )}
@@ -280,9 +287,19 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
           </div>
         )}
 
+        {analysisFailed && image && !analysing && (
+          <div role="alert" className="mx-auto max-w-sm space-y-4 py-6 text-center">
+            <img src={image} alt="Meal photo awaiting an estimate" className="max-h-60 w-full rounded-lg object-cover" />
+            <p className="font-medium text-white">Couldn't estimate this photo</p>
+            <p className="text-sm text-gray-400">Your photo is still here. Check your connection and try again.</p>
+            <button type="button" onClick={() => void analysePreview(image)} className="min-h-12 w-full rounded-lg bg-indigo-600 px-4 py-3 font-medium text-white">Retry estimate</button>
+            <button type="button" onClick={reset} className="min-h-12 w-full rounded-lg border border-gray-700 px-4 py-3 text-gray-300">Use a different photo</button>
+          </div>
+        )}
+
         {/* Result */}
         {result && image && !analysing && (
-          <div className="w-full max-w-sm space-y-3">
+          <div className="mx-auto w-full max-w-sm space-y-3">
             {/* Photo */}
             <img src={image} alt="Meal" className="w-full rounded-2xl object-cover max-h-44" />
 
@@ -420,6 +437,8 @@ export function SnapToLog({ onClose, onLogSuccess }: SnapToLogProps) {
           </div>
         </div>
       )}
-    </div>
+    </Dialog.Content>
+    </Dialog.Portal>
+    </Dialog.Root>
   );
 }

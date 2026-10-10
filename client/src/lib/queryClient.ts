@@ -18,12 +18,14 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  options?: { signal?: AbortSignal },
 ): Promise<Response> {
   const res = await fetch(`${API_URL}${url}`, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
+    signal: options?.signal,
   });
 
   await throwIfResNotOk(res);
@@ -33,19 +35,31 @@ export async function apiRequest(
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
+  timeoutMs?: number;
 }) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const res = await fetch(`${API_URL}${queryKey[0] as string}`, {
-      credentials: "include",
-    });
+  ({ on401: unauthorizedBehavior, timeoutMs = 15_000 }) =>
+  async ({ queryKey, signal }) => {
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    if (signal.aborted) abort();
+    signal.addEventListener("abort", abort, { once: true });
+    const timeout = setTimeout(abort, timeoutMs);
+    try {
+      const res = await fetch(`${API_URL}${queryKey[0] as string}`, {
+        credentials: "include",
+        signal: controller.signal,
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+
+      await throwIfResNotOk(res);
+      return await res.json();
+    } finally {
+      clearTimeout(timeout);
+      signal.removeEventListener("abort", abort);
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({

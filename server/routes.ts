@@ -12,7 +12,6 @@ import {
 } from "./services/tdee-service";
 import {
   processOnboardingMessage,
-  generateDailyMotivation,
   processFeedback,
   onboardingQuestions,
   type OnboardingQuestion
@@ -25,8 +24,6 @@ import {
   getMessagesFromThread,
   extractPendingNutritionLog
 } from "./services/assistant-service";
-import { generateMealPlan } from "./services/meal-service";
-import { generateWorkoutPlan } from "./services/workout-service";
 import { analyzeMealImage } from "./services/image-analysis-service";
 import nutritionRoutes from "./routes/api/logs/nutrition";
 import healthRoutes from "./routes/api/logs/health";
@@ -547,33 +544,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get today's workout log if it exists
       const workoutLog = await storage.getWorkoutLogByDate(user.id, today);
 
-      // Get today's plan or generate a new one
-      let dailyPlan = await storage.getDailyPlanByDate(user.id, today);
-
-      if (!dailyPlan) {
-        // Generate a new plan
-        const mealPlan = await generateMealPlan(
-          user,
-          macros.protein,
-          macros.carbs,
-          macros.fat,
-          macros.targetCalories
-        );
-
-        const workoutPlan = await generateWorkoutPlan(user);
-
-        const motivation = await generateDailyMotivation(user);
-
-        // Create a new daily plan
-        dailyPlan = await storage.createDailyPlan({
-          date: today.toISOString().split('T')[0], // Convert Date to string format
-          userId: user.id,
-          meals: mealPlan,
-          workout: workoutPlan,
-          gymRecommendations: workoutPlan.gymRecommendation,
-          motivation,
-        });
-      }
+      // Dashboard reads must not wait for AI generation before showing totals.
+      // Existing plans still display; creating a plan is an explicit user action.
+      const dailyPlan = await storage.getDailyPlanByDate(user.id, today) ?? null;
 
       // Calculate progress percentages for stats
       const proteinProgress = nutritionTotals.protein
