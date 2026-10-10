@@ -29,6 +29,10 @@ test("unretrieved URLs, missing branch evidence and duplicate options cannot bec
     assert.equal(publicSourceUrl(url), null);
   }
   assert.equal(publicSourceUrl(meal.menuUrl + "#section"), meal.menuUrl);
+  for (const url of ["https://www.google.com/maps/search/Restaurant", "https://www.google.co.uk/search?q=food", "https://maps.apple.com/?q=food", "https://www.bing.com/search?q=food", "https://www.yelp.com/search?find_desc=food"]) {
+    assert.equal(publicSourceUrl(url), null, "Search result links are not menu evidence");
+  }
+  assert.throws(() => groundedMeals({ meals: [{ ...meal, menuUrl: "https://www.google.com/maps/search/Restaurant" }] }, sources));
 });
 
 test("ranking changes with remaining energy and higher-protein preference without changing meals", () => {

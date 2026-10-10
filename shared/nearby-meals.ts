@@ -15,6 +15,10 @@ export function publicSourceUrl(value: string): string | null {
     if (url.protocol !== "https:" || url.username || url.password || url.port ||
       !host.includes(".") || /^(\d+\.){3}\d+$/.test(host) || host.includes(":") ||
       /(^|\.)(localhost|local|internal|test|example|invalid)$/.test(host)) return null;
+    // Search/map links identify a query, not a retrieved menu or branch page.
+    if (/(^|\.)google\.[a-z.]+$/.test(host) && /^\/(maps|search)(\/|$)/.test(url.pathname) ||
+      /(^|\.)(maps.apple.com|duckduckgo.com)$/.test(host) ||
+      /(^|\.)(bing.com|yahoo.com|yelp.com)$/.test(host) && /^\/search(\/|$)/.test(url.pathname)) return null;
     url.hash = "";
     return url.href;
   } catch { return null; }
