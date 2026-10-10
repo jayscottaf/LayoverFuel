@@ -18,6 +18,7 @@ export default defineConfig({
   },
   root: path.resolve(__dirname, "client"),
   build: {
+    manifest: "asset-manifest.json",
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
   },

@@ -15,7 +15,7 @@
     "db:migrate:enums": "node scripts/migrate-goal-activity-enums.mjs",
     "db:migrate:logs": "node scripts/migrate-log-context-columns.mjs",
     "db:migrate:deploy": "npm run db:migrate:google && npm run db:migrate:logs && npm run db:migrate:travel && npm run db:check && npm run ai:check",
-    "test": "node --import tsx --test server/tests/*.test.js server/tests/travel-*.test.ts",
+    "test": "node --import tsx --test server/tests/*.test.ts server/tests/*.test.js",
     "db:migrate:travel": "node scripts/migrate-travel-foundation.mjs",
     "db:check": "tsx scripts/check-schema.ts",
     "ai:check": "tsx scripts/check-nutrition-provider.ts"

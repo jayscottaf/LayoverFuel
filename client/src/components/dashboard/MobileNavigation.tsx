@@ -1,12 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { Home, MessageCircle, BarChart2, User, TrendingUp } from "lucide-react";
+import { Home, BarChart2, User, TrendingUp, CalendarClock } from "lucide-react";
 import { useOffline } from "@/hooks/use-offline";
 
 const tabs = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/stats", icon: TrendingUp, label: "Stats" },
   { href: "/log", icon: BarChart2, label: "Log" },
-  { href: "/chat", icon: MessageCircle, label: "Chat" },
+  { href: "/plan", icon: CalendarClock, label: "Plan" },
   { href: "/profile", icon: User, label: "Profile" },
 ];
 

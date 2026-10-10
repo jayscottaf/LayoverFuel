@@ -180,7 +180,7 @@ export default function StatsPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <Flame className="h-4 w-4 text-orange-400" />
                       <span className="text-sm text-gray-300">
-                        {isAdaptive ? "Your Real Metabolism" : "Estimated TDEE"}
+                        {isAdaptive ? "Estimated Calorie Burn" : "Estimated Maintenance Calories"}
                       </span>
                     </div>
                     <p className="text-3xl font-bold text-white">
@@ -198,7 +198,7 @@ export default function StatsPage() {
                       </p>
                     ) : (
                       <p className="text-sm mt-1 text-gray-400">
-                        Formula estimate. Switches to measured once you log {required} days.
+                        Formula estimate, not your daily food target. Adaptive adjustments are disabled in this beta.
                       </p>
                     )}
                   </div>
@@ -216,15 +216,15 @@ export default function StatsPage() {
                         />
                       ))}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    {isAdaptive && <p className="text-xs text-gray-500 mt-1">
                       {isAdaptive
                         ? `${tdeeData.daysOfData} days`
                         : `${tdeeData.daysOfData}/${required} days`}
-                    </p>
+                    </p>}
                   </div>
                 </div>
 
-                {!isAdaptive && (
+                {!isAdaptive && tdeeData.adaptiveEnabled && (
                   <div className="space-y-1">
                     <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
                       <div
@@ -238,8 +238,8 @@ export default function StatsPage() {
                 <div className="bg-black/30 rounded-xl p-3 mt-3">
                   <p className="text-xs text-gray-400">
                     {isAdaptive
-                      ? "This is your actual calorie burn based on your weight changes and food intake. It includes everything: exercise, daily movement, and metabolism."
-                      : "This is a Mifflin-St Jeor estimate from your profile. Once you've logged a week of meals and weights, this will become a real, measured value tuned to you."}
+                      ? "This is an estimate based on logged food and weight changes, not a direct measurement of metabolism."
+                      : "This is a Mifflin-St Jeor maintenance estimate from your profile. Use Today for your daily food target, which also accounts for your goal."}
                   </p>
                 </div>
               </div>
@@ -252,16 +252,15 @@ export default function StatsPage() {
                 <Flame className="h-6 w-6 text-orange-400" />
               </div>
               <div className="flex-1">
-                <p className="text-white font-medium">Estimated TDEE</p>
-                <p className="text-gray-400 text-sm">Will refine as you log more days</p>
+                <p className="text-white font-medium">Estimated Maintenance Calories</p>
+                <p className="text-gray-400 text-sm">Estimate unavailable</p>
               </div>
             </div>
             <p className="text-3xl font-bold text-white mt-3">
               — <span className="text-lg text-gray-400">cal/day</span>
             </p>
             <p className="text-xs text-gray-500 mt-3">
-              No data yet. Log meals and a daily weight for at least 7 days and the
-              estimate will switch over to your real, measured burn.
+              Complete your profile to calculate a formula estimate. Adaptive adjustments are disabled in this beta.
             </p>
           </div>
         )}

@@ -1,209 +1,130 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { openDB, type DBSchema } from "idb";
+import { readApiJson } from "./queryClient";
+import { getActiveAccountId } from "./account";
 
-// Types for queued items
-export type QueueItemType = 'nutrition' | 'workout' | 'health';
-
+export type QueueItemType = "nutrition" | "workout" | "health";
 export interface QueueItem {
-  id: string;
-  type: QueueItemType;
-  data: any;
-  timestamp: number;
-  retryCount: number;
-  status: 'pending' | 'syncing' | 'failed';
+  id: string; ownerId: number; type: QueueItemType; data: Record<string, unknown>;
+  timestamp: number; retryCount: number; status: "pending" | "syncing" | "failed" | "synced";
+  savedId?: number; cancelled?: boolean; error?: string;
 }
-
-interface OfflineQueueDB extends DBSchema {
-  queue: {
-    key: string;
-    value: QueueItem;
-    indexes: { 'by-status': string; 'by-timestamp': number };
-  };
+interface QueueDB extends DBSchema {
+  queue: { key: string; value: QueueItem; indexes: { "by-status": string; "by-timestamp": number } };
 }
-
-const DB_NAME = 'layoverfuel-offline';
-const DB_VERSION = 1;
-const STORE_NAME = 'queue';
-
-let dbInstance: IDBPDatabase<OfflineQueueDB> | null = null;
-
-// Initialize IndexedDB
-async function getDB(): Promise<IDBPDatabase<OfflineQueueDB>> {
-  if (dbInstance) return dbInstance;
-
-  dbInstance = await openDB<OfflineQueueDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-      store.createIndex('by-status', 'status');
-      store.createIndex('by-timestamp', 'timestamp');
-    },
-  });
-
-  return dbInstance;
+const database = () => openDB<QueueDB>("layoverfuel-offline", 1, {
+  upgrade(db) {
+    const store = db.createObjectStore("queue", { keyPath: "id" });
+    store.createIndex("by-status", "status");
+    store.createIndex("by-timestamp", "timestamp");
+  },
+});
+function changed() { window.dispatchEvent(new Event("nutrition-queue-changed")); }
+function requireOwner() {
+  const owner = getActiveAccountId();
+  if (!owner) throw new Error("Sign in before saving a meal");
+  return owner;
 }
-
-// Generate unique ID for queue items
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-// Add item to queue
-export async function queueItem(type: QueueItemType, data: any): Promise<string> {
-  const db = await getDB();
-  const id = generateId();
-
-  const item: QueueItem = {
-    id,
-    type,
-    data,
-    timestamp: Date.now(),
-    retryCount: 0,
-    status: 'pending',
-  };
-
-  await db.add(STORE_NAME, item);
-  console.log('[OFFLINE QUEUE] Added item:', id, type);
-
-  return id;
-}
-
-// Get all pending items
-export async function getPendingItems(): Promise<QueueItem[]> {
-  const db = await getDB();
-  const items = await db.getAllFromIndex(STORE_NAME, 'by-status', 'pending');
-  return items.sort((a, b) => a.timestamp - b.timestamp);
-}
-
-// Get all items (for debugging)
-export async function getAllItems(): Promise<QueueItem[]> {
-  const db = await getDB();
-  return await db.getAll(STORE_NAME);
-}
-
-// Get count of pending items
-export async function getPendingCount(): Promise<number> {
-  const db = await getDB();
-  return await db.countFromIndex(STORE_NAME, 'by-status', 'pending');
-}
-
-// Update item status
-export async function updateItemStatus(
-  id: string,
-  status: QueueItem['status'],
-  incrementRetry = false
-): Promise<void> {
-  const db = await getDB();
-  const item = await db.get(STORE_NAME, id);
-
-  if (!item) {
-    console.warn('[OFFLINE QUEUE] Item not found:', id);
-    return;
-  }
-
-  item.status = status;
-  if (incrementRetry) {
-    item.retryCount += 1;
-  }
-
-  await db.put(STORE_NAME, item);
-  console.log('[OFFLINE QUEUE] Updated item:', id, 'status:', status);
-}
-
-// Remove item from queue
-export async function removeItem(id: string): Promise<void> {
-  const db = await getDB();
-  await db.delete(STORE_NAME, id);
-  console.log('[OFFLINE QUEUE] Removed item:', id);
-}
-
-// Clear all items (useful for debugging)
-export async function clearQueue(): Promise<void> {
-  const db = await getDB();
-  await db.clear(STORE_NAME);
-  console.log('[OFFLINE QUEUE] Cleared all items');
-}
-
-// Sync a single item
-async function syncItem(item: QueueItem): Promise<boolean> {
+export async function queueItem(type: QueueItemType, data: Record<string, unknown>): Promise<string> {
+  if (type !== "nutrition") throw new Error("Offline workout and health saves are not supported yet");
+  const ownerId = requireOwner();
+  const id = String(data.clientRequestId ?? crypto.randomUUID());
+  const payload = { ...data, clientRequestId: id };
+  const db = await database();
   try {
-    // Update status to syncing
-    await updateItemStatus(item.id, 'syncing');
-
-    // Determine API endpoint based on type
-    let endpoint = '';
-    switch (item.type) {
-      case 'nutrition':
-        endpoint = '/api/logs/nutrition';
-        break;
-      case 'workout':
-        endpoint = '/api/logs/workout';
-        break;
-      case 'health':
-        endpoint = '/api/logs/health';
-        break;
-      default:
-        throw new Error(`Unknown item type: ${item.type}`);
-    }
-
-    // Make API request
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item.data),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Sync failed: ${response.statusText}`);
-    }
-
-    // Success - remove from queue
-    await removeItem(item.id);
-    console.log('[OFFLINE QUEUE] Synced successfully:', item.id);
-    return true;
-  } catch (error) {
-    console.error('[OFFLINE QUEUE] Sync failed:', item.id, error);
-
-    // Mark as failed and increment retry count
-    await updateItemStatus(item.id, 'failed', true);
-
-    // If too many retries, remove from queue
-    if (item.retryCount >= 3) {
-      console.warn('[OFFLINE QUEUE] Max retries reached, removing:', item.id);
-      await removeItem(item.id);
-    }
-
-    return false;
-  }
+    const tx = db.transaction("queue", "readwrite");
+    const existing = await tx.store.get(id);
+    if (existing && existing.ownerId !== ownerId) throw new Error("This draft belongs to another account");
+    if (existing && canonical(existing.data) !== canonical(payload)) throw new Error("This meal changed after saving. Use a new draft to save the corrected values.");
+    if (!existing) await tx.store.put({ id, ownerId, type, data: payload,
+      timestamp: Date.now(), retryCount: 0, status: "pending" });
+    await tx.done;
+  } finally { db.close(); }
+  changed(); return id;
 }
+const canonical = (data: unknown) => JSON.stringify(data, (_key, value) =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value);
+export async function getAllItems(): Promise<QueueItem[]> {
+  const db = await database();
+  const items = await db.getAll("queue"); db.close();
+  // Older unowned drafts are quarantined, never assigned to whoever signs in next.
+  return items.filter(item => item.ownerId === getActiveAccountId());
+}
+export async function getQueueItem(id: string): Promise<QueueItem | undefined> {
+  return (await getAllItems()).find(item => item.id === id);
+}
+export async function getPendingItems(): Promise<QueueItem[]> {
+  return (await getAllItems()).filter(item => item.status !== "synced").sort((a, b) => a.timestamp - b.timestamp);
+}
+export async function getPendingCount() { return (await getPendingItems()).length; }
+export async function hasQueuedItem(type: QueueItemType) { return (await getPendingItems()).some(item => item.type === type); }
 
-// Sync all pending items
-export async function syncQueue(): Promise<{
-  total: number;
-  success: number;
-  failed: number;
-}> {
-  const pendingItems = await getPendingItems();
-  const total = pendingItems.length;
-  let success = 0;
-  let failed = 0;
-
-  console.log('[OFFLINE QUEUE] Starting sync:', total, 'items');
-
-  for (const item of pendingItems) {
-    const result = await syncItem(item);
-    if (result) {
+async function mutate(id: string, update: (current: QueueItem) => QueueItem) {
+  const db = await database();
+  try {
+    const tx = db.transaction("queue", "readwrite");
+    const current = await tx.store.get(id);
+    if (!current) throw new Error("This draft is no longer available");
+    const next = update(current);
+    await tx.store.put(next);
+    await tx.done;
+    changed();
+    return next;
+  } finally { db.close(); }
+}
+let syncing: Promise<{ total: number; success: number; failed: number }> | undefined;
+async function performSync() {
+  const ownerId = getActiveAccountId();
+  const items = ownerId ? await getPendingItems() : [];
+  let success = 0; let failed = 0;
+  for (const queued of items) {
+    if (getActiveAccountId() !== ownerId) break;
+    const item = await mutate(queued.id, current => current.status === "synced" ? current : { ...current, status: "syncing" });
+    if (item.status === "synced") continue;
+    try {
+      if (item.cancelled && item.savedId) {
+        await readApiJson("DELETE", `/api/logs/nutrition/${item.savedId}`, undefined, { accountId: ownerId! });
+        await mutate(item.id, current => ({ ...current, status: "synced", error: undefined }));
+        success++;
+        continue;
+      }
+      const saved = await readApiJson<{ id: number }>("POST", "/api/logs/nutrition", item.data, { accountId: ownerId! });
+      if (!Number.isSafeInteger(saved.id)) throw new Error("The server did not confirm this meal");
+      // Commit acknowledgement atomically with the latest Undo intent, never a stale copy.
+      const latest = await mutate(item.id, current => ({ ...current, savedId: saved.id,
+        status: current.cancelled ? "pending" : "synced", error: undefined }));
+      if (latest.cancelled) {
+        await readApiJson("DELETE", `/api/logs/nutrition/${saved.id}`, undefined, { accountId: ownerId! });
+        await mutate(item.id, current => ({ ...current, status: "synced", error: undefined }));
+      }
       success++;
-    } else {
+    } catch (error) {
+      await mutate(item.id, current => ({ ...current, status: "failed", retryCount: current.retryCount + 1,
+        error: error instanceof Error ? error.message : "Sync failed" }));
       failed++;
     }
   }
-
-  console.log('[OFFLINE QUEUE] Sync complete:', { total, success, failed });
-  return { total, success, failed };
+  return { total: items.length, success, failed };
 }
-
-// Check if item exists in queue
-export async function hasQueuedItem(type: QueueItemType): Promise<boolean> {
-  const items = await getPendingItems();
-  return items.some(item => item.type === type);
+export function syncQueue() {
+  if (!syncing) {
+    // Coordinate tabs as well as components; the server is still the idempotency authority.
+    const run = typeof navigator !== "undefined" && navigator.locks
+      ? navigator.locks.request("layoverfuel-nutrition-sync", performSync) : performSync();
+    syncing = run.finally(() => { syncing = undefined; });
+  }
+  return syncing;
+}
+export async function cancelQueuedNutrition(id: string) {
+  const item = await getQueueItem(id);
+  if (!item) throw new Error("This draft is no longer available for this account");
+  const cancelled = await mutate(id, current => ({ ...current, cancelled: true,
+    status: current.status === "pending" && current.retryCount === 0 && !current.savedId && !syncing ? "synced" : "pending" }));
+  if (cancelled.status === "synced" && !cancelled.savedId) return;
+  if (syncing) await syncing;
+  const latest = await getQueueItem(id);
+  if (latest?.savedId && navigator.onLine) {
+    await readApiJson("DELETE", `/api/logs/nutrition/${latest.savedId}`, undefined, { accountId: item.ownerId });
+    await mutate(id, current => ({ ...current, cancelled: true, status: "synced" }));
+  } else if (navigator.onLine) await syncQueue();
 }

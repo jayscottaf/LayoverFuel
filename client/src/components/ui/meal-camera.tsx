@@ -105,15 +105,15 @@ export function MealCamera({ onCapture, onImageSelect }: {
         )}
       </div>
       {blocked ? (
-        <button type="button" onClick={() => setAttempt(value => value + 1)} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 font-medium text-white hover:bg-indigo-500">
+        <button type="button" onClick={() => setAttempt(value => value + 1)} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground hover:bg-primary/90">
           <RefreshCw className="h-5 w-5" aria-hidden="true" /> Try camera again
         </button>
       ) : (
-        <button type="button" onClick={capture} disabled={state !== "ready"} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
+        <button type="button" onClick={capture} disabled={state !== "ready"} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
           <Camera className="h-5 w-5" aria-hidden="true" /> Take photo
         </button>
       )}
-      <ImageUpload onImageSelect={onImageSelect} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 font-medium text-gray-200 hover:bg-gray-800">
+      <ImageUpload onImageSelect={onImageSelect} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border bg-card px-4 py-3 font-medium text-foreground hover:bg-muted">
         <ImagePlus className="h-5 w-5" aria-hidden="true" /> Choose a photo
       </ImageUpload>
     </div>
