@@ -14,6 +14,7 @@
     "db:migrate:google": "node scripts/migrate-google-columns.mjs",
     "db:migrate:enums": "node scripts/migrate-goal-activity-enums.mjs",
     "db:migrate:logs": "node scripts/migrate-log-context-columns.mjs",
+    "db:migrate:deploy": "npm run db:migrate:google && npm run db:migrate:logs",
     "test": "node --test"
   },
   "dependencies": {
