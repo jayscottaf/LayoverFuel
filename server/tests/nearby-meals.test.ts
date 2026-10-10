@@ -7,6 +7,7 @@ import { nearbyInputSchema, publicSourceUrl, rankNearbyMeals } from "../../share
 import { groundedMeals, researchNearbyMeals } from "../services/nearby-meals-service";
 import { planMealSchema } from "../../shared/travel-plan";
 import { buildTravelPlan } from "../services/travel-plan-service";
+import { publicAddress, supportedMeal } from "../services/public-menu-evidence";
 
 const meal = { venue: "Fixture Kitchen", address: "100 Fixture Street, Nashville, TN", name: "Chicken bowl",
   order: "Chicken, rice and vegetables", portion: "One bowl; dressing on the side", calories: 600, protein: 40, carbs: 65, fat: 18,
@@ -32,7 +33,10 @@ test("unretrieved URLs, missing branch evidence and duplicate options cannot bec
   for (const url of ["https://www.google.com/maps/search/Restaurant", "https://www.google.co.uk/search?q=food", "https://maps.apple.com/?q=food", "https://www.bing.com/search?q=food", "https://www.yelp.com/search?find_desc=food"]) {
     assert.equal(publicSourceUrl(url), null, "Search result links are not menu evidence");
   }
-  assert.throws(() => groundedMeals({ meals: [{ ...meal, menuUrl: "https://www.google.com/maps/search/Restaurant" }] }, sources));
+  assert.equal(groundedMeals({ meals: [{ ...meal, menuUrl: "https://www.google.com/maps/search/Restaurant" }] }, sources).length, 0);
+  const banquet = { ...meal, menuUrl: "https://hotel.com/banquet-menu.pdf" };
+  assert.equal(publicSourceUrl(banquet.menuUrl), null);
+  assert.equal(groundedMeals({ meals: [banquet, meal] }, [...sources, { title: "Banquet", url: banquet.menuUrl }]).length, 1);
 });
 
 test("ranking changes with remaining energy and higher-protein preference without changing meals", () => {
@@ -55,6 +59,16 @@ test("kept venue sources survive plan refresh and are removed only when the meal
   assert.equal(buildTravelPlan({ ...input, logs: [{ ...kept, planMealId: kept.id }] }).meals.some(item => item.id === kept.id), false);
 });
 
+test("current-page evidence rejects stale menu items, wrong streets and private network targets", () => {
+  const candidate = { ...meal, id: "fixture" };
+  assert.equal(supportedMeal(candidate, "Chicken bowl with rice", "100 Fixture Street, Nashville"), true);
+  assert.equal(supportedMeal(candidate, "Fish bowl with rice", "100 Fixture Street, Nashville"), false);
+  assert.equal(supportedMeal(candidate, "Chicken bowl", "200 Wrong Street, Nashville"), false);
+  assert.equal(supportedMeal({ ...candidate, address: "100 Fixture St, Nashville" }, "Chicken bowl", "100 Fixture Street"), true);
+  for (const address of ["127.0.0.1", "10.0.0.1", "192.168.0.1", "169.254.169.254", "100.64.0.1", "::1", "::ffff:127.0.0.1", "fd00::1"]) assert.equal(publicAddress(address), false);
+  assert.equal(publicAddress("8.8.8.8"), true);
+});
+
 test("real SDK search-to-extraction contract keeps only cited source links", async () => {
   const requests: any[] = [];
   let cited = true;
@@ -74,14 +88,15 @@ test("real SDK search-to-extraction contract keeps only cited source links", asy
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
   const client = new OpenAI({ apiKey: "synthetic-test-key", baseURL: `http://127.0.0.1:${(server.address() as AddressInfo).port}`, maxRetries: 0 });
   try {
-    const results = await researchNearbyMeals({ area: "Nashville, TN", kind: "restaurant" }, undefined, client);
+    const results = await researchNearbyMeals({ area: "Nashville, TN", kind: "restaurant" }, undefined, client, async meals => meals);
     assert.equal(results.meals.length, 1);
     assert.equal(results.sources.length, 2);
     assert.equal(requests[0].tools[0].type, "web_search");
     assert.equal(requests[0].tool_choice, "required");
     assert.equal(requests.every(body => body.store === false), true);
-    assert.deepEqual(JSON.parse(requests[0].input), { area: "Nashville, TN", kind: "restaurant" });
+    assert.equal(JSON.parse(requests[0].input).area, "Nashville, TN");
+    assert.equal(JSON.parse(requests[0].input).kind, "restaurant");
     cited = false;
-    await assert.rejects(researchNearbyMeals({ area: "LGA Terminal B", kind: "airport" }, undefined, client), /no citations/);
+    await assert.rejects(researchNearbyMeals({ area: "LGA Terminal B", kind: "airport" }, undefined, client, async meals => meals), /no citations/);
   } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
 });

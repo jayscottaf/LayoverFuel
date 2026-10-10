@@ -47,7 +47,7 @@ export function NearbyMeals({ plan, isToday, readOnly, mutations }: {
     const request = new AbortController(); controller.current = request;
     setBusy(true); setError(""); setResults(null);
     try {
-      const response = await readApiJson<NearbyResults>("POST", "/api/nearby-meals", { area: area.trim(), kind }, { signal: request.signal, timeoutMs: 80_000 });
+      const response = await readApiJson<NearbyResults>("POST", "/api/nearby-meals", { area: area.trim(), kind }, { signal: request.signal, timeoutMs: 90_000 });
       if (!nearbyResearchSchema.safeParse({ meals: response.meals }).success) {
         throw new Error("These results lacked usable menu sources. Try a more specific area or try again.");
       }

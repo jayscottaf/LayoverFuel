@@ -19,6 +19,7 @@ export function publicSourceUrl(value: string): string | null {
     if (/(^|\.)google\.[a-z.]+$/.test(host) && /^\/(maps|search)(\/|$)/.test(url.pathname) ||
       /(^|\.)(maps.apple.com|duckduckgo.com)$/.test(host) ||
       /(^|\.)(bing.com|yahoo.com|yelp.com)$/.test(host) && /^\/search(\/|$)/.test(url.pathname)) return null;
+    if (/(^|\.)maps\.google\.[a-z.]+$/.test(host) || /banquet|catering|wedding|private[-_+% ]?(event|dining)/i.test(url.pathname)) return null;
     url.hash = "";
     return url.href;
   } catch { return null; }
