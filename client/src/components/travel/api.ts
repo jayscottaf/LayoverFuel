@@ -87,7 +87,7 @@ export interface PlanMeal extends Macros {
   description: string;
   status: "planned" | "locked";
   source: "estimate" | "manual";
-  venue?: { name: string; address: string; menuUrl: string; locationUrl: string; checkedAt: string };
+  venue?: { name: string; address: string; menuUrl: string; locationUrl: string; checkedAt: string; evidence?: "live_menu" | "chain_web" };
 }
 
 /** Equipment values the plan service understands. "none" is exclusive. */

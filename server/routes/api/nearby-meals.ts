@@ -16,7 +16,7 @@ router.post("/", async (req, res) => {
   } catch (error) {
     if (controller.signal.aborted) return;
     console.error("Nearby menu research failed", error instanceof Error ? error.name : "unknown");
-    res.status(502).json({ message: "Live menus could not be checked. Try again or enter a more specific neighborhood or airport terminal." });
+    res.status(502).json({ message: "Local menus and web food choices could not be researched. Try again or enter a more specific neighborhood or airport terminal." });
   } finally { res.off("close", cancel); }
 });
 export default router;

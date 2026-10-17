@@ -36,7 +36,11 @@ export const nearbyCandidateSchema = nutrientsSchema.extend({
   access: z.string().max(200),
 });
 export const nearbyResearchSchema = z.object({ meals: z.array(nearbyCandidateSchema).max(6) });
-export type NearbyMeal = z.infer<typeof nearbyCandidateSchema> & { id: string };
+export const nearbyEvidenceSchema = z.enum(["live_menu", "chain_web"]);
+export type NearbyMeal = z.infer<typeof nearbyCandidateSchema> & {
+  id: string;
+  evidence?: z.infer<typeof nearbyEvidenceSchema>;
+};
 export interface NearbyResults {
   area: string;
   kind: NearbyInput["kind"];

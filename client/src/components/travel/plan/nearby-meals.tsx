@@ -15,7 +15,7 @@ export function nearbyPlanMeal(meal: NearbyMeal, checkedAt: string): PlanMeal {
     id: meal.id, name: `${meal.name} - ${meal.venue}`.slice(0, 200),
     description: `${meal.order} Portion: ${meal.portion}`.slice(0, 1000),
     status: "locked", source: "estimate", calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat,
-    venue: { name: meal.venue, address: meal.address, menuUrl: meal.menuUrl, locationUrl: meal.locationUrl, checkedAt },
+    venue: { name: meal.venue, address: meal.address, menuUrl: meal.menuUrl, locationUrl: meal.locationUrl, checkedAt, evidence: meal.evidence },
   };
 }
 
@@ -47,7 +47,7 @@ export function NearbyMeals({ plan, isToday, readOnly, mutations }: {
     const request = new AbortController(); controller.current = request;
     setBusy(true); setError(""); setResults(null);
     try {
-      const response = await readApiJson<NearbyResults>("POST", "/api/nearby-meals", { area: area.trim(), kind }, { signal: request.signal, timeoutMs: 90_000 });
+      const response = await readApiJson<NearbyResults>("POST", "/api/nearby-meals", { area: area.trim(), kind }, { signal: request.signal, timeoutMs: 150_000 });
       if (!nearbyResearchSchema.safeParse({ meals: response.meals }).success) {
         throw new Error("These results lacked usable menu sources. Try a more specific area or try again.");
       }
@@ -72,11 +72,11 @@ export function NearbyMeals({ plan, isToday, readOnly, mutations }: {
       ]} onChange={value => { cancel(); setKind(value); setResults(null); }} />
       <p className="text-xs text-muted-foreground">Search sends the entered area to OpenAI, not your health profile or meal history.</p>
       <div className="flex flex-wrap gap-2"><button type="submit" className={btnPrimary} disabled={readOnly || locating || busy || area.trim().length < 3}>
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}{busy ? "Checking menus" : "Find meals"}
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}{busy ? "Finding meals" : "Find meals"}
       </button>{busy && <button type="button" className={btnQuiet} onClick={cancel}><X className="h-4 w-4" />Cancel</button>}</div>
     </form>
     {readOnly && <p role="status" className="mt-3 text-sm text-muted-foreground">Live menu search needs an internet connection.</p>}
-    {busy && <p role="status" className="mt-3 text-sm text-muted-foreground">Looking up places and their menus. This may take a minute.</p>}
+    {busy && <p role="status" className="mt-3 text-sm text-muted-foreground">Looking up local menus, then chain food choices on the web if needed. This may take up to two minutes.</p>}
     {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
     {results && <>
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
@@ -84,18 +84,20 @@ export function NearbyMeals({ plan, isToday, readOnly, mutations }: {
         <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={highProtein} onChange={event => setHighProtein(event.target.checked)} />Higher protein first</label>
       </div>
       <p className="text-xs text-muted-foreground">Researched {new Date(results.checkedAt).toLocaleString()}. Nutrition is estimated. Menus may change; confirm hours, route, airport access and dietary/allergy needs with the venue.</p>
-      {meals.length === 0 && <p role="status" className="mt-4 text-sm">No menu choices with both menu and location sources were found. Try a neighborhood, a different city, or an airport terminal.</p>}
+      {meals.some(meal => meal.evidence === "chain_web") && <p role="status" className="mt-3 text-sm">Local menus could not be confirmed. These choices use chain menus found on the web and sourced nearby branches. Confirm availability at the branch.</p>}
+      {meals.length === 0 && <p role="status" className="mt-4 text-sm">No sourced local meals or chain choices were found. Try a neighborhood, a different city, or an airport terminal.</p>}
       <ul className="mt-4 divide-y">{meals.map(meal => {
         const saved = plan.meals.some(item => item.id === meal.id && item.status === "locked");
         const planned = nearbyPlanMeal(meal, results.checkedAt);
         return <li key={meal.id} className="py-4 first:pt-0">
           <p className="text-sm font-medium text-highlight">{meal.venue}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{meal.evidence === "chain_web" ? "Chain menu · Web-sourced" : "Menu checked directly"}</p>
           <h3 className="mt-1 font-semibold">{meal.name}</h3><p className="mt-1 text-sm">{meal.order}</p>
           <p className="mt-1 text-xs text-muted-foreground">{meal.address}{meal.access ? ` · ${meal.access}` : ""}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2"><MacroLine m={meal} /><span className="text-xs text-muted-foreground">Estimate</span></div>
           <p className="mt-1 text-xs text-muted-foreground">Portion: {meal.portion}</p>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-            <a className="inline-flex min-h-11 items-center gap-1 text-primary underline" href={meal.menuUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3.5 w-3.5" />Menu source</a>
+            <a className="inline-flex min-h-11 items-center gap-1 text-primary underline" href={meal.menuUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3.5 w-3.5" />{meal.evidence === "chain_web" ? "Chain menu source" : "Menu source"}</a>
             <a className="inline-flex min-h-11 items-center gap-1 text-primary underline" href={meal.locationUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3.5 w-3.5" />Location source</a>
             <a className="inline-flex min-h-11 items-center gap-1 text-primary underline" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${meal.venue} ${meal.address}`)}`} target="_blank" rel="noopener noreferrer"><MapPin className="h-3.5 w-3.5" />Map</a>
           </div>

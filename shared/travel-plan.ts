@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { dateKeySchema, timezoneSchema } from "./dates";
 import { nutrientsSchema, type Nutrients } from "./nutrition";
-import { publicSourceUrl } from "./nearby-meals";
+import { nearbyEvidenceSchema, publicSourceUrl } from "./nearby-meals";
 
 export const travelContextSchema = z.object({
   location: z.string().trim().max(200).default(""),
@@ -19,6 +19,7 @@ export const planMealSchema = nutrientsSchema.extend({
     menuUrl: z.string().max(2000).refine(value => !!publicSourceUrl(value)),
     locationUrl: z.string().max(2000).refine(value => !!publicSourceUrl(value)),
     checkedAt: z.string().datetime(),
+    evidence: nearbyEvidenceSchema.optional(),
   }).optional(),
 });
 export const travelPlanInputSchema = z.object({
