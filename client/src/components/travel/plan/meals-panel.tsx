@@ -60,7 +60,7 @@ function MealItem({
         <p>{meal.venue.address}</p>
         <a className="inline-block min-h-11 py-3 text-primary underline" href={meal.venue.menuUrl} target="_blank" rel="noopener noreferrer">Menu source</a>
         <span> · Researched {new Date(meal.venue.checkedAt).toLocaleDateString()}</span>
-        {meal.venue.evidence === "chain_web" && <p>Web-sourced chain menu · Confirm availability at this branch.</p>}
+        {(meal.venue.evidence === "chain_web" || meal.venue.evidence === "web") && <p>Web-sourced food choice · Confirm availability at the venue.</p>}
       </div>}
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
         <MacroLine m={planMacros(meal)} />

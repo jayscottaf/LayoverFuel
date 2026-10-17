@@ -228,6 +228,7 @@ export function ContextEditor({
           </Field>
           <CurrentAreaButton disabled={readOnly || saving} onBusyChange={setLocating}
             onFound={value => update("location", value)} />
+          <p className="text-xs text-muted-foreground">Current location identifies your city or area. At an airport, you can enter its name or code and terminal, such as CHS or LGA Terminal B.</p>
         </div>
 
         <div className="space-y-1.5">

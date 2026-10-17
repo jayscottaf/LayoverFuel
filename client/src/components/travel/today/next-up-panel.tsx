@@ -29,7 +29,7 @@ function NextMeal({ meal, today }: { meal: PlanMeal; today: string }) {
       </div>
       {meal.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{meal.description}</p>}
       {meal.venue && <a className="mt-2 inline-block min-h-11 py-3 text-xs text-primary underline" href={meal.venue.menuUrl} target="_blank" rel="noopener noreferrer">Menu source</a>}
-      {meal.venue?.evidence === "chain_web" && <p className="text-xs text-muted-foreground">Web-sourced chain menu · Confirm availability at this branch.</p>}
+      {(meal.venue?.evidence === "chain_web" || meal.venue?.evidence === "web") && <p className="text-xs text-muted-foreground">Web-sourced food choice · Confirm availability at the venue.</p>}
       <MacroLine m={meal} className="mt-2" />
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <SourceBadge source={meal.source === "manual" ? "manual" : "estimate"} />

@@ -10,6 +10,7 @@ Layover Fuel helps you stay lean, energized, and consistent—no matter where yo
 
 - 💬 **Chat-based Assistant** using OpenAI's Assistants API (GPT-4o)
 - 🥗 **Macro-aware meal logging** with AI image analysis and confirmation step
+- 🍽️ **Nearby food search** across independent restaurants, chains and airport dining directories, with web sources and estimated nutrition for known meals. Sourced restaurants still appear when menu details are unavailable. Airport searches show the airport used; enter a name/code and terminal in your saved location for more precision.
 - 📷 **Image uploads** for food and workouts
 - ✈️ **Shred and Sustain phase support** for fat loss or maintenance
 - 🧠 **Motivational habit strategies** inspired by top performance frameworks
