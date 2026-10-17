@@ -5,7 +5,8 @@ import { useTravelPlan } from "@/components/travel/api";
 import { formatLongDate, shiftDate, useLocalDay } from "@/components/travel/local-date";
 import { Page, PageHeader, Segmented, StateMessage } from "@/components/travel/primitives";
 import { BudgetPanel, BudgetSkeleton, WhatChanged } from "@/components/travel/plan/budget-panel";
-import { ContextEditor, ContextSkeleton, PLAN_LOCATION_INPUT_ID } from "@/components/travel/plan/context-editor";
+import { ContextEditor, ContextSkeleton } from "@/components/travel/plan/context-editor";
+import { focusPlanLocation } from "@/components/travel/plan/plan-location";
 import { MealsPanel, MealsSkeleton } from "@/components/travel/plan/meals-panel";
 import { RetryButton } from "@/components/travel/plan/retry-button";
 import { usePlanMutations } from "@/components/travel/plan/use-plan-mutations";
@@ -17,14 +18,6 @@ const DAY_OPTIONS: Array<{ value: Day; label: string }> = [
   { value: "today", label: "Today" },
   { value: "tomorrow", label: "Tomorrow" },
 ];
-
-/** Send people to the first context field (e.g. from the empty meal list). */
-function focusContextEditor() {
-  const el = document.getElementById(PLAN_LOCATION_INPUT_ID);
-  if (!el) return;
-  el.scrollIntoView({ block: "center" });
-  el.focus({ preventScroll: true });
-}
 
 /**
  * The remaining-day plan. Targets are fixed; the server re-derives meal ideas
@@ -76,7 +69,7 @@ export default function PlanPage() {
               refreshFailed={plan.isError}
               refreshing={plan.isFetching}
               onRetry={retry}
-              onSetUp={focusContextEditor}
+              onSetUp={focusPlanLocation}
             />
           </div>
           <div className="min-w-0 md:sticky md:top-8 md:col-span-2 md:self-start">

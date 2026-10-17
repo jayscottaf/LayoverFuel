@@ -7,9 +7,7 @@ import { EQUIPMENT_OPTIONS, PLAN_PATTERNS, contextsEqual, normalizeContext, togg
 import { btnLink, btnPrimary, btnQuiet, textareaClass } from "./ui";
 import type { PlanBusy, SaveOutcome } from "./use-plan-mutations";
 import { CurrentAreaButton } from "./current-area-button";
-
-/** The location input, so other parts of the screen can send people here. */
-export const PLAN_LOCATION_INPUT_ID = "plan-context-location";
+import { PLAN_LOCATION_INPUT_ID } from "./plan-location";
 
 function PatternPicker({
   value,
@@ -208,18 +206,18 @@ export function ContextEditor({
     <Panel labelledBy={titleId}>
       <SectionTitle id={titleId}>Where you are and what you have</SectionTitle>
       <p className="-mt-1 mb-4 text-sm text-muted-foreground">
-        Meal windows and equipment are reference notes. Nearby menus are researched separately.
+        Your saved location is also used to find nearby meals. Meal windows and equipment are reference notes.
       </p>
 
       <form onSubmit={submit} noValidate className="flex flex-col gap-5">
         <div className="space-y-1.5">
-          <Field id={PLAN_LOCATION_INPUT_ID} label="Location">
+          <Field id={PLAN_LOCATION_INPUT_ID} label="City, neighborhood or airport terminal">
             <input
               id={PLAN_LOCATION_INPUT_ID}
               type="text"
               autoComplete="off"
               maxLength={160}
-              placeholder="City, airport, hotel or area"
+              placeholder="Nashville, TN or LGA Terminal B"
               value={form.location}
               disabled={locating}
               onChange={e => {

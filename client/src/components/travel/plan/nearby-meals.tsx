@@ -4,8 +4,8 @@ import { nearbyResearchSchema, rankNearbyMeals, type NearbyInput, type NearbyRes
 import { readApiJson } from "@/lib/queryClient";
 import type { PlanMeal, TravelPlan } from "../api";
 import { useCapture } from "../capture/capture-context";
-import { MacroLine, Segmented, inputClass } from "../primitives";
-import { CurrentAreaButton } from "./current-area-button";
+import { MacroLine, Segmented } from "../primitives";
+import { focusPlanLocation } from "./plan-location";
 import { planMealDraft } from "./plan-utils";
 import { btnPrimary, btnQuiet, btnSecondary } from "./ui";
 import type { PlanMutations } from "./use-plan-mutations";
@@ -23,31 +23,28 @@ export function NearbyMeals({ plan, isToday, readOnly, mutations }: {
   plan: TravelPlan; isToday: boolean; readOnly: boolean; mutations: PlanMutations;
 }) {
   const id = useId();
-  const [area, setArea] = useState(plan.context.location.startsWith("Near ") ? "" : plan.context.location);
+  const area = plan.context.location.startsWith("Near ") ? "" : plan.context.location.trim();
   const [kind, setKind] = useState<NearbyInput["kind"]>("restaurant");
   const [highProtein, setHighProtein] = useState(false);
-  const [locating, setLocating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [results, setResults] = useState<NearbyResults | null>(null);
   const controller = useRef<AbortController | null>(null);
-  const savedArea = useRef(plan.context.location);
   const { open } = useCapture();
   useEffect(() => () => { controller.current?.abort(); }, []);
   useEffect(() => { if (readOnly) { controller.current?.abort(); controller.current = null; setBusy(false); } }, [readOnly]);
   useEffect(() => {
-    if (savedArea.current === plan.context.location) return;
-    if (area === savedArea.current && !busy && !locating) { setArea(plan.context.location); setResults(null); }
-    savedArea.current = plan.context.location;
-  }, [plan.context.location, area, busy, locating]);
+    controller.current?.abort(); controller.current = null;
+    setBusy(false); setResults(null); setError("");
+  }, [area]);
 
   const cancel = () => { controller.current?.abort(); controller.current = null; setBusy(false); };
   const search = async () => {
-    if (busy || locating || readOnly || area.trim().length < 3) return;
+    if (busy || readOnly || area.length < 3) return;
     const request = new AbortController(); controller.current = request;
     setBusy(true); setError(""); setResults(null);
     try {
-      const response = await readApiJson<NearbyResults>("POST", "/api/nearby-meals", { area: area.trim(), kind }, { signal: request.signal, timeoutMs: 150_000 });
+      const response = await readApiJson<NearbyResults>("POST", "/api/nearby-meals", { area, kind }, { signal: request.signal, timeoutMs: 150_000 });
       if (!nearbyResearchSchema.safeParse({ meals: response.meals }).success) {
         throw new Error("These results lacked usable menu sources. Try a more specific area or try again.");
       }
@@ -56,22 +53,22 @@ export function NearbyMeals({ plan, isToday, readOnly, mutations }: {
       if (controller.current === request) setError(failure instanceof Error ? failure.message : "Menus could not be checked. Try again.");
     } finally { if (controller.current === request) { controller.current = null; setBusy(false); } }
   };
-  const changeArea = (value: string) => { cancel(); setArea(value); setResults(null); setError(""); };
   const meals = results ? rankNearbyMeals(results.meals, plan.remaining.calories,
     Math.max(1, plan.meals.filter(meal => meal.status !== "locked").length), highProtein) : [];
 
   return <section id="nearby-meals" className="min-w-0 border-t pt-5" aria-labelledby={`${id}-title`}>
     <div className="flex items-center gap-2"><MapPin className="h-5 w-5 text-highlight" /><h2 id={`${id}-title`} className="text-lg font-semibold">Nearby meals</h2></div>
     <form className="mt-4 space-y-3" onSubmit={event => { event.preventDefault(); void search(); }}>
-      <label htmlFor={`${id}-area`} className="block text-sm font-medium">City, neighborhood or airport terminal</label>
-      <input id={`${id}-area`} className={inputClass} value={area} maxLength={160} disabled={locating || readOnly}
-        onChange={event => changeArea(event.target.value)} placeholder="Nashville, TN or LGA Terminal B" />
-      <CurrentAreaButton disabled={readOnly || busy} onFound={changeArea} onBusyChange={setLocating} />
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <p className="min-w-0 break-words text-sm">{area.length >= 3 ? area : "Set your location to find nearby meals."}</p>
+        <button type="button" className={btnQuiet} onClick={focusPlanLocation}>{area.length >= 3 ? "Change location" : "Set location"}</button>
+      </div>
+      <p className="text-xs text-muted-foreground">Uses the location saved for this day.</p>
       <Segmented label="Meal search" value={kind} options={[
         { value: "restaurant", label: "Restaurants" }, { value: "grocery", label: "Groceries" }, { value: "airport", label: "Airport" },
       ]} onChange={value => { cancel(); setKind(value); setResults(null); }} />
-      <p className="text-xs text-muted-foreground">Search sends the entered area to OpenAI, not your health profile or meal history.</p>
-      <div className="flex flex-wrap gap-2"><button type="submit" className={btnPrimary} disabled={readOnly || locating || busy || area.trim().length < 3}>
+      <p className="text-xs text-muted-foreground">Search sends your saved area to OpenAI, not your health profile or meal history.</p>
+      <div className="flex flex-wrap gap-2"><button type="submit" className={btnPrimary} disabled={readOnly || busy || area.length < 3}>
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}{busy ? "Finding meals" : "Find meals"}
       </button>{busy && <button type="button" className={btnQuiet} onClick={cancel}><X className="h-4 w-4" />Cancel</button>}</div>
     </form>
