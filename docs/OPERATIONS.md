@@ -17,7 +17,7 @@ Replit disabled it. No data was recovered; the new database started empty.
 
 - `GET https://api.layoverfuel.com/api/health` returns
   `{"status":"ok","checks":{"database":"ready",...}}` when the schema is complete.
-- `.github/workflows/uptime.yml` checks it hourly. A failed run emails the repo
+- `.github/workflows/uptime.yml` checks it once a day. A failed run emails the repo
   owner. GitHub pauses scheduled workflows after 60 days without repo activity;
   re-enable them from the Actions tab if that happens.
 
@@ -50,7 +50,7 @@ Neon console for the current limit.
 ## Database compute budget
 
 The Neon Free plan has a monthly compute-hour limit and suspends the database
-after a few idle minutes. Things that wake it: user requests, the hourly uptime
+after a few idle minutes. Things that wake it: user requests, the daily uptime
 check, the nightly backup, and the daily session prune
 (`pruneSessionInterval` in `server/storage.ts`). Avoid adding frequent timers or
 polling that touch the database.

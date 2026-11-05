@@ -1,11 +1,12 @@
-# Hourly production health check. A failed run makes GitHub email the repo
-# owner. Hourly rather than more often: each check wakes the serverless
-# database, and the free plan has a monthly compute budget.
+# Daily production health check. A failed run makes GitHub email the repo
+# owner. Kept infrequent: each check wakes the serverless database, and the
+# free plan has a monthly compute budget. Run it by hand from the Actions tab
+# any time.
 name: Uptime check
 
 on:
   schedule:
-    - cron: "17 * * * *"
+    - cron: "17 13 * * *" # 13:17 UTC, morning in the US
   workflow_dispatch:
 
 permissions:
