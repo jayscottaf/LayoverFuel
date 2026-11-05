@@ -1,0 +1,51 @@
+# Nightly encrypted Postgres backup, kept as a 30-day workflow artifact.
+# The repo is public, so the dump is encrypted before upload. Restore steps:
+# docs/OPERATIONS.md.
+name: Database backup
+
+on:
+  schedule:
+    - cron: "30 7 * * *" # 07:30 UTC, overnight in the US
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Check secrets
+        run: |
+          if [ -z "$BACKUP_DATABASE_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Set BACKUP_DATABASE_URL and BACKUP_PASSPHRASE repository secrets"
+            exit 1
+          fi
+
+      - name: Dump and encrypt
+        run: |
+          set -o pipefail
+          stamp=$(date -u +%Y-%m-%dT%H%MZ)
+          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+          docker run --rm -e BACKUP_DATABASE_URL postgres:18 \
+            sh -c 'pg_dump --format=custom --no-owner --no-privileges "$BACKUP_DATABASE_URL"' \
+            | gpg --batch --yes --pinentry-mode loopback --symmetric --cipher-algo AES256 \
+                --passphrase-file <(printf '%s' "$BACKUP_PASSPHRASE") \
+                --output "layoverfuel-$stamp.dump.gpg"
+          size=$(stat -c %s "layoverfuel-$stamp.dump.gpg")
+          if [ "$size" -lt 1024 ]; then
+            echo "::error::Backup is only $size bytes"
+            exit 1
+          fi
+          echo "Encrypted backup: $size bytes"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: layoverfuel-db-${{ env.STAMP }}
+          path: layoverfuel-*.dump.gpg
+          retention-days: 30
+          if-no-files-found: error

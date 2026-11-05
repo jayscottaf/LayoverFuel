@@ -1,0 +1,33 @@
+# Hourly production health check. A failed run makes GitHub email the repo
+# owner. Hourly rather than more often: each check wakes the serverless
+# database, and the free plan has a monthly compute budget.
+name: Uptime check
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check /api/health
+        run: |
+          # Retries ride out a cold database start or a deploy in progress.
+          for attempt in 1 2 3; do
+            body=$(curl -fsS -m 30 https://api.layoverfuel.com/api/health) &&
+              echo "$body" | jq -e '.status == "ok" and .checks.database == "ready"' > /dev/null &&
+              { echo "Healthy: $body"; exit 0; }
+            echo "Attempt $attempt failed: ${body:-no response}"
+            sleep 30
+          done
+          echo "::error::api.layoverfuel.com is unhealthy"
+          exit 1
+
+      - name: Check frontend
+        run: curl -fsS -m 30 -o /dev/null https://layoverfuel.com
