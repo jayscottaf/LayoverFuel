@@ -118,18 +118,14 @@ Prefer substantial meals and protein options when available, but don't discard a
 
 async function searchMeals(input: NearbyInput, signal: AbortSignal | undefined, client: OpenAI, broaden: boolean): Promise<NearbyResults> {
   signal?.throwIfAborted();
-  // SDK v4 does not type the current hosted search tool; post preserves the
-  // existing SDK while using the documented Responses wire contract.
-  const research = await client.post<unknown, OpenAI.Responses.Response>("/responses", {
-    body: {
-      model: process.env.OPENAI_NEARBY_MODEL || "gpt-4.1", store: false,
-      tools: [{ type: "web_search", search_context_size: "high" }], tool_choice: "required",
-      instructions: researchInstructions + (broaden
-        ? " A previous lookup produced no usable food choices. Try different search terms and additional sources, especially official airport dining directories, concessionaires, independent restaurants and local menu/ordering pages. Return sourced places even without menu details."
-        : ""),
-      input: JSON.stringify(input), max_output_tokens: 4500,
-    }, signal, timeout: 45_000,
-  });
+  const research = await client.responses.create({
+    model: process.env.OPENAI_NEARBY_MODEL || "gpt-4.1", store: false,
+    tools: [{ type: "web_search", search_context_size: "high" }], tool_choice: "required",
+    instructions: researchInstructions + (broaden
+      ? " A previous lookup produced no usable food choices. Try different search terms and additional sources, especially official airport dining directories, concessionaires, independent restaurants and local menu/ordering pages. Return sourced places even without menu details."
+      : ""),
+    input: JSON.stringify(input), max_output_tokens: 4500,
+  }, { signal, timeout: 45_000 });
   if (!research.output.some(item => item.type === "web_search_call" && item.status === "completed") || research.status !== "completed") {
     throw new Error("Search did not complete");
   }

@@ -135,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[REGISTER ERROR]", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+        return res.status(400).json({ message: "Invalid input", errors: error.issues });
       }
       // Log helpful details about the error
       if (error instanceof Error) {
@@ -188,7 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[LOGIN ERROR]", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+        return res.status(400).json({ message: "Invalid input", errors: error.issues });
       }
       // Log helpful details about the error
       if (error instanceof Error) {
@@ -350,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json({ message: "Onboarding completed successfully" });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+        return res.status(400).json({ message: "Invalid input", errors: error.issues });
       }
       res.status(500).json({ message: "Server error" });
     }
