@@ -67,7 +67,10 @@ export class DatabaseStorage implements IStorage {
   constructor() {
     this.sessionStore = new PostgresSessionStore({
       pool,
-      createTableIfMissing: true
+      createTableIfMissing: true,
+      // Prune daily, not every 15 min, so the timer doesn't keep waking the
+      // serverless DB. Expired sessions are already ignored on read.
+      pruneSessionInterval: 60 * 60 * 24
     });
   }
 
