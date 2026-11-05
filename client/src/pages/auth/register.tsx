@@ -185,8 +185,8 @@ export default function Register() {
 
         <p className="text-center text-sm text-gray-500">
           Already have an account?{" "}
-          <Link href="/auth/login">
-            <a className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">Sign in</a>
+          <Link href="/auth/login" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+            Sign in
           </Link>
         </p>
       </div>
