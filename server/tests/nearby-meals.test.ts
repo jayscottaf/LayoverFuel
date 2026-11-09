@@ -4,7 +4,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import OpenAI from "openai";
 import { nearbyInputSchema, publicSourceUrl, rankNearbyMeals } from "../../shared/nearby-meals";
-import { groundedDiscovery, groundedMeals, groundedPlaces, researchNearbyMeals } from "../services/nearby-meals-service";
+import { groundedDiscovery, groundedMeals, groundedPlaces, researchMentionsDish, researchNearbyMeals } from "../services/nearby-meals-service";
 import { planMealSchema } from "../../shared/travel-plan";
 import { buildTravelPlan } from "../services/travel-plan-service";
 import { publicAddress, supportedMeal } from "../services/public-menu-evidence";
@@ -245,5 +245,51 @@ test("failed searches report failure instead of fabricating food choices", async
     await assert.rejects(researchNearbyMeals({ area: "LGA Terminal B", kind: "airport" }, undefined, client), /Search did not complete/);
     assert.equal(requests.length, 2);
     assert.match(requests[1].instructions, /Never substitute off-airport venues/);
+  });
+});
+
+test("dish names match despite small wording differences but invented dishes still fail", () => {
+  assert.equal(researchMentionsDish("Chicken bowl", independentResearch), true);
+  assert.equal(researchMentionsDish("Chicken Bowls", independentResearch), true);
+  assert.equal(researchMentionsDish("General Tso's Chicken", "Jade's menu lists General Tso Chicken and lo mein."), true);
+  assert.equal(researchMentionsDish("Steamed chicken with mixed vegetables", "Steamed Chicken w/ Mixed Vegetable (diet menu)"), true);
+  assert.equal(researchMentionsDish("Unsourced steak bowl", independentResearch), false);
+  assert.equal(researchMentionsDish("Beef and broccoli", independentResearch), false);
+});
+
+const jadePlace = { venue: "Jade", address: "81-59 Lefferts Blvd, Kew Gardens, NY 11415", access: "",
+  details: "American-Chinese; dine-in and take-out.", locationUrl: "https://www.localdiningguide.com/jade", menuUrl: "https://jadekewgardens.com/menu" };
+const jadeSources = [jadePlace.locationUrl, jadePlace.menuUrl].map(url => ({ title: "Jade", url }));
+const jadeResearch = "Jade at 81-59 Lefferts Blvd in Kew Gardens is an American-Chinese restaurant with a menu online.";
+const jadeMenuResearch = "Jade menu: Steamed Chicken w/ Mixed Vegetable (diet menu); Shrimp Lo Mein.";
+const jadeDish = { ...meal, venue: "Jade", address: "Kew Gardens", name: "Steamed chicken with mixed vegetables",
+  order: "Steamed chicken with mixed vegetables, sauce on the side", menuUrl: jadePlace.menuUrl, locationUrl: "https://invented.com/x" };
+
+test("restaurants with menus but no confirmed dishes get one focused menu search", async () => {
+  const replies = [
+    fixtureResponse(true, discovery(), jadeSources, jadeResearch),
+    fixtureResponse(false, discovery([], [jadePlace])),
+    fixtureResponse(true, discovery(), [{ title: "Jade menu", url: jadePlace.menuUrl }], jadeMenuResearch),
+    fixtureResponse(false, discovery([jadeDish, { ...jadeDish, name: "Kung pao beef" }, { ...jadeDish, venue: "Invented Kitchen" }])),
+  ];
+  await withResearchServer((_body, index) => replies[index], async (client, requests) => {
+    const result = await researchNearbyMeals({ area: "Kew gardens, ny", kind: "restaurant" }, undefined, client);
+    assert.equal(requests.length, 4);
+    assert.match(requests[2].instructions, /open its own menu/);
+    assert.deepEqual(JSON.parse(requests[2].input).places.map((p: any) => p.venue), ["Jade"]);
+    assert.equal(result.meals.length, 1, "Only the dish named in the cited menu research survives");
+    assert.equal(result.meals[0].name, "Steamed chicken with mixed vegetables");
+    assert.equal(result.meals[0].address, jadePlace.address, "Location comes from the sourced place, not the extractor");
+    assert.equal(result.meals[0].locationUrl, jadePlace.locationUrl);
+    assert.equal(result.places?.length, 1);
+  });
+});
+
+test("a failed menu search keeps the sourced restaurants", async () => {
+  await withResearchServer((body, index) => index >= 2 ? { id: "resp_failed", status: "failed", output: [] }
+    : fixtureResponse(!!body.tools, discovery([], [jadePlace]), jadeSources, jadeResearch), async client => {
+    const result = await researchNearbyMeals({ area: "Kew gardens, ny", kind: "restaurant" }, undefined, client);
+    assert.deepEqual(result.meals, []);
+    assert.equal(result.places?.[0]?.venue, "Jade");
   });
 });
