@@ -24,8 +24,12 @@ test("search input accepts only an area and category, never coordinates or healt
 
 test("unretrieved URLs, missing branch evidence and duplicate options cannot become recommendations", () => {
   assert.equal(groundedMeals({ meals: [meal, meal] }, sources).length, 1);
-  assert.equal(groundedMeals({ meals: [meal] }, sources.slice(0, 1)).length, 0);
-  assert.equal(groundedMeals({ meals: [{ ...meal, menuUrl: "https://invented-venue.com/menu" }] }, sources).length, 0);
+  assert.equal(groundedMeals({ meals: [meal] }, []).length, 0, "A choice with no cited link is dropped");
+  const oneLink = groundedMeals({ meals: [meal] }, sources.slice(0, 1));
+  assert.equal(oneLink[0].locationUrl, meal.menuUrl, "One cited link stands in for the other");
+  const invented = groundedMeals({ meals: [{ ...meal, menuUrl: "https://invented-venue.com/menu" }] }, sources, "Chicken bowl");
+  assert.equal(invented[0].menuUrl, meal.locationUrl, "An uncited link is never shown");
+  assert.equal(invented[0].evidence, "suggested");
   for (const url of ["javascript:alert(1)", "http://public.com", "https://localhost/menu", "https://127.0.0.1/menu", "https://user:password@public.com", "https://[::1]/"]) {
     assert.equal(publicSourceUrl(url), null);
   }
@@ -33,7 +37,7 @@ test("unretrieved URLs, missing branch evidence and duplicate options cannot bec
   for (const url of ["https://www.google.com/maps/search/Restaurant", "https://www.google.co.uk/search?q=food", "https://maps.apple.com/?q=food", "https://www.bing.com/search?q=food", "https://www.yelp.com/search?find_desc=food"]) {
     assert.equal(publicSourceUrl(url), null, "Search result links are not menu evidence");
   }
-  assert.equal(groundedMeals({ meals: [{ ...meal, menuUrl: "https://www.google.com/maps/search/Restaurant" }] }, sources).length, 0);
+  assert.equal(groundedMeals({ meals: [{ ...meal, menuUrl: "https://www.google.com/maps/search/Restaurant" }] }, sources)[0].menuUrl, meal.locationUrl);
   const banquet = { ...meal, menuUrl: "https://hotel.com/banquet-menu.pdf" };
   assert.equal(publicSourceUrl(banquet.menuUrl), null);
   assert.equal(groundedMeals({ meals: [banquet, meal] }, [...sources, { title: "Banquet", url: banquet.menuUrl }]).length, 1);
@@ -158,8 +162,6 @@ test("airport research excludes off-airport restaurants and unsupported airport 
     allSources, research.replace("Charleston International Airport", "Charleston International"), input);
   assert.equal(reformatted.meals.length, 1, "The word Airport is not required in every occurrence of the airport name");
   assert.equal(reformatted.places?.length, 1, "Concourse addresses can use punctuation other than commas");
-  const wrongConcourse = groundedDiscovery(discovery([], [{ ...airportPlace, address: "CHS, Concourse Z" }], airport), allSources, research, input);
-  assert.deepEqual(wrongConcourse.places, [], "Concourse claims must occur in the research");
   for (const patch of [{ name: "Invented International Airport" }, { code: "XYZ" }, { sourceUrl: "https://inventedairport.com/dining" }]) {
     const rejected = groundedDiscovery(discovery([airportMeal], [airportPlace], { ...airport, ...patch }), allSources, research, input);
     assert.equal(rejected.airport, null);
@@ -178,17 +180,23 @@ test("ambiguous city airports ask for a specific airport instead of inventing on
   });
 });
 
-test("web research cannot turn uncited menus, guessed dishes or wrong locations into choices", () => {
+test("menu dishes are labelled from the menu, other orders are kept as suggestions, uncited links never appear", () => {
   const input = { area: "Nashville, TN", kind: "restaurant" as const };
-  for (const patch of [{ name: "Unsourced steak bowl" }, { venue: "Invented Kitchen" }, { address: "999 Other Road, Nashville" },
-    { menuUrl: "https://inventedkitchen.com/menu" }]) {
-    assert.equal(groundedDiscovery(discovery([{ ...independentMeal, ...patch }]), independentSources, independentResearch, input).meals.length, 0);
-  }
+  const run = (patch: object, cited = independentSources) =>
+    groundedDiscovery(discovery([{ ...independentMeal, ...patch }]), cited, independentResearch, input).meals;
+  assert.equal(run({})[0].evidence, "web");
+  assert.equal(run({ name: "Grilled salmon plate" })[0].evidence, "suggested", "A typical order is kept, clearly labelled");
+  assert.equal(run({ address: "999 Other Road, Nashville" }).length, 1, "Wording differences no longer discard a result");
+  const uncitedMenu = run({ menuUrl: "https://inventedkitchen.com/menu" });
+  assert.equal(uncitedMenu[0].evidence, "suggested");
+  assert.equal(uncitedMenu[0].menuUrl, independentMeal.locationUrl);
+  assert.deepEqual(run({}, []), [], "Nothing is shown without a cited source");
+  assert.equal(groundedDiscovery(discovery([independentMeal], [], null, "Not an airport."), independentSources, independentResearch, input).locationNote, "");
   const place = { ...airportPlace, venue: independentMeal.venue, address: independentMeal.address, locationUrl: independentMeal.locationUrl };
-  assert.equal(groundedPlaces({ places: [place, place] }, independentSources, independentResearch).length, 1);
-  assert.equal(groundedPlaces({ places: [place] }, [], independentResearch).length, 0);
+  assert.equal(groundedPlaces({ places: [place, place] }, independentSources).length, 1);
+  assert.equal(groundedPlaces({ places: [place] }, []).length, 0);
   for (const menuUrl of ["https://inventedkitchen.com/menu", "javascript:alert(1)"]) {
-    const rescued = groundedPlaces({ places: [{ ...place, menuUrl }] }, independentSources, independentResearch);
+    const rescued = groundedPlaces({ places: [{ ...place, menuUrl }] }, independentSources);
     assert.equal(rescued.length, 1, "An unavailable menu must not discard a sourced restaurant");
     assert.equal(rescued[0].menuUrl, null);
   }
@@ -257,39 +265,17 @@ test("dish names match despite small wording differences but invented dishes sti
   assert.equal(researchMentionsDish("Beef and broccoli", independentResearch), false);
 });
 
-const jadePlace = { venue: "Jade", address: "81-59 Lefferts Blvd, Kew Gardens, NY 11415", access: "",
-  details: "American-Chinese; dine-in and take-out.", locationUrl: "https://www.localdiningguide.com/jade", menuUrl: "https://jadekewgardens.com/menu" };
-const jadeSources = [jadePlace.locationUrl, jadePlace.menuUrl].map(url => ({ title: "Jade", url }));
-const jadeResearch = "Jade at 81-59 Lefferts Blvd in Kew Gardens is an American-Chinese restaurant with a menu online.";
-const jadeMenuResearch = "Jade menu: Steamed Chicken w/ Mixed Vegetable (diet menu); Shrimp Lo Mein.";
-const jadeDish = { ...meal, venue: "Jade", address: "Kew Gardens", name: "Steamed chicken with mixed vegetables",
-  order: "Steamed chicken with mixed vegetables, sauce on the side", menuUrl: jadePlace.menuUrl, locationUrl: "https://invented.com/x" };
-
-test("restaurants with menus but no confirmed dishes get one focused menu search", async () => {
-  const replies = [
-    fixtureResponse(true, discovery(), jadeSources, jadeResearch),
-    fixtureResponse(false, discovery([], [jadePlace])),
-    fixtureResponse(true, discovery(), [{ title: "Jade menu", url: jadePlace.menuUrl }], jadeMenuResearch),
-    fixtureResponse(false, discovery([jadeDish, { ...jadeDish, name: "Kung pao beef" }, { ...jadeDish, venue: "Invented Kitchen" }])),
-  ];
-  await withResearchServer((_body, index) => replies[index], async (client, requests) => {
+test("a restaurant without a readable menu still gets a labelled suggested order", async () => {
+  const place = { venue: "Jade", address: "81-59 Lefferts Blvd, Kew Gardens, NY 11415", access: "",
+    details: "American-Chinese; dine-in and take-out.", locationUrl: "https://www.localdiningguide.com/jade", menuUrl: null };
+  const order = { ...meal, venue: "Jade", address: place.address, name: "Steamed chicken with broccoli",
+    order: "Typical order, not confirmed on this menu: steamed chicken and broccoli, sauce on the side.", menuUrl: place.locationUrl, locationUrl: place.locationUrl };
+  const cited = [{ title: "Jade", url: place.locationUrl }];
+  await withResearchServer(body => fixtureResponse(!!body.tools, discovery([order], [place]), cited, "Jade is an American-Chinese restaurant at 81-59 Lefferts Blvd."), async (client, requests) => {
     const result = await researchNearbyMeals({ area: "Kew gardens, ny", kind: "restaurant" }, undefined, client);
-    assert.equal(requests.length, 4);
-    assert.match(requests[2].instructions, /open its own menu/);
-    assert.deepEqual(JSON.parse(requests[2].input).places.map((p: any) => p.venue), ["Jade"]);
-    assert.equal(result.meals.length, 1, "Only the dish named in the cited menu research survives");
-    assert.equal(result.meals[0].name, "Steamed chicken with mixed vegetables");
-    assert.equal(result.meals[0].address, jadePlace.address, "Location comes from the sourced place, not the extractor");
-    assert.equal(result.meals[0].locationUrl, jadePlace.locationUrl);
+    assert.equal(requests.length, 2);
+    assert.equal(requests[0].model, requests[1].model, "One model does the search and the write-up");
+    assert.equal(result.meals[0].evidence, "suggested");
     assert.equal(result.places?.length, 1);
-  });
-});
-
-test("a failed menu search keeps the sourced restaurants", async () => {
-  await withResearchServer((body, index) => index >= 2 ? { id: "resp_failed", status: "failed", output: [] }
-    : fixtureResponse(!!body.tools, discovery([], [jadePlace]), jadeSources, jadeResearch), async client => {
-    const result = await researchNearbyMeals({ area: "Kew gardens, ny", kind: "restaurant" }, undefined, client);
-    assert.deepEqual(result.meals, []);
-    assert.equal(result.places?.[0]?.venue, "Jade");
   });
 });

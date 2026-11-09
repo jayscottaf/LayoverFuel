@@ -35,7 +35,7 @@ export const nearbyCandidateSchema = nutrientsSchema.extend({
   locationUrl: sourceUrlSchema,
   access: z.string().max(200),
 });
-export const nearbyResearchSchema = z.object({ meals: z.array(nearbyCandidateSchema).max(6) });
+export const nearbyResearchSchema = z.object({ meals: z.array(nearbyCandidateSchema).max(8) });
 export const nearbyPlaceSchema = z.object({
   venue: z.string().trim().min(1).max(100),
   address: z.string().trim().min(3).max(200),
@@ -55,7 +55,7 @@ export const nearbyDiscoverySchema = nearbyResearchSchema.extend({
   locationNote: z.string().max(300),
 });
 // Keep the previous values readable on already-saved plans.
-export const nearbyEvidenceSchema = z.enum(["live_menu", "chain_web", "web"]);
+export const nearbyEvidenceSchema = z.enum(["live_menu", "chain_web", "web", "suggested"]);
 export type NearbyMeal = z.infer<typeof nearbyCandidateSchema> & {
   id: string;
   evidence?: z.infer<typeof nearbyEvidenceSchema>;

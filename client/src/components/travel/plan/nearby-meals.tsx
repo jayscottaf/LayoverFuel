@@ -47,7 +47,7 @@ export function NearbyMeals({ plan, isToday, readOnly, mutations }: {
       const response = await readApiJson<NearbyResults>("POST", "/api/nearby-meals", { area, kind }, { signal: request.signal, timeoutMs: 150_000 });
       if (!nearbyDiscoverySchema.safeParse({ meals: response.meals, places: response.places ?? [],
         airport: response.airport ?? null, locationNote: response.locationNote ?? "" }).success) {
-        throw new Error("These results lacked usable menu sources. Try a more specific area or try again.");
+        throw new Error("The search results could not be read. Try again.");
       }
       if (controller.current === request) setResults(response);
     } catch (failure) {
@@ -87,14 +87,14 @@ export function NearbyMeals({ plan, isToday, readOnly, mutations }: {
       {results.airport && <p className="mt-1 text-sm">Airport searched: <a className="text-primary underline" href={results.airport.sourceUrl} target="_blank" rel="noopener noreferrer">{results.airport.name} ({results.airport.code})</a></p>}
       {results.locationNote && <p role="status" className="mt-2 text-sm">{results.locationNote}</p>}
       <p className="text-xs text-muted-foreground">Researched {new Date(results.checkedAt).toLocaleString()}. Nutrition is estimated. Menus may change; confirm hours, route, airport access and dietary/allergy needs with the venue.</p>
-      {meals.length === 0 && places.length === 0 && !results.locationNote && <p role="status" className="mt-4 text-sm">No sourced food places were found. Try a more specific location, airport name or terminal.</p>}
-      {meals.length === 0 && places.length > 0 && <p role="status" className="mt-3 text-sm">Found food places, but specific menu items could not be confirmed. Check their sources for current choices.</p>}
+      {meals.length === 0 && places.length === 0 && <p role="status" className="mt-4 text-sm font-medium">This search found nothing nearby. Tap Find meals to try again, or use a more specific location, airport name or terminal.</p>}
+      {meals.length === 0 && places.length > 0 && <p role="status" className="mt-3 text-sm">Found food places, but no orders to suggest. Check their sources for current choices.</p>}
       <ul className="mt-4 divide-y">{meals.map(meal => {
         const saved = plan.meals.some(item => item.id === meal.id && item.status === "locked");
         const planned = nearbyPlanMeal(meal, results.checkedAt);
         return <li key={meal.id} className="py-4 first:pt-0">
           <p className="text-sm font-medium text-highlight">{meal.venue}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{meal.evidence === "live_menu" ? "Menu checked directly" : "Web-sourced food choice · Confirm availability"}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{meal.evidence === "suggested" ? "Suggested order · Not confirmed on this menu" : meal.evidence === "live_menu" ? "Menu checked directly" : "From the menu · Confirm availability"}</p>
           <h3 className="mt-1 font-semibold">{meal.name}</h3><p className="mt-1 text-sm">{meal.order}</p>
           <p className="mt-1 text-xs text-muted-foreground">{meal.address}{meal.access ? ` · ${meal.access}` : ""}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2"><MacroLine m={meal} /><span className="text-xs text-muted-foreground">Estimate</span></div>
