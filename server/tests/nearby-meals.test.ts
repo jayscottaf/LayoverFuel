@@ -163,7 +163,8 @@ test("airport research excludes off-airport restaurants and unsupported airport 
   assert.equal(reformatted.meals.length, 1, "The word Airport is not required in every occurrence of the airport name");
   assert.equal(reformatted.places?.length, 1, "Concourse addresses can use punctuation other than commas");
   for (const patch of [{ name: "Invented International Airport" }, { code: "XYZ" }, { sourceUrl: "https://inventedairport.com/dining" }]) {
-    const rejected = groundedDiscovery(discovery([airportMeal], [airportPlace], { ...airport, ...patch }), allSources, research, input);
+    const rejected = groundedDiscovery(discovery([airportMeal], [airportPlace], { ...airport, ...patch }), allSources, research,
+      { area: "North Charleston, SC", kind: "airport" as const });
     assert.equal(rejected.airport, null);
     assert.deepEqual(rejected.meals, []);
     assert.deepEqual(rejected.places, []);
@@ -278,4 +279,30 @@ test("a restaurant without a readable menu still gets a labelled suggested order
     assert.equal(result.meals[0].evidence, "suggested");
     assert.equal(result.places?.length, 1);
   });
+});
+
+test("airports are recognised from a device position, a code or a nickname", async () => {
+  const { nearestAirport, resolveAirport } = await import("../../shared/airports");
+  assert.equal(nearestAirport(42.3643, -71.0052)?.code, "BOS", "Standing in a Logan terminal");
+  assert.equal(nearestAirport(42.3601, -71.0589), null, "Downtown Boston is not the airport");
+  for (const text of ["bos", "BOS", "Bos", "Boston Logan", "boston logan terminal b", "Logan Airport", "Boston airport",
+    "Boston Logan International Airport (BOS)", "BOS Terminal C"]) {
+    assert.equal(resolveAirport(text)?.code, "BOS", text);
+  }
+  for (const text of ["East Boston", "Boston, MA", "Logan Square, Chicago", "Kew Gardens, NY", "Chicago airport", "Midway, UT"]) {
+    assert.equal(resolveAirport(text), null, text);
+  }
+  assert.equal(resolveAirport("LaGuardia")?.code, "LGA");
+  assert.equal(resolveAirport("Nashville airport")?.code, "BNA");
+});
+
+test("a named airport is trusted even when the search describes it differently", () => {
+  const source = { title: "Massport dining", url: "https://www.massport.com/logan-airport/at-the-airport/shop-and-dine" };
+  const order = { ...meal, venue: "Legal Sea Foods", address: "Logan International Airport, Terminal B", name: "Grilled salmon",
+    menuUrl: source.url, locationUrl: source.url };
+  const result = groundedDiscovery(discovery([order], [], null), [source], "Legal Sea Foods in Terminal B serves Grilled salmon.",
+    { area: "Boston Logan International Airport (BOS)", kind: "airport" });
+  assert.equal(result.airport?.code, "BOS");
+  assert.equal(result.meals.length, 1);
+  assert.equal(result.locationNote, "");
 });

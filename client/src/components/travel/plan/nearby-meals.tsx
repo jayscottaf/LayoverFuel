@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ExternalLink, Loader2, MapPin, NotebookPen, Pin, Search, X } from "lucide-react";
+import { airportLabel, resolveAirport } from "@shared/airports";
 import { nearbyDiscoverySchema, rankNearbyMeals, type NearbyInput, type NearbyResults, type NearbyMeal } from "@shared/nearby-meals";
 import { readApiJson } from "@/lib/queryClient";
 import type { PlanMeal, TravelPlan } from "../api";
@@ -24,7 +25,9 @@ export function NearbyMeals({ plan, isToday, readOnly, mutations }: {
 }) {
   const id = useId();
   const area = plan.context.location.startsWith("Near ") ? "" : plan.context.location.trim();
-  const [kind, setKind] = useState<NearbyInput["kind"]>(/\b(airport|terminal|concourse)\b/i.test(area) || /^[A-Z]{3}$/.test(area) ? "airport" : "restaurant");
+  const knownAirport = resolveAirport(area);
+  const looksLikeAirport = !!knownAirport || /\b(airport|terminal|concourse)\b/i.test(area) || /^[A-Z]{3}$/.test(area);
+  const [kind, setKind] = useState<NearbyInput["kind"]>(looksLikeAirport ? "airport" : "restaurant");
   const [highProtein, setHighProtein] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -36,6 +39,7 @@ export function NearbyMeals({ plan, isToday, readOnly, mutations }: {
   useEffect(() => {
     controller.current?.abort(); controller.current = null;
     setBusy(false); setResults(null); setError("");
+    setKind(looksLikeAirport ? "airport" : "restaurant");
   }, [area]);
 
   const cancel = () => { controller.current?.abort(); controller.current = null; setBusy(false); };
@@ -44,7 +48,7 @@ export function NearbyMeals({ plan, isToday, readOnly, mutations }: {
     const request = new AbortController(); controller.current = request;
     setBusy(true); setError(""); setResults(null);
     try {
-      const response = await readApiJson<NearbyResults>("POST", "/api/nearby-meals", { area, kind }, { signal: request.signal, timeoutMs: 150_000 });
+      const response = await readApiJson<NearbyResults>("POST", "/api/nearby-meals", { area: kind === "airport" && knownAirport ? `${airportLabel(knownAirport)}${/\b(terminal|concourse)\b/i.test(area) ? `, ${area}` : ""}`.slice(0, 160) : area, kind }, { signal: request.signal, timeoutMs: 150_000 });
       if (!nearbyDiscoverySchema.safeParse({ meals: response.meals, places: response.places ?? [],
         airport: response.airport ?? null, locationNote: response.locationNote ?? "" }).success) {
         throw new Error("The search results could not be read. Try again.");
@@ -59,7 +63,7 @@ export function NearbyMeals({ plan, isToday, readOnly, mutations }: {
   const places = (results?.places ?? []).filter(place => !meals.some(meal =>
     meal.venue.toLowerCase() === place.venue.toLowerCase() && meal.address.toLowerCase() === place.address.toLowerCase()));
 
-  return <section id="nearby-meals" className="min-w-0 border-t pt-5" aria-labelledby={`${id}-title`}>
+  return <section id="nearby-meals" className="min-w-0 rounded-[22px] bg-card p-4 md:p-5" aria-labelledby={`${id}-title`}>
     <div className="flex items-center gap-2"><MapPin className="h-5 w-5 text-highlight" /><h2 id={`${id}-title`} className="text-lg font-semibold">Nearby meals</h2></div>
     <form className="mt-4 space-y-3" onSubmit={event => { event.preventDefault(); void search(); }}>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">

@@ -3,96 +3,97 @@
 @tailwind utilities;
 
 @layer base {
+  /* iOS-style palette. Light: grouped grey ground with white cards. */
   :root {
-    --background: 0 0% 99%;
-    --foreground: 0 0% 11%;
+    --background: 240 24% 96%;
+    --foreground: 240 3% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 160 16% 11%;
+    --card-foreground: 240 3% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 160 16% 11%;
-    --primary: 161 94% 24%;
+    --popover-foreground: 240 3% 11%;
+    --primary: 161 85% 26%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 150 12% 93%;
-    --secondary-foreground: 160 16% 11%;
-    --muted: 150 12% 94%;
-    --muted-foreground: 160 7% 37%;
-    --accent: 150 14% 92%;
-    --accent-foreground: 160 16% 11%;
+    --secondary: 240 10% 90%;
+    --secondary-foreground: 240 3% 11%;
+    --muted: 240 10% 92%;
+    --muted-foreground: 240 3% 37%;
+    --accent: 240 10% 90%;
+    --accent-foreground: 240 3% 11%;
     --destructive: 0 72% 42%;
     --destructive-foreground: 0 0% 100%;
-    --border: 150 11% 88%;
-    --input: 150 10% 84%;
-    --ring: 161 94% 28%;
-    --radius: 0.5rem;
+    --border: 240 6% 88%;
+    --input: 240 6% 80%;
+    --ring: 161 85% 30%;
+    --radius: 0.875rem;
 
-    /* Nutrition + status tokens (not part of shadcn; used via utilities below) */
-    --protein: 161 94% 28%;
-    --carbs: 32 88% 40%;
-    --fat: 212 20% 42%;
-    --highlight: 30 84% 42%;
-    --highlight-soft: 36 90% 94%;
-    --success-soft: 152 50% 93%;
-    --warning: 35 92% 33%;
-    --warning-soft: 42 95% 92%;
+    --protein: 161 85% 28%;
+    --carbs: 33 90% 38%;
+    --fat: 219 24% 38%;
+    --highlight: 33 90% 36%;
+    --highlight-soft: 36 85% 91%;
+    --success-soft: 152 45% 92%;
+    --warning: 33 92% 30%;
+    --warning-soft: 36 85% 91%;
     --danger-soft: 0 80% 96%;
-    --track: 150 10% 90%;
+    --track: 240 6% 90%;
 
-    --chart-1: 161 94% 28%;
-    --chart-2: 32 88% 40%;
-    --chart-3: 212 20% 42%;
+    --chart-1: 161 85% 28%;
+    --chart-2: 33 90% 38%;
+    --chart-3: 219 24% 38%;
     --chart-4: 190 60% 35%;
     --chart-5: 0 60% 45%;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 160 16% 11%;
-    --sidebar-primary: 161 94% 24%;
+    --sidebar-foreground: 240 3% 11%;
+    --sidebar-primary: 161 85% 26%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 150 12% 94%;
-    --sidebar-accent-foreground: 160 16% 11%;
-    --sidebar-border: 150 11% 88%;
-    --sidebar-ring: 161 94% 28%;
+    --sidebar-accent: 240 10% 92%;
+    --sidebar-accent-foreground: 240 3% 11%;
+    --sidebar-border: 240 6% 88%;
+    --sidebar-ring: 161 85% 30%;
   }
 
+  /* Dark (the default): true black ground, raised grey cards, brighter emerald. */
   .dark {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 94%;
-    --card: 0 0% 10%;
-    --card-foreground: 150 12% 93%;
-    --popover: 160 11% 10%;
-    --popover-foreground: 150 12% 93%;
-    --primary: 158 64% 46%;
-    --primary-foreground: 160 40% 6%;
-    --secondary: 160 8% 14%;
-    --secondary-foreground: 150 12% 93%;
-    --muted: 160 8% 13%;
-    --muted-foreground: 150 6% 64%;
-    --accent: 160 8% 16%;
-    --accent-foreground: 150 12% 93%;
-    --destructive: 0 70% 58%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 240 3% 11%;
+    --card-foreground: 0 0% 100%;
+    --popover: 240 3% 13%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 156 64% 54%;
+    --primary-foreground: 156 65% 5%;
+    --secondary: 240 2% 18%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 2% 18%;
+    --muted-foreground: 240 4% 65%;
+    --accent: 240 2% 22%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 3 100% 67%;
     --destructive-foreground: 0 0% 100%;
-    --border: 160 8% 17%;
-    --input: 160 8% 22%;
-    --ring: 158 64% 46%;
+    --border: 240 2% 22%;
+    --input: 240 2% 28%;
+    --ring: 156 64% 54%;
 
-    --protein: 158 64% 50%;
-    --carbs: 36 90% 58%;
-    --fat: 210 22% 66%;
-    --highlight: 32 90% 62%;
-    --highlight-soft: 30 40% 14%;
-    --success-soft: 158 40% 12%;
-    --warning: 38 92% 60%;
-    --warning-soft: 36 45% 13%;
-    --danger-soft: 0 40% 14%;
-    --track: 160 8% 18%;
+    --protein: 156 64% 54%;
+    --carbs: 34 85% 61%;
+    --fat: 218 35% 72%;
+    --highlight: 34 85% 61%;
+    --highlight-soft: 37 57% 15%;
+    --success-soft: 154 49% 14%;
+    --warning: 36 86% 72%;
+    --warning-soft: 37 57% 15%;
+    --danger-soft: 0 45% 16%;
+    --track: 240 2% 18%;
 
-    --sidebar-background: 160 12% 7%;
-    --sidebar-foreground: 150 12% 93%;
-    --sidebar-primary: 158 64% 46%;
-    --sidebar-primary-foreground: 160 40% 6%;
-    --sidebar-accent: 160 8% 14%;
-    --sidebar-accent-foreground: 150 12% 93%;
-    --sidebar-border: 160 8% 17%;
-    --sidebar-ring: 158 64% 46%;
+    --sidebar-background: 240 3% 11%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 156 64% 54%;
+    --sidebar-primary-foreground: 156 65% 5%;
+    --sidebar-accent: 240 2% 18%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 240 2% 22%;
+    --sidebar-ring: 156 64% 54%;
   }
 
   /* Legacy screens (Progress, Profile, Itinerary, auth) were designed for a

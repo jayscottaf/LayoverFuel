@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { nearbyAirportSchema, nearbyCandidateSchema, nearbyDiscoverySchema, nearbyPlaceSchema, publicSourceUrl, type NearbyInput, type NearbyMeal, type NearbyResults, type NearbyPlace } from "@shared/nearby-meals";
+import { airportTerms, resolveAirport } from "@shared/airports";
 import { normalizeEvidence } from "./public-menu-evidence";
 
 type Sources = NearbyResults["sources"];
@@ -79,6 +80,9 @@ export function groundedPlaces(raw: unknown, citations: Sources, airport?: NonNu
 function inAirport(place: { address: string; access: string }, airport: NonNullable<NearbyResults["airport"]>) {
   const location = `${place.address} ${place.access}`;
   const name = normalizeEvidence(airport.name.replace(/\bairport\b/gi, ""));
+  const known = resolveAirport(airport.code);
+  // A listed airport is also recognised by its nicknames ("Logan International, Terminal B").
+  if (known && airportTerms(known).some(term => term.length >= 3 && new RegExp(`(^|[^a-z])${term.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}([^a-z]|$)`, "i").test(location))) return true;
   return (name.length >= 3 && normalizeEvidence(location).includes(name)) ||
     new RegExp(`\\b${airport.code}\\b`, "i").test(location);
 }
@@ -90,10 +94,15 @@ export function groundedDiscovery(raw: unknown, sources: NearbyResults["sources"
   }).parse(raw);
   const parsedAirport = nearbyAirportSchema.safeParse(data.airport);
   const airportName = parsedAirport.success ? normalizeEvidence(parsedAirport.data.name.replace(/\bairport\b/gi, "")) : "";
-  const airport = input.kind === "airport" && parsedAirport.success && airportName.length >= 3 &&
+  const verified = input.kind === "airport" && parsedAirport.success && airportName.length >= 3 &&
     sources.some(source => publicSourceUrl(source.url) === publicSourceUrl(parsedAirport.data.sourceUrl)) &&
     normalizeEvidence(research).includes(airportName) &&
     new RegExp(`\\b${parsedAirport.data.code}\\b`, "i").test(research) ? parsedAirport.data : null;
+  // An airport the user named or is standing in needs no confirmation from the search.
+  const known = input.kind === "airport" ? resolveAirport(input.area) : null;
+  const airport = known && sources.length
+    ? { name: known.name, code: known.code, sourceUrl: verified?.code === known.code ? verified.sourceUrl : sources[0].url }
+    : verified;
   const meals = groundedMeals(data, sources, research).filter(meal => input.kind !== "airport" || airport && inAirport(meal, airport));
   const places = input.kind === "airport" && !airport ? [] : groundedPlaces(data, sources, airport ?? undefined);
   // Counts only: shows why a search came back thin without logging what was searched.

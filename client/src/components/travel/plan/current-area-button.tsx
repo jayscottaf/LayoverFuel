@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, LocateFixed, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { airportLabel, nearestAirport } from "@shared/airports";
 import { btnPrimary, btnQuiet, btnSecondary } from "./ui";
 
 export function areaFromGeocode(data: unknown): string {
@@ -46,6 +47,9 @@ export function CurrentAreaButton({ onFound, disabled, onBusyChange }: {
         try {
           const { latitude, longitude } = position.coords;
           if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) throw new Error("Invalid device location. Enter a city instead.");
+          // At a listed airport the name comes from the built-in list; nothing is sent anywhere.
+          const airport = nearestAirport(latitude, longitude);
+          if (airport) { cancel(); callbacks.current.onFound(airportLabel(airport)); return; }
           const query = new URLSearchParams({ latitude: String(latitude), longitude: String(longitude), localityLanguage: "en" });
           const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?${query}`, {
             signal: request.signal, credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer",
@@ -58,7 +62,7 @@ export function CurrentAreaButton({ onFound, disabled, onBusyChange }: {
       }, failure => fail(failure.code === 1
         ? "Location permission was denied. Enter a city, or allow location in your browser settings."
         : "Your device could not find its location. Enter a city or try again."),
-      { enableHighAccuracy: false, timeout: 15_000, maximumAge: 0 });
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 });
     } catch { fail("Location is unavailable. Enter a city instead."); }
   };
   return <>

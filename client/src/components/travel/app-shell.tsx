@@ -117,7 +117,7 @@ function TabBar() {
         href={href}
         aria-current={active ? "page" : undefined}
         className={`relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] ${
-          active ? "font-medium text-foreground" : "text-muted-foreground"
+          active ? "font-semibold text-primary" : "text-muted-foreground"
         }`}
       >
         <Icon className="h-5 w-5" aria-hidden="true" />
@@ -131,7 +131,7 @@ function TabBar() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 backdrop-blur pb-safe md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/90 backdrop-blur-xl pb-safe md:hidden"
     >
       <div className="mx-auto flex max-w-lg items-stretch px-2">
         {left.map(tab)}
@@ -140,7 +140,7 @@ function TabBar() {
             type="button"
             onClick={() => open()}
             aria-label="Log food"
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md active:scale-95 transition-transform"
+            className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
           >
             <Plus className="h-6 w-6" aria-hidden="true" />
           </button>

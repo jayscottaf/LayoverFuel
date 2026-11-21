@@ -36,8 +36,8 @@ export function PageHeader({
   return (
     <header className="mb-6 flex items-start justify-between gap-4">
       <div className="min-w-0">
-        {eyebrow && <p className="text-sm text-muted-foreground tabular">{eyebrow}</p>}
-        <h1 className="mt-0.5 text-2xl font-semibold tracking-normal md:text-3xl">{title}</h1>
+        {eyebrow && <p className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground tabular">{eyebrow}</p>}
+        <h1 className="mt-0.5 text-[34px] font-bold leading-tight tracking-tight">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-2">
@@ -45,7 +45,7 @@ export function PageHeader({
         <Link
           href="/profile"
           aria-label="Profile and settings"
-          className="flex h-10 w-10 items-center justify-center rounded-full border bg-card text-muted-foreground hover:text-foreground md:hidden"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-primary md:hidden"
         >
           <CircleUserRound className="h-5 w-5" aria-hidden="true" />
         </Link>
@@ -54,7 +54,7 @@ export function PageHeader({
   );
 }
 
-/** Unframed page section; only individual items and dialogs use card surfaces. */
+/** Grouped card surface, iOS style. Do not nest Panels. */
 export function Panel({
   children,
   className = "",
@@ -67,7 +67,7 @@ export function Panel({
   labelledBy?: string;
 }) {
   return (
-    <Tag aria-labelledby={labelledBy} className={`border-t py-5 ${className}`}>
+    <Tag aria-labelledby={labelledBy} className={`rounded-[22px] bg-card p-4 md:p-5 ${className}`}>
       {children}
     </Tag>
   );
@@ -84,7 +84,7 @@ export function SectionTitle({
 }) {
   return (
     <div className="mb-3 flex items-center justify-between gap-3">
-      <h2 id={id} className="text-base font-semibold">
+      <h2 id={id} className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
         {children}
       </h2>
       {action}
@@ -270,7 +270,7 @@ export function Segmented<T extends string>({
   className?: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className={`flex flex-wrap gap-1 rounded-lg bg-secondary p-1 ${className}`}>
+    <div role="radiogroup" aria-label={label} className={`flex flex-wrap gap-0.5 rounded-xl bg-secondary p-0.5 ${className}`}>
       {options.map(o => {
         const active = o.value === value;
         return (

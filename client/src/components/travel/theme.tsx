@@ -12,8 +12,8 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  preference: "system",
-  resolved: "light",
+  preference: "dark",
+  resolved: "dark",
   setPreference: () => {},
 });
 
@@ -22,7 +22,7 @@ function readPreference(): ThemePreference {
     const v = localStorage.getItem(STORAGE_KEY);
     if (v === "light" || v === "dark" || v === "system") return v;
   } catch {}
-  return "system";
+  return "dark";
 }
 
 function systemPrefersDark(): boolean {
