@@ -2,18 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, LocateFixed, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { airportLabel, nearestAirport } from "@shared/airports";
+import { areaFromGeocode } from "@shared/geocode-area";
 import { btnPrimary, btnQuiet, btnSecondary } from "./ui";
-
-export function areaFromGeocode(data: unknown): string {
-  if (!data || typeof data !== "object") throw new Error("Your area could not be identified. Enter a city instead.");
-  const record = data as Record<string, unknown>;
-  const read = (key: string) => typeof record[key] === "string" ? String(record[key]).trim().slice(0, 60) : "";
-  if (read("lookupSource") !== "coordinates" && read("lookupSource") !== "reverseGeocoding") {
-    throw new Error("The location service could not confirm your device location. Enter a city instead.");
-  }
-  if (!read("city") && !read("locality")) throw new Error("No city was found. Enter an area instead.");
-  return [...new Set([read("locality"), read("city"), read("principalSubdivision"), read("countryName")].filter(Boolean))].join(", ").slice(0, 160);
-}
 
 export function CurrentAreaButton({ onFound, disabled, onBusyChange }: {
   onFound: (area: string) => void; disabled?: boolean; onBusyChange?: (busy: boolean) => void;
