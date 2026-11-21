@@ -7,6 +7,7 @@ import { EQUIPMENT_OPTIONS, PLAN_PATTERNS, contextsEqual, normalizeContext, togg
 import { btnLink, btnPrimary, btnQuiet, textareaClass } from "./ui";
 import type { PlanBusy, SaveOutcome } from "./use-plan-mutations";
 import { CurrentAreaButton } from "./current-area-button";
+import { PlaceAutocompleteInput } from "./place-autocomplete-input";
 import { PLAN_LOCATION_INPUT_ID } from "./plan-location";
 
 function PatternPicker({
@@ -212,17 +213,13 @@ export function ContextEditor({
       <form onSubmit={submit} noValidate className="flex flex-col gap-5">
         <div className="space-y-1.5">
           <Field id={PLAN_LOCATION_INPUT_ID} label="City, neighborhood or airport terminal">
-            <input
+            <PlaceAutocompleteInput
               id={PLAN_LOCATION_INPUT_ID}
-              type="text"
-              autoComplete="off"
               maxLength={160}
               placeholder="Nashville, TN or LGA Terminal B"
               value={form.location}
               disabled={locating}
-              onChange={e => {
-                update("location", e.target.value);
-              }}
+              onChange={value => update("location", value)}
               className={inputClass}
             />
           </Field>

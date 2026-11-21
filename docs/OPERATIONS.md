@@ -54,3 +54,14 @@ after a few idle minutes. Things that wake it: user requests, the daily uptime
 check, the nightly backup, and the daily session prune
 (`pruneSessionInterval` in `server/storage.ts`). Avoid adding frequent timers or
 polling that touch the database.
+
+## Location lookup (Google Maps)
+
+The plan's location field suggests places as you type, and "Use current location"
+names the area, through `/api/places/*` (`server/services/places-service.ts`). The
+server calls Google with `GOOGLE_MAPS_API_KEY` (Railway variable); the browser never
+sees the key. The key needs **Places API (New)** and **Geocoding API** enabled and
+should be restricted to those two APIs.
+
+Without the key the field is a plain text box and current location falls back to
+BigDataCloud in the browser (`shared/geocode-area.ts`).
