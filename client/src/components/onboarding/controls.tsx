@@ -2,7 +2,7 @@ import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { AlertCircle, Check } from "lucide-react";
 
 export const primaryButtonClass =
-  "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-[54px] w-full items-center justify-center gap-2 rounded-full bg-primary px-4 text-[17px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const secondaryButtonClass =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50";
@@ -107,8 +107,8 @@ export function RadioCards<T extends string>({
             tabIndex={tabIndexFor(i)}
             onClick={() => onChange(o.value)}
             onKeyDown={e => onKeyDown(e, i)}
-            className={`flex min-h-11 w-full items-start gap-3 rounded-lg border p-4 text-left transition-colors ${
-              selected ? "border-primary bg-primary/5" : "bg-card hover:bg-secondary"
+            className={`flex min-h-11 w-full items-start gap-3 rounded-2xl border-2 p-4 text-left transition-colors ${
+              selected ? "border-primary bg-primary/10" : "border-transparent bg-card hover:bg-secondary"
             }`}
           >
             <span className="mt-0.5">
@@ -142,8 +142,8 @@ export function ToggleOption({
       type="button"
       aria-pressed={pressed}
       onClick={onToggle}
-      className={`flex min-h-11 w-full items-center gap-2.5 rounded-lg border px-3 text-left text-sm transition-colors ${
-        pressed ? "border-primary bg-primary/5 font-medium" : "bg-card hover:bg-secondary"
+      className={`flex min-h-12 w-full items-center gap-2.5 rounded-xl border-2 px-3 text-left text-sm transition-colors ${
+        pressed ? "border-primary bg-primary/10 font-medium" : "border-transparent bg-card hover:bg-secondary"
       }`}
     >
       <SelectionMark selected={pressed} round={false} />

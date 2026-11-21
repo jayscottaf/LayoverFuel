@@ -498,7 +498,7 @@ export function ResultStep({
     <div className="space-y-4">
       <Panel as="div">
         <p className="text-sm text-muted-foreground">Daily calorie target</p>
-        <p className="mt-1 text-4xl font-semibold tracking-normal tabular">
+        <p className="mt-1 text-[56px] font-bold leading-none tracking-tight text-primary tabular">
           {fmtInt(targets.targetCalories)}
           <span className="ml-1.5 text-base font-normal text-muted-foreground">kcal</span>
         </p>

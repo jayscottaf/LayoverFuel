@@ -414,7 +414,7 @@ export function OnboardingView() {
               aria-valuemax={TOTAL_STEPS}
               aria-valuenow={progressNow}
               aria-valuetext={done ? "Setup complete" : `Step ${step + 1} of ${TOTAL_STEPS}`}
-              className="mt-1 h-1 overflow-hidden rounded-full bg-track"
+              className="mt-1 h-1.5 overflow-hidden rounded-full bg-track"
             >
               <div
                 className="h-full rounded-full bg-primary transition-[width] duration-300"
@@ -436,11 +436,11 @@ export function OnboardingView() {
                   id={HEADING_ID}
                   ref={headingRef}
                   tabIndex={-1}
-                  className="text-2xl font-semibold tracking-normal focus:outline-none"
+                  className="text-[30px] font-bold leading-tight tracking-tight focus:outline-none"
                 >
                   {copy.title}
                 </h1>
-                <p className="mt-1 text-sm text-muted-foreground">{copy.subtitle}</p>
+                <p className="mt-1.5 text-base text-muted-foreground">{copy.subtitle}</p>
                 <div className="mt-6">{content}</div>
               </div>
 

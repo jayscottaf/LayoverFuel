@@ -65,7 +65,7 @@ function Router() {
 
   if (!isAuthenticated) {
     return (
-      <div className="legacy-dark dark min-h-screen">
+      <div className="min-h-screen bg-background text-foreground">
         <Switch>
           <Route path="/auth/register" component={RegisterPage} />
           <Route component={LoginPage} />
