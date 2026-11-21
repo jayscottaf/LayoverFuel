@@ -14,11 +14,11 @@ const CustomTooltip = ({ active, payload }: any) => {
     const roundedWeight = Math.round(payload[0].value * 2) / 2;
 
     return (
-      <div className="bg-gray-950 border border-blue-500/20 rounded-lg p-3 shadow-2xl backdrop-blur">
-        <p className="text-xs text-gray-400 mb-1">{formattedDate}</p>
+      <div className="bg-card border border-primary/40 rounded-lg p-3 shadow-2xl backdrop-blur">
+        <p className="text-xs text-muted-foreground mb-1">{formattedDate}</p>
         <div className="flex items-baseline gap-1">
-          <p className="text-lg font-bold text-white">{roundedWeight}</p>
-          <p className="text-xs text-gray-400">lbs</p>
+          <p className="text-lg font-bold text-foreground">{roundedWeight}</p>
+          <p className="text-xs text-muted-foreground">lbs</p>
         </div>
       </div>
     );
@@ -50,7 +50,7 @@ export function WeightProgressChart({
 
   return (
     <div className={`${className}`}>
-      <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-800">
+      <div className="bg-card rounded-xl p-4 border border-border">
         <div className="h-40">
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
@@ -65,37 +65,37 @@ export function WeightProgressChart({
               >
                 <defs>
                   <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" strokeOpacity={0.3} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
                 <XAxis
                   dataKey="displayDate"
-                  stroke="#6B7280"
+                  stroke="hsl(var(--muted-foreground))"
                   fontSize={10}
-                  tick={{ fill: '#6B7280' }}
-                  axisLine={{ stroke: '#374151' }}
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
                 />
                 <YAxis
                   domain={[minWeight, maxWeight]}
-                  stroke="#6B7280"
+                  stroke="hsl(var(--muted-foreground))"
                   fontSize={10}
-                  tick={{ fill: '#6B7280' }}
-                  axisLine={{ stroke: '#374151' }}
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
                   tickFormatter={(value) => `${value}`}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 {validGoalWeight !== undefined && (
                   <ReferenceLine
                     y={validGoalWeight}
-                    stroke="#10B981"
+                    stroke="hsl(var(--highlight))"
                     strokeDasharray="8 4"
                     strokeWidth={1.5}
                     label={{
                       value: "Goal",
                       position: "right",
-                      fill: "#10B981",
+                      fill: "hsl(var(--highlight))",
                       fontSize: 10
                     }}
                   />
@@ -103,19 +103,19 @@ export function WeightProgressChart({
                 <Area
                   type="monotone"
                   dataKey="weight"
-                  stroke="#3B82F6"
+                  stroke="hsl(var(--primary))"
                   strokeWidth={2.5}
                   fill="url(#weightGradient)"
                   activeDot={{
                     r: 5,
-                    fill: "#3B82F6",
-                    stroke: "#1E293B",
+                    fill: "hsl(var(--primary))",
+                    stroke: "hsl(var(--card))",
                     strokeWidth: 2
                   }}
                   dot={{
                     r: 3,
-                    fill: "#3B82F6",
-                    stroke: "#1E293B",
+                    fill: "hsl(var(--primary))",
+                    stroke: "hsl(var(--card))",
                     strokeWidth: 1.5
                   }}
                 />
@@ -124,8 +124,8 @@ export function WeightProgressChart({
           ) : (
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
-                <p className="text-gray-500 text-sm mb-2">No weight data available</p>
-                <p className="text-gray-600 text-xs">Log your weight to see trends</p>
+                <p className="text-muted-foreground text-sm mb-2">No weight data available</p>
+                <p className="text-muted-foreground text-xs">Log your weight to see trends</p>
               </div>
             </div>
           )}
@@ -134,13 +134,13 @@ export function WeightProgressChart({
         {chartData.length > 0 && (
           <div className="mt-3 flex items-center justify-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-0.5 bg-blue-500"></div>
-              <span className="text-xs text-gray-400">Current</span>
+              <div className="w-3 h-0.5 bg-primary"></div>
+              <span className="text-xs text-muted-foreground">Current</span>
             </div>
             {validGoalWeight !== undefined && (
               <div className="flex items-center gap-2">
-                <div className="w-3 h-0.5 bg-green-500" style={{ borderTop: '2px dashed #10B981', height: 0 }}></div>
-                <span className="text-xs text-gray-400">Goal</span>
+                <div className="w-3 h-0.5 bg-primary" style={{ borderTop: '2px dashed hsl(var(--highlight))', height: 0 }}></div>
+                <span className="text-xs text-muted-foreground">Goal</span>
               </div>
             )}
           </div>

@@ -4,9 +4,9 @@ import { Info } from "lucide-react";
 import { nonNeg, type DashboardData } from "../api";
 import { formatShortDate, isDateKey } from "../local-date";
 import {
-  CalorieSummary,
+  CalorieRing,
   MacroLine,
-  MacroMeter,
+  MacroRow,
   Panel,
   SectionTitle,
   SkeletonBlock,
@@ -56,7 +56,23 @@ export function RemainingPanel({
       <SectionTitle id={titleId}>Remaining today</SectionTitle>
 
       {targetCalories > 0 ? (
-        <CalorieSummary consumed={consumed} target={targetCalories} basis="Based on logged meals" />
+        <div>
+          <div className="flex items-center gap-4">
+            <CalorieRing consumed={consumed} target={targetCalories} />
+            {hasMacroTargets ? (
+              <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+                <MacroRow macro="protein" consumed={eaten.protein} target={macroTargets.protein} />
+                <MacroRow macro="carbs" consumed={eaten.carbs} target={macroTargets.carbs} />
+                <MacroRow macro="fat" consumed={eaten.fat} target={macroTargets.fat} />
+              </div>
+            ) : (
+              <MacroLine m={eaten} className="min-w-0 flex-1" />
+            )}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground tabular">
+            {fmtInt(consumed)} eaten of {fmtInt(targetCalories)} kcal target · Based on logged meals
+          </p>
+        </div>
       ) : (
         <div>
           <p className="text-4xl font-semibold tabular tracking-normal">
@@ -70,17 +86,8 @@ export function RemainingPanel({
             </Link>{" "}
             to see what's left.
           </p>
+          <MacroLine m={eaten} className="mt-4" />
         </div>
-      )}
-
-      {hasMacroTargets ? (
-        <div className="mt-5 grid grid-cols-3 gap-3">
-          <MacroMeter macro="protein" consumed={eaten.protein} target={macroTargets.protein} />
-          <MacroMeter macro="carbs" consumed={eaten.carbs} target={macroTargets.carbs} />
-          <MacroMeter macro="fat" consumed={eaten.fat} target={macroTargets.fat} />
-        </div>
-      ) : (
-        <MacroLine m={eaten} className="mt-4" />
       )}
 
       {dayMismatch && serverDate && (

@@ -35,12 +35,39 @@ export function DateNav({
     }
   };
 
+  // Seven days ending today, or around the selected day when it is further back.
+  const stripEnd = compareDates(date, shiftDate(today, -6)) >= 0 ? today
+    : compareDates(shiftDate(date, 3), today) > 0 ? today : shiftDate(date, 3);
+  const strip = Array.from({ length: 7 }, (_, i) => shiftDate(stripEnd, i - 6));
+  const part = (day: string, options: Intl.DateTimeFormatOptions) =>
+    new Date(`${day}T12:00:00Z`).toLocaleDateString(undefined, { ...options, timeZone: "UTC" });
+
   return (
-    <div
-      role="group"
-      aria-label="Choose a day"
-      className="flex flex-col gap-2 rounded-lg border bg-card p-2 md:flex-row md:items-center md:justify-between md:gap-6 md:p-3"
-    >
+    <div role="group" aria-label="Choose a day" className="flex flex-col gap-2 rounded-[22px] bg-card p-2 md:p-3">
+      <div className="grid grid-cols-7 gap-1">
+        {strip.map(day => {
+          const selected = day === date;
+          return (
+            <button
+              key={day}
+              type="button"
+              aria-pressed={selected}
+              aria-label={`${formatLongDate(day)}${day === today ? ", today" : ""}`}
+              onClick={() => onChange(day)}
+              className={`flex h-[60px] flex-col items-center justify-center gap-0.5 rounded-[14px] transition-colors ${
+                selected ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-secondary"
+              }`}
+            >
+              <span className={`text-[11px] font-semibold uppercase ${selected ? "" : "text-muted-foreground"}`}>
+                {part(day, { weekday: "short" })}
+              </span>
+              <span className="text-[17px] font-semibold tabular">{part(day, { day: "numeric" })}</span>
+              <span className={`h-1 w-1 rounded-full ${day === today ? (selected ? "bg-primary-foreground" : "bg-primary") : "bg-transparent"}`} aria-hidden="true" />
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-col gap-2 border-t pt-2 md:flex-row md:items-center md:justify-between md:gap-6">
       <div className="flex items-center gap-2 md:min-w-[20rem]">
         <button
           type="button"
@@ -87,6 +114,7 @@ export function DateNav({
             Today
           </button>
         )}
+      </div>
       </div>
     </div>
   );

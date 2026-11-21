@@ -99,7 +99,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
             aria-label={label}
             title={label}
             onClick={() => setPreference(value)}
-            className={`flex h-8 w-9 items-center justify-center rounded-md transition-colors ${
+            className={`flex h-11 w-11 items-center justify-center rounded-md transition-colors ${
               active ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >

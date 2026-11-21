@@ -138,6 +138,44 @@ export function CalorieSummary({
   );
 }
 
+/** Calories left as a ring. Over target is stated neutrally; the ring simply stays full. */
+export function CalorieRing({ consumed, target, size = 132 }: { consumed: number; target: number; size?: number }) {
+  const stroke = 13;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const pct = target > 0 ? Math.min(Math.max(consumed / target, 0), 1) : 0;
+  const remaining = Math.round(target - consumed);
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        role="img"
+        aria-label={`${fmtInt(consumed)} of ${fmtInt(target)} kilocalories eaten`}
+      >
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--track))" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${pct * c} ${c}`}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          className="transition-[stroke-dasharray] duration-500"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-[30px] font-bold leading-none tabular tracking-tight">{fmtInt(Math.abs(remaining))}</span>
+        <span className="mt-1 text-xs font-medium text-muted-foreground">{remaining < 0 ? "kcal over" : "kcal left"}</span>
+      </div>
+    </div>
+  );
+}
+
 const MACRO_TONES = {
   protein: { bar: "bg-protein", text: "text-protein", label: "Protein" },
   carbs: { bar: "bg-carbs", text: "text-carbs", label: "Carbs" },
@@ -177,6 +215,32 @@ export function MacroMeter({
       <p className="mt-1 text-xs text-muted-foreground tabular">
         {left >= 0 ? `${left} g left` : `${Math.abs(left)} g over`}
       </p>
+    </div>
+  );
+}
+
+/** One-line macro bar for tight spaces (beside the calorie ring). */
+export function MacroRow({ macro, consumed, target }: { macro: keyof typeof MACRO_TONES; consumed: number; target: number }) {
+  const tone = MACRO_TONES[macro];
+  const pct = target > 0 ? Math.min(consumed / target, 1) : 0;
+  return (
+    <div className="min-w-0">
+      <div className="flex items-baseline justify-between gap-2 text-[13px]">
+        <span className="font-semibold">{tone.label}</span>
+        <span className="tabular text-muted-foreground">
+          {Math.round(consumed)} / {Math.round(target)} g
+        </span>
+      </div>
+      <div
+        className="mt-1 h-1.5 overflow-hidden rounded-full bg-track"
+        role="meter"
+        aria-label={`${tone.label} eaten`}
+        aria-valuemin={0}
+        aria-valuemax={Math.max(target, 1)}
+        aria-valuenow={Math.round(consumed)}
+      >
+        <div className={`h-full rounded-full ${tone.bar} transition-[width] duration-500`} style={{ width: `${pct * 100}%` }} />
+      </div>
     </div>
   );
 }

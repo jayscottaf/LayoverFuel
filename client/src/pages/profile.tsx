@@ -6,6 +6,7 @@ import { User, ChevronRight, Check, LogOut, RefreshCw, CalendarCheck, CalendarX,
 import { apiRequest, apiUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ThemeToggle } from "@/components/travel/theme";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -97,14 +98,14 @@ function EditorSheet({ title, onClose, onSave, children }: EditorSheetProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-lg bg-gray-950 border border-gray-800 rounded-t-3xl px-5 pt-4 pb-8 space-y-4 overflow-y-auto"
+        className="w-full max-w-lg bg-card border border-border rounded-t-3xl px-5 pt-4 pb-8 space-y-4 overflow-y-auto"
         style={{ maxHeight: "85dvh" }}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between py-1">
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-sm">Cancel</button>
-          <h3 className="text-white font-semibold">{title}</h3>
-          <button onClick={onSave} className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm">Save</button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-sm">Cancel</button>
+          <h3 className="text-foreground font-semibold">{title}</h3>
+          <button onClick={onSave} className="text-primary hover:text-primary font-semibold text-sm">Save</button>
         </div>
         {children}
       </div>
@@ -121,12 +122,12 @@ function SettingsRow({ label, value, onTap, last = false }: {
   return (
     <button
       onClick={onTap}
-      className={`w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-800/60 transition-colors active:bg-gray-800 ${!last ? "border-b border-gray-800/60" : ""}`}
+      className={`w-full flex items-center justify-between px-4 py-3.5 hover:bg-secondary/60 transition-colors active:bg-secondary ${!last ? "border-b border-border" : ""}`}
     >
-      <span className="text-sm text-gray-300">{label}</span>
+      <span className="text-sm text-muted-foreground">{label}</span>
       <div className="flex items-center gap-2">
-        <span className={`text-sm max-w-[180px] truncate text-right ${isPlaceholder ? "text-indigo-400" : "text-gray-500"}`}>{value}</span>
-        <ChevronRight className="h-4 w-4 text-gray-600 shrink-0" />
+        <span className={`text-sm max-w-[180px] truncate text-right ${isPlaceholder ? "text-primary" : "text-muted-foreground"}`}>{value}</span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
       </div>
     </button>
   );
@@ -135,8 +136,8 @@ function SettingsRow({ label, value, onTap, last = false }: {
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1">{title}</p>
-      <div className="bg-gray-900 rounded-2xl overflow-hidden">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-1">{title}</p>
+      <div className="bg-card rounded-2xl overflow-hidden">
         {children}
       </div>
     </div>
@@ -273,26 +274,26 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div className="flex-1 overflow-y-auto bg-background pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
         <div className="max-w-lg mx-auto px-4 pt-4 space-y-5">
-          <div className="bg-gray-900 rounded-3xl p-5 space-y-5">
+          <div className="bg-card rounded-[22px] p-5 space-y-5">
             <div className="flex items-center gap-3">
-              <Skeleton className="w-14 h-14 rounded-2xl bg-gray-800" />
+              <Skeleton className="w-14 h-14 rounded-2xl bg-secondary" />
               <div className="flex-1 space-y-2">
-                <Skeleton className="h-5 w-32 bg-gray-800" />
-                <Skeleton className="h-3 w-44 bg-gray-800" />
+                <Skeleton className="h-5 w-32 bg-secondary" />
+                <Skeleton className="h-3 w-44 bg-secondary" />
               </div>
             </div>
             <div className="grid grid-cols-4 gap-2">
               {[0, 1, 2, 3].map(i => (
-                <Skeleton key={i} className="h-16 rounded-xl bg-gray-800" />
+                <Skeleton key={i} className="h-16 rounded-xl bg-secondary" />
               ))}
             </div>
           </div>
           {[0, 1, 2, 3].map(i => (
             <div key={i} className="space-y-1">
-              <Skeleton className="h-3 w-20 bg-gray-800" />
-              <Skeleton className="h-20 rounded-2xl bg-gray-900" />
+              <Skeleton className="h-3 w-20 bg-secondary" />
+              <Skeleton className="h-20 rounded-2xl bg-card" />
             </div>
           ))}
         </div>
@@ -302,35 +303,37 @@ export default function ProfilePage() {
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div className="flex-1 overflow-y-auto bg-background pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
         <div className="max-w-lg mx-auto px-4 pt-4 space-y-5">
 
+          <h1 className="text-[34px] font-bold leading-tight tracking-tight text-foreground">Profile</h1>
+
           {/* Avatar + targets hero */}
-          <div className="bg-gray-900 rounded-3xl p-5">
+          <div className="bg-card rounded-[22px] p-5">
             {/* Avatar row */}
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
-                <User className="h-7 w-7 text-indigo-400" />
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/40 flex items-center justify-center shrink-0">
+                <User className="h-7 w-7 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-lg font-bold text-white truncate">{profile?.name ?? "—"}</p>
-                <p className="text-xs text-gray-400 truncate">{profile?.email ?? ""}</p>
+                <p className="text-lg font-bold text-foreground truncate">{profile?.name ?? "—"}</p>
+                <p className="text-xs text-muted-foreground truncate">{profile?.email ?? ""}</p>
               </div>
             </div>
 
             {/* Calorie + macro targets */}
-            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Daily Targets</p>
+            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-2">Daily Targets</p>
             <div className="grid grid-cols-4 gap-2">
               {[
-                { label: "Calories", value: macros?.targetCalories ? `${macros.targetCalories}` : "—", unit: "kcal", color: "text-orange-400" },
-                { label: "Protein", value: macros?.protein ? `${macros.protein}` : "—", unit: "g", color: "text-blue-400" },
-                { label: "Carbs", value: macros?.carbs ? `${macros.carbs}` : "—", unit: "g", color: "text-emerald-400" },
-                { label: "Fat", value: macros?.fat ? `${macros.fat}` : "—", unit: "g", color: "text-amber-400" },
+                { label: "Calories", value: macros?.targetCalories ? `${macros.targetCalories}` : "—", unit: "kcal", color: "text-highlight" },
+                { label: "Protein", value: macros?.protein ? `${macros.protein}` : "—", unit: "g", color: "text-primary" },
+                { label: "Carbs", value: macros?.carbs ? `${macros.carbs}` : "—", unit: "g", color: "text-primary" },
+                { label: "Fat", value: macros?.fat ? `${macros.fat}` : "—", unit: "g", color: "text-highlight" },
               ].map(({ label, value, unit, color }) => (
-                <div key={label} className="bg-gray-800 rounded-xl p-2.5 text-center">
+                <div key={label} className="bg-secondary rounded-xl p-2.5 text-center">
                   <p className={`text-base font-bold ${color}`}>{value}</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">{unit}</p>
-                  <p className="text-[10px] text-gray-500">{label}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{unit}</p>
+                  <p className="text-[10px] text-muted-foreground">{label}</p>
                 </div>
               ))}
             </div>
@@ -339,7 +342,7 @@ export default function ProfilePage() {
           {/* Goal */}
           <SectionCard title="Goal">
             <div className="px-4 py-3">
-              <p className="text-xs text-gray-500 mb-2">Fitness goal</p>
+              <p className="text-xs text-muted-foreground mb-2">Fitness goal</p>
               <div className="grid grid-cols-2 gap-2">
                 {GOAL_OPTIONS.map(opt => (
                   <button
@@ -347,8 +350,8 @@ export default function ProfilePage() {
                     onClick={() => mutation.mutate({ fitnessGoal: opt.value })}
                     className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-colors ${
                       profile?.fitnessGoal === opt.value
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground hover:bg-accent"
                     }`}
                   >
                     {opt.label}
@@ -389,18 +392,18 @@ export default function ProfilePage() {
                   onClick={() => mutation.mutate({ activityLevel: opt.value })}
                   className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl transition-colors ${
                     profile?.activityLevel === opt.value
-                      ? "bg-indigo-600/20 border border-indigo-500/40"
-                      : "hover:bg-gray-800"
+                      ? "bg-primary/10 border border-primary/40"
+                      : "hover:bg-secondary"
                   }`}
                 >
                   <div className="text-left">
-                    <p className={`text-sm font-medium ${profile?.activityLevel === opt.value ? "text-indigo-300" : "text-gray-300"}`}>
+                    <p className={`text-sm font-medium ${profile?.activityLevel === opt.value ? "text-primary" : "text-muted-foreground"}`}>
                       {opt.label}
                     </p>
-                    <p className="text-xs text-gray-500">{opt.sub}</p>
+                    <p className="text-xs text-muted-foreground">{opt.sub}</p>
                   </div>
                   {profile?.activityLevel === opt.value && (
-                    <Check className="h-4 w-4 text-indigo-400 shrink-0" />
+                    <Check className="h-4 w-4 text-primary shrink-0" />
                   )}
                 </button>
               ))}
@@ -414,18 +417,18 @@ export default function ProfilePage() {
 
           {/* Integrations */}
           <SectionCard title="Integrations">
-            <div className="px-4 py-3.5 border-b border-gray-800/60">
+            <div className="px-4 py-3.5 border-b border-border">
               <div className="flex items-start gap-3">
-                <div className={`shrink-0 rounded-xl p-2.5 ${profile?.googleCalendarConnected ? "bg-emerald-500/20" : "bg-gray-800"}`}>
+                <div className={`shrink-0 rounded-xl p-2.5 ${profile?.googleCalendarConnected ? "bg-success-soft" : "bg-secondary"}`}>
                   {profile?.googleCalendarConnected ? (
-                    <CalendarCheck className="h-5 w-5 text-emerald-400" />
+                    <CalendarCheck className="h-5 w-5 text-primary" />
                   ) : (
-                    <CalendarX className="h-5 w-5 text-gray-500" />
+                    <CalendarX className="h-5 w-5 text-muted-foreground" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white font-medium">Google Calendar</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-sm text-foreground font-medium">Google Calendar</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {profile?.googleCalendarConnected
                       ? "Connected — we read your upcoming events to surface flights and layovers."
                       : "Connect to see upcoming flights and layovers from your calendar."}
@@ -437,7 +440,7 @@ export default function ProfilePage() {
                   <>
                     <button
                       onClick={() => navigate("/itinerary")}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium py-2.5 rounded-xl transition-colors"
                     >
                       <Plane className="h-4 w-4" />
                       View itinerary
@@ -445,7 +448,7 @@ export default function ProfilePage() {
                     <button
                       onClick={() => disconnectCalendar.mutate()}
                       disabled={disconnectCalendar.isPending}
-                      className="flex-1 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 text-sm font-medium py-2.5 rounded-xl transition-colors"
+                      className="flex-1 bg-secondary hover:bg-accent disabled:opacity-50 text-muted-foreground text-sm font-medium py-2.5 rounded-xl transition-colors"
                     >
                       Disconnect
                     </button>
@@ -453,7 +456,7 @@ export default function ProfilePage() {
                 ) : (
                   <a
                     href={apiUrl("/api/auth/google/connect-calendar")}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium py-2.5 rounded-xl transition-colors"
                   >
                     <CalendarCheck className="h-4 w-4" />
                     Connect Google Calendar
@@ -465,16 +468,16 @@ export default function ProfilePage() {
 
           {/* App */}
           <SectionCard title="App">
-            <div className="px-4 py-3.5 border-b border-gray-800/60">
+            <div className="px-4 py-3.5 border-b border-border">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
-                  <p className="text-sm text-gray-300 font-medium">Quick Log Mode</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Instant logging with 5-second undo (faster) vs always confirm first (safer)</p>
+                  <p className="text-sm text-muted-foreground font-medium">Quick Log Mode</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Instant logging with 5-second undo (faster) vs always confirm first (safer)</p>
                 </div>
                 <button
                   onClick={() => mutation.mutate({ quickLogMode: !profile?.quickLogMode })}
                   className={`shrink-0 relative w-12 h-7 rounded-full transition-colors ${
-                    profile?.quickLogMode ? "bg-indigo-600" : "bg-gray-700"
+                    profile?.quickLogMode ? "bg-primary" : "bg-accent"
                   }`}
                 >
                   <div
@@ -487,17 +490,21 @@ export default function ProfilePage() {
             </div>
             <button
               onClick={() => { localStorage.removeItem("layoverfuel_shortcuts"); toast({ title: "Reset", description: "Shortcuts restored to defaults." }); }}
-              className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-800/60 border-b border-gray-800/60 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-secondary/60 border-b border-border transition-colors"
             >
-              <span className="text-sm text-gray-300">Reset Quick Shortcuts</span>
-              <RefreshCw className="h-4 w-4 text-gray-500" />
+              <span className="text-sm text-muted-foreground">Reset Quick Shortcuts</span>
+              <RefreshCw className="h-4 w-4 text-muted-foreground" />
             </button>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <span className="text-sm text-foreground">Appearance</span>
+              <ThemeToggle />
+            </div>
             <button
               onClick={() => setShowLogoutConfirm(true)}
-              className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-gray-800/60 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-secondary/60 transition-colors"
             >
-              <span className="text-sm text-red-400">Sign out</span>
-              <LogOut className="h-4 w-4 text-red-400" />
+              <span className="text-sm text-destructive">Sign out</span>
+              <LogOut className="h-4 w-4 text-destructive" />
             </button>
           </SectionCard>
 
@@ -505,20 +512,20 @@ export default function ProfilePage() {
       </div>
 
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
-        <AlertDialogContent className="bg-gray-900 border-gray-800 text-white">
+        <AlertDialogContent className="bg-card border-border text-foreground">
           <AlertDialogHeader>
             <AlertDialogTitle>Sign out of LayoverFuel?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogDescription className="text-muted-foreground">
               Your logged meals, workouts, and profile are saved. You can sign back in any time.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:text-white">
+            <AlertDialogCancel className="bg-secondary text-muted-foreground border-border hover:bg-accent hover:text-foreground">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLogout}
-              className="bg-red-600 text-white hover:bg-red-500"
+              className="bg-destructive text-foreground hover:bg-destructive"
             >
               Sign out
             </AlertDialogAction>
@@ -533,7 +540,7 @@ export default function ProfilePage() {
         <EditorSheet title="Name" onClose={() => setEditing(null)} onSave={() => saveStr("name")}>
           <input
             autoFocus
-            className="w-full bg-gray-900 text-white text-base rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-indigo-500"
+            className="w-full bg-card text-foreground text-base rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary"
             value={tempStr}
             onChange={e => setTempStr(e.target.value)}
             placeholder="Your name"
@@ -550,11 +557,11 @@ export default function ProfilePage() {
                 key={opt.value}
                 onClick={() => setTempStr(opt.value)}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${
-                  tempStr === opt.value ? "bg-indigo-600/20 border border-indigo-500/40" : "bg-gray-900 hover:bg-gray-800"
+                  tempStr === opt.value ? "bg-primary/10 border border-primary/40" : "bg-card hover:bg-secondary"
                 }`}
               >
-                <span className={`text-sm ${tempStr === opt.value ? "text-indigo-300" : "text-gray-300"}`}>{opt.label}</span>
-                {tempStr === opt.value && <Check className="h-4 w-4 text-indigo-400" />}
+                <span className={`text-sm ${tempStr === opt.value ? "text-primary" : "text-muted-foreground"}`}>{opt.label}</span>
+                {tempStr === opt.value && <Check className="h-4 w-4 text-primary" />}
               </button>
             ))}
           </div>
@@ -573,12 +580,12 @@ export default function ProfilePage() {
               autoFocus
               type="number"
               inputMode="decimal"
-              className="w-full bg-gray-900 text-white text-2xl font-semibold rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-indigo-500 text-center"
+              className="w-full bg-card text-foreground text-2xl font-semibold rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary text-center"
               value={tempNum}
               onChange={e => setTempNum(e.target.value)}
               placeholder="0"
             />
-            <p className="text-xs text-center text-gray-500">
+            <p className="text-xs text-center text-muted-foreground">
               {editing === "age" ? "years" : "pounds"}
             </p>
           </div>
@@ -591,34 +598,34 @@ export default function ProfilePage() {
           <div className="space-y-3">
             <div className="flex gap-3">
               <div className="flex-1 space-y-1.5">
-                <p className="text-xs text-center text-gray-500">Feet</p>
+                <p className="text-xs text-center text-muted-foreground">Feet</p>
                 <input
                   autoFocus
                   type="number"
                   inputMode="numeric"
                   min={1}
                   max={8}
-                  className="w-full bg-gray-900 text-white text-2xl font-semibold rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-indigo-500 text-center"
+                  className="w-full bg-card text-foreground text-2xl font-semibold rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary text-center"
                   value={tempFeet}
                   onChange={e => setTempFeet(e.target.value)}
                   placeholder="5"
                 />
               </div>
               <div className="flex-1 space-y-1.5">
-                <p className="text-xs text-center text-gray-500">Inches</p>
+                <p className="text-xs text-center text-muted-foreground">Inches</p>
                 <input
                   type="number"
                   inputMode="numeric"
                   min={0}
                   max={11}
-                  className="w-full bg-gray-900 text-white text-2xl font-semibold rounded-xl px-4 py-3 border border-gray-700 focus:outline-none focus:border-indigo-500 text-center"
+                  className="w-full bg-card text-foreground text-2xl font-semibold rounded-xl px-4 py-3 border border-border focus:outline-none focus:border-primary text-center"
                   value={tempInches}
                   onChange={e => setTempInches(e.target.value)}
                   placeholder="8"
                 />
               </div>
             </div>
-            <p className="text-xs text-center text-gray-500">e.g. 5 feet 8 inches = 5'8"</p>
+            <p className="text-xs text-center text-muted-foreground">e.g. 5 feet 8 inches = 5'8"</p>
           </div>
         </EditorSheet>
       )}
@@ -637,11 +644,11 @@ export default function ProfilePage() {
                     setTempArr(prev => prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]);
                   }}
                   className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-colors flex items-center justify-between gap-2 ${
-                    selected ? "bg-indigo-600/20 border border-indigo-500/40 text-indigo-300" : "bg-gray-900 text-gray-400 hover:bg-gray-800"
+                    selected ? "bg-primary/10 border border-primary/40 text-primary" : "bg-card text-muted-foreground hover:bg-secondary"
                   }`}
                 >
                   <span>{opt}</span>
-                  {selected && <Check className="h-3.5 w-3.5 text-indigo-400 shrink-0" />}
+                  {selected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
                 </button>
               );
             })}

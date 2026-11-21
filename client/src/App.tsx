@@ -17,7 +17,7 @@ import LoginPage from "@/pages/auth/login";
 import RegisterPage from "@/pages/auth/register";
 import { OnboardingView } from "@/components/onboarding/OnboardingView";
 import { ThemeProvider } from "@/components/travel/theme";
-import { AppShell, LegacyScreen } from "@/components/travel/app-shell";
+import { AppShell } from "@/components/travel/app-shell";
 import { CaptureProvider } from "@/components/travel/capture/capture-context";
 
 function LoadingScreen() {
@@ -37,20 +37,6 @@ function Redirect({ to }: { to: string }) {
   return null;
 }
 
-function legacy(Component: React.ComponentType) {
-  return function LegacyRoute() {
-    return (
-      <LegacyScreen>
-        <Component />
-      </LegacyScreen>
-    );
-  };
-}
-
-const LegacyStats = legacy(StatsPage);
-const LegacyProfile = legacy(ProfilePage);
-const LegacyItinerary = legacy(ItineraryPage);
-
 function AuthedApp() {
   return (
     <CaptureProvider>
@@ -59,9 +45,9 @@ function AuthedApp() {
           <Route path="/" component={HomePage} />
           <Route path="/plan" component={PlanPage} />
           <Route path="/log" component={LogPage} />
-          <Route path="/stats" component={LegacyStats} />
-          <Route path="/profile" component={LegacyProfile} />
-          <Route path="/itinerary" component={LegacyItinerary} />
+          <Route path="/stats" component={StatsPage} />
+          <Route path="/profile" component={ProfilePage} />
+          <Route path="/itinerary" component={ItineraryPage} />
           {/* The general coach is paused; send old links to the structured log. */}
           <Route path="/chat">{() => <Redirect to="/log" />}</Route>
           <Route component={NotFound} />

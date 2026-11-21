@@ -95,25 +95,24 @@ export default function StatsPage() {
   const weightChange = currentWeight && previousWeight ? currentWeight - previousWeight : 0;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-black pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
-      <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
+    <div className="flex-1 overflow-y-auto bg-background pb-28" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4">
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-white">Your Progress</h1>
-          <p className="text-gray-400 text-sm mt-1">Track your journey to better health</p>
+          <h1 className="text-[34px] font-bold leading-tight tracking-tight text-foreground">Progress</h1>
         </div>
 
         {/* Time Range Selector */}
-        <div className="flex gap-2 bg-gray-900 rounded-2xl p-1">
+        <div className="flex gap-2 bg-card rounded-2xl p-1">
           {(["week", "month", "3month", "year"] as const).map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
               className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
                 timeRange === range
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-400 hover:text-white"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {range === "3month" ? "3M" : range.charAt(0).toUpperCase() + range.slice(1)}
@@ -123,27 +122,27 @@ export default function StatsPage() {
 
         {/* Weight Section */}
         {weightLoading ? (
-          <div className="bg-gray-900 rounded-3xl p-5 space-y-4">
+          <div className="bg-card rounded-[22px] p-5 space-y-4">
             <div className="space-y-2">
-              <Skeleton className="h-4 w-28 bg-gray-800" />
-              <Skeleton className="h-9 w-32 bg-gray-800" />
-              <Skeleton className="h-4 w-36 bg-gray-800" />
+              <Skeleton className="h-4 w-28 bg-secondary" />
+              <Skeleton className="h-9 w-32 bg-secondary" />
+              <Skeleton className="h-4 w-36 bg-secondary" />
             </div>
-            <Skeleton className="h-40 w-full rounded-xl bg-gray-800" />
+            <Skeleton className="h-40 w-full rounded-xl bg-secondary" />
           </div>
         ) : weightHistory && weightHistory.length > 0 ? (
-          <div className="bg-gray-900 rounded-3xl p-5 space-y-4">
+          <div className="bg-card rounded-[22px] p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <Scale className="h-4 w-4 text-blue-400" />
-                  <span className="text-sm text-gray-400">Current Weight</span>
+                  <Scale className="h-4 w-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">Current Weight</span>
                 </div>
-                <p className="text-3xl font-bold text-white">
-                  {currentWeight !== undefined ? Math.round(currentWeight * 2) / 2 : "--"} <span className="text-lg text-gray-500">lbs</span>
+                <p className="text-3xl font-bold text-foreground">
+                  {currentWeight !== undefined ? Math.round(currentWeight * 2) / 2 : "--"} <span className="text-lg text-muted-foreground">lbs</span>
                 </p>
                 {weightChange !== 0 && (
-                  <div className={`flex items-center gap-1 mt-1 ${weightChange > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                  <div className={`flex items-center gap-1 mt-1 ${weightChange > 0 ? 'text-destructive' : 'text-primary'}`}>
                     {weightChange > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                     <span className="text-sm">{Math.round(Math.abs(weightChange) * 2) / 2} lbs this {timeRange}</span>
                   </div>
@@ -158,10 +157,10 @@ export default function StatsPage() {
             />
           </div>
         ) : (
-          <div className="bg-gray-900 rounded-3xl p-8 text-center">
-            <Scale className="h-12 w-12 text-gray-700 mx-auto mb-3" />
-            <p className="text-gray-400">No weight data yet</p>
-            <p className="text-gray-500 text-sm mt-1">Log your weight daily to see trends</p>
+          <div className="bg-card rounded-[22px] p-8 text-center">
+            <Scale className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">No weight data yet</p>
+            <p className="text-muted-foreground text-sm mt-1">Log your weight daily to see trends</p>
           </div>
         )}
 
@@ -171,49 +170,49 @@ export default function StatsPage() {
             const isAdaptive = (tdeeData.source ?? "adaptive") === "adaptive";
             const required = tdeeData.requiredDaysForAdaptive ?? 7;
             return (
-              <div className="bg-gradient-to-br from-indigo-600/20 to-blue-600/20 border border-indigo-500/30 rounded-3xl p-5">
+              <div className="bg-card rounded-[22px] p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <Flame className="h-4 w-4 text-orange-400" />
-                      <span className="text-sm text-gray-300">
+                      <Flame className="h-4 w-4 text-highlight" />
+                      <span className="text-sm text-muted-foreground">
                         {isAdaptive ? "Estimated Calorie Burn" : "Estimated Maintenance Calories"}
                       </span>
                     </div>
-                    <p className="text-3xl font-bold text-white">
-                      {tdeeData.value} <span className="text-lg text-gray-400">cal/day</span>
+                    <p className="text-3xl font-bold text-foreground">
+                      {tdeeData.value} <span className="text-lg text-muted-foreground">cal/day</span>
                     </p>
                     {isAdaptive ? (
                       <p className="text-sm mt-1">
                         {tdeeData.difference > 0 ? (
-                          <span className="text-green-400">↑ {tdeeData.difference} higher than formula</span>
+                          <span className="text-primary">↑ {tdeeData.difference} higher than formula</span>
                         ) : tdeeData.difference < 0 ? (
-                          <span className="text-red-400">↓ {Math.abs(tdeeData.difference)} lower than formula</span>
+                          <span className="text-destructive">↓ {Math.abs(tdeeData.difference)} lower than formula</span>
                         ) : (
-                          <span className="text-gray-400">Matches formula estimate</span>
+                          <span className="text-muted-foreground">Matches formula estimate</span>
                         )}
                       </p>
                     ) : (
-                      <p className="text-sm mt-1 text-gray-400">
+                      <p className="text-sm mt-1 text-muted-foreground">
                         Formula estimate, not your daily food target. Adaptive adjustments are disabled in this beta.
                       </p>
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-500 mb-1">Confidence</p>
+                    <p className="text-xs text-muted-foreground mb-1">Confidence</p>
                     <div className="flex gap-1">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <div
                           key={i}
                           className={`w-2 h-6 rounded-full ${
                             i < (tdeeData.confidence === "high" ? 5 : tdeeData.confidence === "medium" ? 3 : 1)
-                              ? "bg-blue-500"
-                              : "bg-gray-700"
+                              ? "bg-primary"
+                              : "bg-accent"
                           }`}
                         />
                       ))}
                     </div>
-                    {isAdaptive && <p className="text-xs text-gray-500 mt-1">
+                    {isAdaptive && <p className="text-xs text-muted-foreground mt-1">
                       {isAdaptive
                         ? `${tdeeData.daysOfData} days`
                         : `${tdeeData.daysOfData}/${required} days`}
@@ -223,9 +222,9 @@ export default function StatsPage() {
 
                 {!isAdaptive && tdeeData.adaptiveEnabled && (
                   <div className="space-y-1">
-                    <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all"
+                        className="h-full bg-primary rounded-full transition-all"
                         style={{ width: `${Math.min((tdeeData.daysOfData / Math.max(required, 1)) * 100, 100)}%` }}
                       />
                     </div>
@@ -233,7 +232,7 @@ export default function StatsPage() {
                 )}
 
                 <div className="bg-black/30 rounded-xl p-3 mt-3">
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-muted-foreground">
                     {isAdaptive
                       ? "This is an estimate based on logged food and weight changes, not a direct measurement of metabolism."
                       : "This is a Mifflin-St Jeor maintenance estimate from your profile. Use Today for your daily food target, which also accounts for your goal."}
@@ -243,20 +242,20 @@ export default function StatsPage() {
             );
           })()
         ) : (
-          <div className="bg-gray-900 rounded-3xl p-5">
+          <div className="bg-card rounded-[22px] p-5">
             <div className="flex items-center gap-3">
-              <div className="bg-orange-500/20 rounded-xl p-3">
-                <Flame className="h-6 w-6 text-orange-400" />
+              <div className="bg-highlight-soft rounded-xl p-3">
+                <Flame className="h-6 w-6 text-highlight" />
               </div>
               <div className="flex-1">
-                <p className="text-white font-medium">Estimated Maintenance Calories</p>
-                <p className="text-gray-400 text-sm">Estimate unavailable</p>
+                <p className="text-foreground font-medium">Estimated Maintenance Calories</p>
+                <p className="text-muted-foreground text-sm">Estimate unavailable</p>
               </div>
             </div>
-            <p className="text-3xl font-bold text-white mt-3">
-              — <span className="text-lg text-gray-400">cal/day</span>
+            <p className="text-3xl font-bold text-foreground mt-3">
+              — <span className="text-lg text-muted-foreground">cal/day</span>
             </p>
-            <p className="text-xs text-gray-500 mt-3">
+            <p className="text-xs text-muted-foreground mt-3">
               Complete your profile to calculate a formula estimate. Adaptive adjustments are disabled in this beta.
             </p>
           </div>
@@ -264,36 +263,36 @@ export default function StatsPage() {
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gray-900 rounded-2xl p-4">
+          <div className="bg-card rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-4 w-4 text-green-400" />
-              <span className="text-xs text-gray-400">Days Logged</span>
+              <Calendar className="h-4 w-4 text-primary" />
+              <span className="text-xs text-muted-foreground">Days Logged</span>
             </div>
-            <p className="text-2xl font-bold text-white">{statsData?.totalDaysLogged || 0}</p>
+            <p className="text-2xl font-bold text-foreground">{statsData?.totalDaysLogged || 0}</p>
           </div>
 
-          <div className="bg-gray-900 rounded-2xl p-4">
+          <div className="bg-card rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Award className="h-4 w-4 text-orange-400" />
-              <span className="text-xs text-gray-400">Current Streak</span>
+              <Award className="h-4 w-4 text-highlight" />
+              <span className="text-xs text-muted-foreground">Current Streak</span>
             </div>
-            <p className="text-2xl font-bold text-white">{statsData?.streak || 0} <span className="text-sm text-gray-500">days</span></p>
+            <p className="text-2xl font-bold text-foreground">{statsData?.streak || 0} <span className="text-sm text-muted-foreground">days</span></p>
           </div>
 
-          <div className="bg-gray-900 rounded-2xl p-4">
+          <div className="bg-card rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Target className="h-4 w-4 text-blue-400" />
-              <span className="text-xs text-gray-400">Avg Calories</span>
+              <Target className="h-4 w-4 text-primary" />
+              <span className="text-xs text-muted-foreground">Avg Calories</span>
             </div>
-            <p className="text-2xl font-bold text-white">{statsData?.avgCalories?.toLocaleString() || 0}</p>
+            <p className="text-2xl font-bold text-foreground">{statsData?.avgCalories?.toLocaleString() || 0}</p>
           </div>
 
-          <div className="bg-gray-900 rounded-2xl p-4">
+          <div className="bg-card rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-4 w-4 text-purple-400" />
-              <span className="text-xs text-gray-400">Consistency</span>
+              <TrendingUp className="h-4 w-4 text-highlight" />
+              <span className="text-xs text-muted-foreground">Consistency</span>
             </div>
-            <p className="text-2xl font-bold text-white">{statsData?.consistency || 0}<span className="text-sm text-gray-500">%</span></p>
+            <p className="text-2xl font-bold text-foreground">{statsData?.consistency || 0}<span className="text-sm text-muted-foreground">%</span></p>
           </div>
         </div>
 
